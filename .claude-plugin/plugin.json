@@ -1,0 +1,9 @@
+{
+  "name": "a-plat",
+  "description": "Met à plat un projet sous forme de maquettes : ce qui existe, ce qui est à compléter, ce qui manque, écran par écran.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Les contributeurs d'À plat"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "a-plat",
+  "owner": {
+    "name": "Les contributeurs d'À plat"
+  },
+  "metadata": {
+    "description": "Un plugin pour mettre à plat un projet sous forme de maquettes."
+  },
+  "plugins": [
+    {
+      "name": "a-plat",
+      "source": "./",
+      "description": "Met à plat un projet sous forme de maquettes : ce qui existe, ce qui est à compléter, ce qui manque, écran par écran."
+    }
+  ]
+}
