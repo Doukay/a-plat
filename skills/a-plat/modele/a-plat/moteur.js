@@ -202,13 +202,512 @@
     });
   }
 
-  // Les vues de la vue d'ensemble et de l'écran seul viennent plus tard : en attendant,
-  // elles le disent en une phrase.
-  function dessinerPasEncore(nomDeLaVue) {
-    return function (conteneur) {
-      conteneur.appendChild(titreDeVue(nomDeLaVue));
-      conteneur.appendChild(creer("p", "consigne", "Cette vue n'affiche rien pour l'instant."));
+  // ------------------------------------------------------------ 4b. les écrans
+  //
+  // Chaque écran s'affiche dans un cadre (iframe). La page ne peut pas lire dans un cadre :
+  // c'est le petit script relais.js, chargé par l'écran, qui lui écrit (postMessage).
+  // Ne sont écoutés que les messages marqués { aPlat: 1 } qui viennent d'un cadre créé ici.
+
+  var DELAI_ECRAN_INTROUVABLE = 3000; // millisecondes sans message pret
+  var HAUTEUR_DE_VIGNETTE = 400;      // hauteur visée d'une vignette, pour garder une rangée lisible
+  var LARGEUR_DE_VIGNETTE = 480;      // largeur la plus grande d'une vignette
+  var LARGEUR_PAR_DEFAUT = 390;
+  var HAUTEUR_PAR_DEFAUT = 844;
+  var HAUTEUR_MAXIMALE_D_UN_CADRE = 20000;
+
+  var TYPES_DE_NOTE = {
+    "decision": "Décision",
+    "a-trancher": "À trancher",
+    "a-verifier": "À vérifier",
+    "a-coder": "À coder",
+    "source": "Source"
+  };
+
+  var MODES = [
+    { valeur: "corriger", libelle: "Corriger", aide: "Toucher un élément de l'écran ne l'active pas : cela le désigne pour une correction." },
+    { valeur: "essayer", libelle: "Essayer le parcours", aide: "Les liens et les boutons de l'écran mènent à l'écran suivant, comme dans l'application." }
+  ];
+
+  var DEMANDE_DE_DESSIN = "« dessine les premiers écrans »";
+
+  // L'état de la visite : le mode choisi vaut pour tous les écrans, d'une vue à l'autre.
+  var mode = "corriger";
+  var cadres = [];         // un par cadre affiché : { cadre, boite, code, chemin, vignette, lecture, pret, minuteur, voile }
+  var observateur = null;  // il lance le compte à rebours « introuvable » quand un cadre est près de l'écran
+  var zoneDuLien = null;   // la ligne où la vue d'un écran seul dit qu'un lien ne mène nulle part
+
+  function estObjet(valeur) {
+    return typeof valeur === "object" && valeur !== null && !Array.isArray(valeur);
+  }
+
+  // Un fichier du plan ne sert que dans son dossier (ecrans/ ou actuel/). On refuse tout ce qui
+  // peut en sortir : « .. », une adresse complète (https:, file:…), une barre au début, une
+  // barre oblique inverse, et les mêmes écrits avec des %. Renvoie le fichier, ou null.
+  function fichierSur(valeur) {
+    if (!estTexte(valeur)) return null;
+    var versions = [valeur];
+    try {
+      versions.push(decodeURIComponent(valeur));
+    } catch (erreur) {
+      return null;
+    }
+    for (var i = 0; i < versions.length; i++) {
+      var version = versions[i];
+      if (version.indexOf("..") !== -1) return null;
+      if (/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(version)) return null;
+      if (/^[\/\\]/.test(version) || version.indexOf("\\") !== -1) return null;
+      if (/[\u0000-\u001f]/.test(version)) return null;
+    }
+    return valeur;
+  }
+
+  function dimension(valeur, parDefaut) {
+    return typeof valeur === "number" && isFinite(valeur) && valeur >= 100 && valeur <= 5000 ? Math.round(valeur) : parDefaut;
+  }
+
+  function nomCourt(valeur) {
+    return estTexte(valeur) ? valeur : "Sans titre";
+  }
+
+  function lienDeLEcran(code) {
+    return "#ecran/" + encodeURIComponent(code);
+  }
+
+  function nettoyerLesCadres() {
+    cadres.forEach(function (entree) {
+      if (entree.minuteur) window.clearTimeout(entree.minuteur);
+    });
+    cadres = [];
+    if (observateur) observateur.disconnect();
+    observateur = null;
+    zoneDuLien = null;
+  }
+
+  // ---- le cadre d'un écran
+
+  function entreeDeLaSource(source) {
+    if (!source) return null;
+    for (var i = 0; i < cadres.length; i++) {
+      if (cadres[i].cadre.contentWindow === source) return cadres[i];
+    }
+    return null;
+  }
+
+  function envoyerLeMode(entree) {
+    // Les vignettes et l'actuel ne servent qu'à regarder : leurs touchers ne font rien.
+    var valeur = entree.vignette || entree.lecture ? "corriger" : mode;
+    try {
+      entree.cadre.contentWindow.postMessage({ aPlat: 1, type: "mode", mode: valeur }, "*");
+    } catch (erreur) {
+      // cadre déjà retiré de la page
+    }
+  }
+
+  function montrerEcranIntrouvable(entree) {
+    if (entree.pret || entree.voile) return;
+    var voile = creer("div", "cadre-manque");
+    voile.appendChild(creer("p", "cadre-manque-titre", "Écran introuvable : " + entree.chemin));
+    voile.appendChild(creer("p", "", "Demandez à Claude de recréer ce fichier, ou de retirer cet écran du plan."));
+    entree.voile = voile;
+    entree.boite.classList.add("introuvable");
+    entree.boite.appendChild(voile);
+  }
+
+  function lancerLeDelai(entree) {
+    if (entree.pret || entree.minuteur) return;
+    entree.minuteur = window.setTimeout(function () {
+      entree.minuteur = null;
+      montrerEcranIntrouvable(entree);
+    }, DELAI_ECRAN_INTROUVABLE);
+  }
+
+  // Le délai ne commence que quand le cadre est près de l'écran : un cadre paresseux, hors
+  // de la vue, n'est pas encore chargé et ne doit pas être pris pour un fichier absent.
+  function surveiller(entree) {
+    if (typeof window.IntersectionObserver !== "function") {
+      lancerLeDelai(entree);
+      return;
+    }
+    if (!observateur) {
+      observateur = new window.IntersectionObserver(function (observations) {
+        observations.forEach(function (observation) {
+          if (!observation.isIntersecting) return;
+          observateur.unobserve(observation.target);
+          for (var i = 0; i < cadres.length; i++) {
+            if (cadres[i].boite === observation.target) lancerLeDelai(cadres[i]);
+          }
+        });
+      }, { rootMargin: "200px" });
+    }
+    observateur.observe(entree.boite);
+  }
+
+  // Construit la boîte d'un cadre. config : code, titre, chemin (déjà vérifié), largeur, hauteur,
+  // vignette (réduit, paresseux, intouchable), lecture (affiché pour comparer seulement).
+  function fabriquerCadre(config) {
+    var boite = creer("div", "cadre-boite");
+    var cadre = document.createElement("iframe");
+    cadre.className = "cadre";
+    cadre.setAttribute("data-code", config.code);
+    cadre.setAttribute("title", config.code + " · " + config.titre);
+
+    if (config.vignette) {
+      var echelle = Math.min(1, HAUTEUR_DE_VIGNETTE / config.hauteur, LARGEUR_DE_VIGNETTE / config.largeur);
+      boite.style.width = Math.round(config.largeur * echelle) + "px";
+      boite.style.height = Math.round(config.hauteur * echelle) + "px";
+      cadre.style.width = config.largeur + "px";
+      cadre.style.height = config.hauteur + "px";
+      cadre.style.transform = "scale(" + echelle + ")";
+      cadre.setAttribute("tabindex", "-1");
+      cadre.setAttribute("loading", "lazy");
+    } else {
+      cadre.style.height = config.hauteur + "px";
+    }
+    cadre.setAttribute("src", config.chemin);
+    boite.appendChild(cadre);
+
+    var entree = {
+      cadre: cadre, boite: boite, code: config.code, chemin: config.chemin,
+      vignette: Boolean(config.vignette), lecture: Boolean(config.lecture),
+      pret: false, minuteur: null, voile: null
     };
+    cadres.push(entree);
+    surveiller(entree);
+    return boite;
+  }
+
+  // La place d'un fichier refusé : une phrase à la place du cadre.
+  function boiteRefusee(fichier, dossier, taille) {
+    var boite = creer("div", "cadre-boite");
+    if (taille) {
+      boite.style.width = taille.largeur + "px";
+      boite.style.height = taille.hauteur + "px";
+    }
+    var montre = String(fichier).length > 80 ? String(fichier).slice(0, 79) + "…" : String(fichier);
+    boite.appendChild(creer("p", "cadre-refuse",
+      "Fichier refusé : « " + montre + " » doit se trouver dans le dossier " + dossier + "/, sans « .. » ni adresse complète."));
+    return boite;
+  }
+
+  // ---- ce que dit un écran
+
+  function surPret(entree, donnee) {
+    entree.pret = true;
+    if (entree.minuteur) {
+      window.clearTimeout(entree.minuteur);
+      entree.minuteur = null;
+    }
+    if (entree.voile) {
+      if (entree.voile.parentNode) entree.voile.parentNode.removeChild(entree.voile);
+      entree.voile = null;
+      entree.boite.classList.remove("introuvable");
+    }
+    envoyerLeMode(entree);
+    if (!entree.vignette && typeof donnee.hauteur === "number" && isFinite(donnee.hauteur) && donnee.hauteur > 0) {
+      entree.cadre.style.height = Math.min(Math.ceil(donnee.hauteur), HAUTEUR_MAXIMALE_D_UN_CADRE) + "px";
+    }
+  }
+
+  // L'écran du plan vers lequel mène un lien (« A2-fiche.html », « ./A2-fiche.html#haut »…), ou null.
+  function ecranDuLien(plan, vers) {
+    var chemin = vers.split("#")[0].split("?")[0];
+    if (!chemin || /^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(chemin)) return null;
+    try {
+      chemin = decodeURIComponent(chemin);
+    } catch (erreur) {
+      // on garde le texte tel quel
+    }
+    var sansPoint = chemin.replace(/^(\.\/)+/, "");
+    var nom = chemin.slice(chemin.lastIndexOf("/") + 1);
+    return window.APlatLogique.ecranParFichier(plan, sansPoint) || window.APlatLogique.ecranParFichier(plan, nom);
+  }
+
+  function surLien(vers) {
+    var ecran = ecranDuLien(window.A_PLAT, vers);
+    if (ecran && estTexte(ecran.code)) {
+      window.location.hash = lienDeLEcran(ecran.code);
+      return;
+    }
+    if (zoneDuLien) {
+      var montre = vers.length > 80 ? vers.slice(0, 79) + "…" : vers;
+      zoneDuLien.textContent = "Le lien « " + montre + " » ne mène à aucun écran du plan : on reste ici.";
+    }
+  }
+
+  window.addEventListener("message", function (evenement) {
+    var donnee = evenement.data;
+    if (!donnee || typeof donnee !== "object" || donnee.aPlat !== 1 || typeof donnee.type !== "string") return;
+    var entree = entreeDeLaSource(evenement.source); // un message qui ne vient pas d'un de nos cadres est ignoré
+    if (!entree) return;
+
+    if (donnee.type === "pret") {
+      surPret(entree, donnee);
+    } else if (donnee.type === "element") {
+      if (entree.vignette || entree.lecture || typeof donnee.nom !== "string") return;
+      window.APlatMoteur.surElementTouche(entree.code, donnee.nom.slice(0, 200));
+    } else if (donnee.type === "lien") {
+      if (entree.vignette || entree.lecture || mode !== "essayer" || typeof donnee.vers !== "string") return;
+      surLien(donnee.vers);
+    }
+  });
+
+  // Appelée quand la personne touche un élément en mode « Corriger » : (code de l'écran, nom
+  // de l'élément). Elle ne fait rien pour l'instant : les corrections la rempliront.
+  function surElementTouche() {}
+
+  function changerLeMode(nouveau) {
+    mode = nouveau;
+    cadres.forEach(function (entree) {
+      if (entree.pret) envoyerLeMode(entree);
+    });
+  }
+
+  // ---- les notes d'une rangée
+
+  function dessinerNotes(rangee) {
+    var notes = (Array.isArray(rangee.notes) ? rangee.notes : []).filter(estObjet);
+    if (notes.length === 0) return null;
+    var liste = creer("ul", "notes");
+    liste.setAttribute("aria-label", "Notes de la rangée " + rangee.id);
+    notes.forEach(function (note) {
+      var element = creer("li", "note");
+      element.setAttribute("data-type", String(note.type));
+      var tete = creer("div", "note-tete");
+      tete.appendChild(creer("span", "note-type", TYPES_DE_NOTE[note.type] || "Note"));
+      if (estTexte(note.date)) tete.appendChild(creer("span", "note-date", note.date));
+      element.appendChild(tete);
+      var corps = creer("p", "note-texte");
+      if (estTexte(note.ancien)) {
+        corps.appendChild(creer("s", "note-ancien", note.ancien));
+        corps.appendChild(document.createTextNode(" "));
+      }
+      if (estTexte(note.texte)) corps.appendChild(document.createTextNode(note.texte));
+      element.appendChild(corps);
+      liste.appendChild(element);
+    });
+    return liste;
+  }
+
+  // ---- la vue d'ensemble
+
+  function dessinerVignette(ecran) {
+    var largeur = dimension(ecran.largeur, LARGEUR_PAR_DEFAUT);
+    var hauteur = dimension(ecran.hauteur, HAUTEUR_PAR_DEFAUT);
+    var echelle = Math.min(1, HAUTEUR_DE_VIGNETTE / hauteur, LARGEUR_DE_VIGNETTE / largeur);
+    var taille = { largeur: Math.round(largeur * echelle), hauteur: Math.round(hauteur * echelle) };
+
+    var element = creer("div", "vignette");
+    element.setAttribute("data-code", ecran.code);
+    element.style.width = taille.largeur + "px";
+
+    var fichier = fichierSur(ecran.fichier);
+    if (fichier) {
+      element.appendChild(fabriquerCadre({
+        code: ecran.code, titre: nomCourt(ecran.titre), chemin: "ecrans/" + fichier,
+        largeur: largeur, hauteur: hauteur, vignette: true
+      }));
+    } else {
+      element.appendChild(boiteRefusee(ecran.fichier, "ecrans", taille));
+    }
+
+    // Un vrai lien, qui couvre toute la vignette (voir .vignette-lien::after dans le style).
+    var lien = creer("a", "vignette-lien");
+    lien.setAttribute("href", lienDeLEcran(ecran.code));
+    lien.appendChild(creer("span", "vignette-code", ecran.code));
+    lien.appendChild(creer("span", "vignette-titre", nomCourt(ecran.titre)));
+    element.appendChild(lien);
+    return element;
+  }
+
+  function dessinerEnsemble(conteneur, plan) {
+    conteneur.appendChild(titreDeVue("Vue d'ensemble"));
+    if (plan.ecrans.length === 0) {
+      conteneur.appendChild(message("Aucun écran n'est encore dessiné", [
+        "La vue d'ensemble se remplira quand les premiers écrans existeront.",
+        "Demandez à Claude de les dessiner : " + DEMANDE_DE_DESSIN + "."
+      ]));
+    } else {
+      conteneur.appendChild(creer("p", "consigne",
+        "Chaque rangée montre ses écrans, puis ses notes. Touchez un écran pour l'ouvrir en grand."));
+    }
+
+    plan.rangees.forEach(function (rangee) {
+      var section = creer("section", "rangee");
+      section.setAttribute("data-rangee", rangee.id);
+
+      var titre = creer("h3", "rangee-titre");
+      titre.appendChild(creer("span", "rangee-id", rangee.id));
+      if (estTexte(rangee.titre)) {
+        titre.appendChild(document.createTextNode(" "));
+        titre.appendChild(creer("span", "rangee-nom", rangee.titre));
+      }
+      section.appendChild(titre);
+
+      var corps = creer("div", "rangee-corps");
+      var ecrans = plan.ecrans.filter(function (ecran) {
+        return ecran.rangee === rangee.id;
+      });
+      if (ecrans.length === 0) {
+        corps.appendChild(creer("p", "rangee-vide", "Aucun écran dans cette rangée."));
+      } else {
+        var ligne = creer("div", "ecrans-ligne");
+        ligne.setAttribute("tabindex", "0");
+        ligne.setAttribute("role", "group");
+        ligne.setAttribute("aria-label", "Écrans de la rangée " + rangee.id);
+        ecrans.forEach(function (ecran) {
+          ligne.appendChild(dessinerVignette(ecran));
+        });
+        corps.appendChild(ligne);
+      }
+      var notes = dessinerNotes(rangee);
+      if (notes) corps.appendChild(notes);
+      section.appendChild(corps);
+      conteneur.appendChild(section);
+    });
+  }
+
+  // ---- l'écran seul
+
+  function creerVolet(classe, titre, largeur) {
+    var volet = creer("section", "volet " + classe);
+    volet.style.width = largeur + "px";
+    if (titre) volet.appendChild(creer("h3", "volet-titre", titre));
+    return volet;
+  }
+
+  // L'existant : une image, ou une page redessinée affichée comme un écran. On choisit d'après
+  // l'extension du fichier ; à défaut, d'après l'origine.
+  function dessinerActuel(ecran, largeur, hauteur) {
+    var actuel = ecran.actuel;
+    var redessine = actuel.origine === "redessine";
+    var volet = creerVolet("volet-actuel", redessine ? "Redessiné d'après le code" : "Capture de l'existant", largeur);
+
+    var fichier = fichierSur(actuel.fichier);
+    if (!fichier) {
+      volet.appendChild(boiteRefusee(actuel.fichier, "actuel", null));
+      return volet;
+    }
+    var chemin = fichier.indexOf("actuel/") === 0 ? fichier : "actuel/" + fichier;
+    var nom = chemin.toLowerCase().split(/[?#]/)[0];
+    var estUnePage = /\.html?$/.test(nom) || (!/\.(png|jpe?g|gif|webp|svg|avif|bmp)$/.test(nom) && redessine);
+
+    if (estUnePage) {
+      volet.appendChild(fabriquerCadre({
+        code: ecran.code, titre: nomCourt(ecran.titre) + " (existant)", chemin: chemin,
+        largeur: largeur, hauteur: hauteur, lecture: true
+      }));
+    } else {
+      var image = document.createElement("img");
+      image.className = "actuel-image";
+      image.setAttribute("src", chemin);
+      image.setAttribute("alt", "Capture de l'existant pour l'écran " + ecran.code + " : " + nomCourt(ecran.titre));
+      volet.appendChild(image);
+    }
+    return volet;
+  }
+
+  function dessinerVoisin(ecran, sens) {
+    var lien = creer("a", "voisin voisin-" + (sens === "precedent" ? "precedent" : "suivant"));
+    lien.setAttribute("href", lienDeLEcran(ecran.code));
+    lien.appendChild(creer("span", "voisin-sens", sens === "precedent" ? "Écran précédent" : "Écran suivant"));
+    lien.appendChild(creer("span", "voisin-nom", ecran.code + " · " + nomCourt(ecran.titre)));
+    return lien;
+  }
+
+  function dessinerEcran(conteneur, plan, code) {
+    var ecrans = plan.ecrans;
+    if (ecrans.length === 0) {
+      var vide = message("Aucun écran n'est encore dessiné", [
+        "Il n'y a rien à montrer ici pour l'instant.",
+        "Demandez à Claude de les dessiner : " + DEMANDE_DE_DESSIN + "."
+      ]);
+      vide.appendChild(creer("a", "lien-retour", "Retour à la vue d'ensemble")).setAttribute("href", "#ensemble");
+      conteneur.appendChild(vide);
+      return;
+    }
+
+    // « #ecran » sans code : le premier écran du plan.
+    var position = 0;
+    if (code !== "") {
+      position = -1;
+      for (var i = 0; i < ecrans.length; i++) {
+        if (ecrans[i].code === code) position = i;
+      }
+    }
+    if (position === -1) {
+      var inconnu = message("Cet écran n'existe pas", ["Le plan ne contient aucun écran avec le code « " + code + " »."]);
+      inconnu.appendChild(creer("a", "lien-retour", "Retour à la vue d'ensemble")).setAttribute("href", "#ensemble");
+      conteneur.appendChild(inconnu);
+      return;
+    }
+    var ecran = ecrans[position];
+    var largeur = dimension(ecran.largeur, LARGEUR_PAR_DEFAUT);
+    var hauteur = dimension(ecran.hauteur, HAUTEUR_PAR_DEFAUT);
+
+    var entete = creer("div", "ecran-entete");
+    entete.appendChild(creer("span", "ecran-code", ecran.code));
+    entete.appendChild(creer("h2", "titre-de-vue", nomCourt(ecran.titre)));
+    conteneur.appendChild(entete);
+    conteneur.appendChild(creer("p", "consigne",
+      "Pour corriger dans la conversation, commencez par le code de l'écran : « " + ecran.code + " : change le titre »."));
+
+    // Le mode : ce que fait un toucher dans l'écran.
+    var choix = creer("div", "mode");
+    choix.setAttribute("role", "group");
+    choix.setAttribute("aria-label", "Ce que fait un toucher dans l'écran");
+    var aide = creer("p", "consigne mode-aide");
+    var boutons = [];
+    function montrerLeMode() {
+      boutons.forEach(function (bouton) {
+        bouton.element.setAttribute("aria-pressed", bouton.valeur === mode ? "true" : "false");
+      });
+      MODES.forEach(function (possible) {
+        if (possible.valeur === mode) aide.textContent = possible.aide;
+      });
+    }
+    MODES.forEach(function (possible) {
+      var bouton = creer("button", "", possible.libelle);
+      bouton.setAttribute("type", "button");
+      bouton.addEventListener("click", function () {
+        changerLeMode(possible.valeur);
+        montrerLeMode();
+      });
+      boutons.push({ valeur: possible.valeur, element: bouton });
+      choix.appendChild(bouton);
+    });
+    montrerLeMode();
+    conteneur.appendChild(choix);
+    conteneur.appendChild(aide);
+
+    zoneDuLien = creer("p", "lien-sans-ecran");
+    zoneDuLien.setAttribute("role", "status");
+    conteneur.appendChild(zoneDuLien);
+
+    // L'actuel (s'il y en a un) et la proposition : côte à côte quand la place le permet.
+    var comparaison = creer("div", "comparaison");
+    var aUnActuel = estObjet(ecran.actuel) && estTexte(ecran.actuel.fichier);
+    if (aUnActuel) comparaison.appendChild(dessinerActuel(ecran, largeur, hauteur));
+
+    var proposition = creerVolet("volet-proposition", aUnActuel ? "Proposition" : "", largeur);
+    var fichier = fichierSur(ecran.fichier);
+    if (fichier) {
+      proposition.appendChild(fabriquerCadre({
+        code: ecran.code, titre: nomCourt(ecran.titre), chemin: "ecrans/" + fichier,
+        largeur: largeur, hauteur: hauteur
+      }));
+    } else {
+      proposition.appendChild(boiteRefusee(ecran.fichier, "ecrans", null));
+    }
+    comparaison.appendChild(proposition);
+    conteneur.appendChild(comparaison);
+
+    // Précédent et suivant, dans l'ordre des écrans du plan.
+    var voisins = creer("div", "voisins");
+    voisins.setAttribute("role", "navigation");
+    voisins.setAttribute("aria-label", "Autres écrans");
+    if (position > 0) voisins.appendChild(dessinerVoisin(ecrans[position - 1], "precedent"));
+    if (position < ecrans.length - 1) voisins.appendChild(dessinerVoisin(ecrans[position + 1], "suivant"));
+    if (voisins.childNodes.length > 0) conteneur.appendChild(voisins);
   }
 
   // Une vue : son adresse (le mot après #), son nom dans la barre et sa fonction de dessin.
@@ -216,8 +715,8 @@
   // (le code d'écran pour #ecran/A2, sinon une chaîne vide).
   var VUES = {
     etat: { nom: "État des lieux", dessiner: dessinerEtatDesLieux },
-    ensemble: { nom: "Vue d'ensemble", dessiner: dessinerPasEncore("Vue d'ensemble") },
-    ecran: { nom: "Écrans", dessiner: dessinerPasEncore("Écrans") }
+    ensemble: { nom: "Vue d'ensemble", dessiner: dessinerEnsemble },
+    ecran: { nom: "Écrans", dessiner: dessinerEcran }
   };
 
   // ------------------------------------------------------------ 5. afficher
@@ -277,6 +776,8 @@
     marquerLaBarre(lue.vue, lecture.plan);
 
     conteneur.textContent = "";
+    nettoyerLesCadres();
+    document.body.setAttribute("data-vue", lue.vue);
     try {
       if (lecture.statut !== "bon") conteneur.appendChild(dessinerProblemeDePlan(lecture));
       else VUES[lue.vue].dessiner(conteneur, lecture.plan, lue.reste);
@@ -290,7 +791,14 @@
     }
   }
 
-  window.APlatMoteur = { afficher: afficher, lireStock: lireStock, garderStock: garderStock };
+  // surElementTouche est appelée par la page à travers cet objet, pour qu'on puisse la remplacer.
+  window.APlatMoteur = {
+    afficher: afficher,
+    lireStock: lireStock,
+    garderStock: garderStock,
+    surElementTouche: surElementTouche,
+    modeCourant: function () { return mode; }
+  };
 
   window.addEventListener("hashchange", function () {
     afficher(window.location.hash);

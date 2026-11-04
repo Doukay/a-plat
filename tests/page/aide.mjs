@@ -1,9 +1,9 @@
 // Aides communes aux tests de la page : assemblage d'un dossier de maquettes jetable
 // et ouverture de sa page en file://, dans un navigateur isolé.
 import { chromium } from "playwright";
-import { cpSync, mkdtempSync, rmSync, existsSync } from "node:fs";
+import { cpSync, mkdtempSync, rmSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const MODELE = fileURLToPath(new URL("../../skills/a-plat/modele", import.meta.url));
@@ -15,7 +15,8 @@ const FIXTURES = fileURLToPath(new URL("../fixtures", import.meta.url));
 export function assembler(fixture, options = {}) {
   const dossier = mkdtempSync(join(tmpdir(), "a-plat-test-"));
   cpSync(MODELE, dossier, { recursive: true });
-  const source = join(FIXTURES, fixture);
+  // resolve : une fixture donnée par un chemin absolu (voir genererFixture) est prise telle quelle.
+  const source = resolve(FIXTURES, fixture);
   if (!existsSync(source)) throw new Error(`Fixture introuvable : ${fixture}`);
   cpSync(source, dossier, { recursive: true });
   for (const chemin of options.retirer ?? []) rmSync(join(dossier, chemin), { recursive: true, force: true });
@@ -47,6 +48,8 @@ export async function avecPage(fixture, options, travail) {
       reducedMotion: options.mouvement ?? "no-preference"
     });
     const page = await contexte.newPage();
+    // Un test qui échoue doit échouer vite : 8 secondes d'attente au plus par action.
+    page.setDefaultTimeout(8000);
     const releve = { console: [], erreurs: [], requetes: [] };
     page.on("console", (message) => {
       if (message.type() === "error") releve.console.push(message.text());
@@ -63,4 +66,46 @@ export async function avecPage(fixture, options, travail) {
     await navigateur.close();
     rmSync(dossier, { recursive: true, force: true });
   }
+}
+
+// ---------------------------------------------------------------- fixtures générées à l'exécution
+
+const generees = [];
+
+// Écrit une fixture jetable dans le dossier temporaire et renvoie son chemin, que l'on
+// passe à avecPage ou assembler à la place d'un nom de fixture. Rien n'est à valider dans Git.
+//   plan    : l'objet du plan (écrit dans plan.js)
+//   ecrans  : { "A1-accueil.html": "<html…>" } écrits dans ecrans/
+//   autres  : { "actuel/x.png": Buffer ou texte } écrits tels quels
+// commun.css est écrit aussi, comme dans un vrai dossier de maquettes.
+export function genererFixture({ plan, ecrans = {}, autres = {} }) {
+  const dossier = mkdtempSync(join(tmpdir(), "a-plat-fixture-"));
+  generees.push(dossier);
+  const ecrire = (chemin, contenu) => {
+    const cible = join(dossier, chemin);
+    mkdirSync(dirname(cible), { recursive: true });
+    writeFileSync(cible, contenu);
+  };
+  ecrire("plan.js", `window.A_PLAT = ${JSON.stringify(plan)};\n`);
+  ecrire("commun.css", "body { font-family: sans-serif; }\n");
+  for (const [nom, contenu] of Object.entries(ecrans)) ecrire(join("ecrans", nom), contenu);
+  for (const [chemin, contenu] of Object.entries(autres)) ecrire(chemin, contenu);
+  return dossier;
+}
+
+// Supprime toutes les fixtures générées ; à appeler dans after().
+export function nettoyerFixtures() {
+  while (generees.length > 0) rmSync(generees.pop(), { recursive: true, force: true });
+}
+
+// Un écran à la forme du format commun, avec le relais.
+export function ecranHtml(code, corps, { tete = "", relais = true } = {}) {
+  return `<!doctype html>
+<html lang="fr" data-ecran="${code}">
+<head><meta charset="utf-8"><title>${code}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../commun.css">${tete}</head>
+<body>${corps}${relais ? '<script src="../a-plat/relais.js"></script>' : ""}</body>
+</html>
+`;
 }

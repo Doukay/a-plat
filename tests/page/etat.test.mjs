@@ -215,15 +215,15 @@ test("une adresse inconnue ou vide revient à l'état des lieux", async () => {
   });
 });
 
-test("les autres vues disent en français qu'elles n'affichent rien pour l'instant", async () => {
+test("les vues d'ensemble et d'écran seul sont marquées dans la barre et ne montrent pas l'état des lieux", async () => {
   await avecPage("complet", { adresse: "ensemble" }, async ({ page }) => {
-    assert.match(await textePrincipal(page), /n'affiche rien pour l'instant/);
     assert.equal(await page.locator('nav a[aria-current="page"]').innerText(), "Vue d'ensemble");
+    assert.equal(await page.locator("#vue .rangee").count(), 2);
     assert.equal(await lignes(page).count(), 0);
   });
   await avecPage("complet", { adresse: "ecran/A2" }, async ({ page }) => {
-    assert.match(await textePrincipal(page), /n'affiche rien pour l'instant/);
     assert.equal(await page.locator('nav a[aria-current="page"]').innerText(), "Écrans");
+    assert.equal(await page.locator("#vue .ecran-code").innerText(), "A2");
   });
 });
 
@@ -231,7 +231,9 @@ test("toucher un lien de la barre change de vue sans recharger la page", async (
   await avecPage("complet", {}, async ({ page }) => {
     await page.locator("nav a", { hasText: "Vue d'ensemble" }).click();
     assert.equal(await page.evaluate(() => location.hash), "#ensemble");
-    assert.match(await textePrincipal(page), /n'affiche rien pour l'instant/);
+    assert.equal(await page.locator("#vue .rangee").count(), 2);
+    await page.locator("nav a", { hasText: "Écrans" }).click();
+    assert.equal(await page.evaluate(() => location.hash), "#ecran/A1");
     await page.locator("nav a", { hasText: "État des lieux" }).click();
     assert.equal(await lignes(page).count(), 2);
   });
