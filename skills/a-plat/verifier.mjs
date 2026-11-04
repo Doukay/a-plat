@@ -1,25 +1,49 @@
 #!/usr/bin/env node
 // Contrôle d'un dossier de maquettes, sans rien afficher à l'écran.
 // Usage : node verifier.mjs <dossier>
-// Code de sortie : 0 tout va bien, 1 au moins une erreur, 2 le dossier ou plan.js manque.
+// Code de sortie : 0 tout va bien, 1 au moins une erreur, 2 le dossier, plan.js ou logique.js manque.
 // Ne demande que Node (18 ou plus), aucune bibliothèque.
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 
-const require = createRequire(import.meta.url);
-const { validerPlan } = require("./modele/a-plat/logique.js");
+const CHEMIN_DE_LA_LOGIQUE = fileURLToPath(new URL("./modele/a-plat/logique.js", import.meta.url));
 
 const DELAI_DU_PLAN_EN_MS = 2000;
 const ELEMENTS_VIDES = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
 // Ces balises peuvent rester ouvertes en HTML : leur fermeture n'est pas une erreur.
 const FERMETURE_FACULTATIVE = new Set(["p", "li", "dt", "dd", "tr", "td", "th", "thead", "tbody", "tfoot", "colgroup", "option", "optgroup", "rt", "rp", "head", "body", "html"]);
-const POLICES_EN_LIGNE = /^https:\/\/fonts\.(googleapis|gstatic)\.com\//i;
+// L'adresse seule (preconnect) ou avec un chemin ; fonts.googleapis.com.autre.test n'en fait pas partie.
+const POLICES_EN_LIGNE = /^https:\/\/fonts\.(googleapis|gstatic)\.com(?=[/?#]|$)/i;
 
 function pluriel(nombre, singulier, plurielDuMot) {
   return `${nombre} ${nombre > 1 ? plurielDuMot : singulier}`;
+}
+
+// ---------------------------------------------------------------- logique.js
+
+// logique.js est lu comme du texte et exécuté dans node:vm avec un objet module : le
+// "type" du package.json le plus proche (module ou commonjs) ne change donc rien.
+// Renvoie { validerPlan }, ou lève une erreur dont le message est déjà en français.
+function chargerLaLogique() {
+  let texte;
+  try {
+    texte = readFileSync(CHEMIN_DE_LA_LOGIQUE, "utf8");
+  } catch (erreur) {
+    throw new Error(`Le fichier modele/a-plat/logique.js ne peut pas être lu : ${erreur.message}`);
+  }
+  const module = { exports: {} };
+  try {
+    vm.runInNewContext(texte, { module }, { filename: "logique.js", timeout: DELAI_DU_PLAN_EN_MS });
+  } catch (erreur) {
+    throw new Error(`Le fichier modele/a-plat/logique.js ne peut pas être exécuté : ${erreur && erreur.message ? erreur.message : erreur}`);
+  }
+  if (typeof module.exports.validerPlan !== "function") {
+    throw new Error("Le fichier modele/a-plat/logique.js n'offre pas validerPlan : il est abîmé ou ce n'est pas le bon fichier.");
+  }
+  return module.exports;
 }
 
 // ---------------------------------------------------------------- plan.js
@@ -249,6 +273,12 @@ function estUnFichier(chemin) {
 function controler(argument) {
   if (!argument) {
     return { code: 2, lignes: ["Il manque le dossier des maquettes. Usage : node verifier.mjs <dossier>"] };
+  }
+  let validerPlan;
+  try {
+    ({ validerPlan } = chargerLaLogique());
+  } catch (erreur) {
+    return { code: 2, lignes: [erreur.message, "Le contrôle n'a pas pu démarrer : réinstaller le plugin À plat."] };
   }
   const dossier = resolve(argument);
   if (!estUnDossier(dossier)) {

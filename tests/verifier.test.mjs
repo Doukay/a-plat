@@ -1,9 +1,9 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const VERIFIER = fileURLToPath(new URL("../skills/a-plat/verifier.mjs", import.meta.url));
@@ -285,6 +285,76 @@ test("les erreurs de plusieurs écrans sont toutes listées", () => {
   assert.equal(code, 1);
   assert.match(sortie, /A1-accueil\.html/);
   assert.match(sortie, /B1-pret\.html/);
+});
+
+test("les deux balises preconnect de Google Fonts sont acceptées avec policeEnLigne", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace("policeEnLigne: false", "policeEnLigne: true"));
+  modifier(dossier, "ecrans/A2-fiche.html", (t) => t.replace("</head>",
+    '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' + `${POLICE}</head>`));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+});
+
+test("une adresse qui ressemble à Google Fonts sans l'être reste refusée", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace("policeEnLigne: false", "policeEnLigne: true"));
+  modifier(dossier, "ecrans/A2-fiche.html", (t) => t.replace("</head>",
+    '<link rel="preconnect" href="https://fonts.googleapis.com.exemple.test"></head>'));
+  assert.equal(lancer(dossier).code, 1);
+});
+
+// Copie skills/a-plat sous un projet qui a ce package.json et renvoie le dossier copié.
+function installerSousUnProjet(contenuDuPackageJson) {
+  const projet = join(racine, `projet-${++numero}`);
+  mkdirSync(join(projet, "outils"), { recursive: true });
+  writeFileSync(join(projet, "package.json"), contenuDuPackageJson);
+  cpSync(dirname(VERIFIER), join(projet, "outils", "a-plat"), { recursive: true });
+  return join(projet, "outils", "a-plat");
+}
+
+function lancerCopie(copie, dossier) {
+  const resultat = spawnSync(process.execPath, [join(copie, "verifier.mjs"), dossier], { encoding: "utf8", timeout: 20000 });
+  return { code: resultat.status, sortie: `${resultat.stdout}${resultat.stderr}` };
+}
+
+test("le contrôle marche sous un projet dont package.json dit type module", () => {
+  const copie = installerSousUnProjet('{"type":"module"}');
+  const { code, sortie } = lancerCopie(copie, preparer());
+  assert.equal(code, 0, sortie);
+  assert.match(sortie, /3 écrans/);
+});
+
+test("le contrôle marche sous un projet dont package.json dit type commonjs", () => {
+  const copie = installerSousUnProjet('{"type":"commonjs"}');
+  assert.equal(lancerCopie(copie, preparer()).code, 0);
+});
+
+test("logique.js absent : code 2 et un message clair, sans trace d'erreur", () => {
+  const copie = installerSousUnProjet("{}");
+  rmSync(join(copie, "modele/a-plat/logique.js"));
+  const { code, sortie } = lancerCopie(copie, preparer());
+  assert.equal(code, 2);
+  assert.match(sortie, /logique\.js/);
+  assert.doesNotMatch(sortie, /\bat .*\(.*:\d+:\d+\)/);
+});
+
+test("logique.js qui n'est pas du JavaScript : code 2 et un message clair", () => {
+  const copie = installerSousUnProjet("{}");
+  writeFileSync(join(copie, "modele/a-plat/logique.js"), "ceci n'est pas ,, du JavaScript");
+  const { code, sortie } = lancerCopie(copie, preparer());
+  assert.equal(code, 2);
+  assert.match(sortie, /logique\.js/);
+  assert.doesNotMatch(sortie, /\bat .*\(.*:\d+:\d+\)/);
+});
+
+test("logique.js qui n'offre pas validerPlan : code 2", () => {
+  const copie = installerSousUnProjet("{}");
+  writeFileSync(join(copie, "modele/a-plat/logique.js"), "module.exports = {};");
+  const { code, sortie } = lancerCopie(copie, preparer());
+  assert.equal(code, 2);
+  assert.match(sortie, /logique\.js/);
 });
 
 test("le contrôle ne dépend pas du dossier courant", () => {
