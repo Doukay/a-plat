@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>À plat</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="a-plat/style.css">
+</head>
+<body>
+<header class="barre">
+  <div class="titre">
+    <span class="marque">À plat</span>
+    <h1 id="projet"></h1>
+  </div>
+  <nav aria-label="Vues">
+    <a href="#etat" data-vue="etat">État des lieux</a>
+    <a href="#ensemble" data-vue="ensemble">Vue d'ensemble</a>
+    <a href="#ecran" data-vue="ecran">Écrans</a>
+  </nav>
+</header>
+<main id="vue">
+  <noscript><p>Cette page a besoin de JavaScript pour s'afficher. Ouvrez-la dans un navigateur où JavaScript est autorisé.</p></noscript>
+</main>
+<script src="a-plat/logique.js"></script>
+<script src="plan.js" onerror="window.APlatPlanAbsent = true"></script>
+<script src="a-plat/moteur.js"></script>
+</body>
+</html>

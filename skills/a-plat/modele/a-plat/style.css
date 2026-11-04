@@ -1,0 +1,233 @@
+/* Style de la page d'À plat : papier froid, un seul bleu pour tout ce qui touche aux corrections.
+   Polices du système, aucune ressource en ligne. Les couleurs passent par des variables,
+   clair et sombre selon le réglage de l'appareil. */
+:root {
+  --fond: #eef0f3;
+  --surface: #fff;
+  --texte: #1b2027;
+  --doux: #5a6472;
+  --trait: #d5dae1;
+  --crayon: #2150c9;
+  --crayon-pale: #e4ebfb;
+  --ok: #1a7a4c;
+  --attente: #8a5a00;
+  --manque: #b3261e;
+  --police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #14171c;
+    --surface: #1d2128;
+    --texte: #e8ebf0;
+    --doux: #a0a9b6;
+    --trait: #343a44;
+    --crayon: #8fb0ff;
+    --crayon-pale: #222d47;
+    --ok: #5fd09a;
+    --attente: #e6b95c;
+    --manque: #ff9c94;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font: 15px/1.45 var(--police);
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px));
+}
+
+/* ---- la barre : le nom du projet, puis les trois vues ---- */
+.barre, #vue {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.barre { margin-bottom: 20px; }
+
+.titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 12px;
+}
+
+.marque {
+  color: var(--doux);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+h1 {
+  margin: 0;
+  min-width: 0;
+  font-size: 19px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+h1:empty { display: none; }
+
+nav {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+}
+
+nav a {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  border-radius: 7px;
+  color: var(--doux);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+}
+nav a:hover { color: var(--texte); }
+nav a[aria-current="page"] {
+  background: var(--texte);
+  color: var(--surface);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--crayon);
+  outline-offset: 2px;
+}
+
+/* ---- le contenu ---- */
+.titre-de-vue {
+  margin: 0 0 6px;
+  font-size: 21px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.consigne {
+  margin: 0 0 14px;
+  color: var(--doux);
+  font-size: 14px;
+}
+
+.resume {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.groupe { margin-top: 20px; }
+
+.groupe h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.lignes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ligne {
+  margin: 0 0 8px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+}
+
+.tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.page {
+  margin: 0;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* L'état s'écrit toujours en toutes lettres : la couleur et la forme ne font que l'appuyer. */
+.etat {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--doux);
+}
+.etat::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  box-sizing: border-box;
+}
+.ligne[data-etat="existe"] .etat { color: var(--ok); }
+.ligne[data-etat="existe"] .etat::before { background: currentColor; }
+.ligne[data-etat="a-completer"] .etat { color: var(--attente); }
+.ligne[data-etat="a-completer"] .etat::before {
+  background: linear-gradient(to right, currentColor 50%, transparent 50%);
+}
+.ligne[data-etat="manque"] .etat { color: var(--manque); }
+.ligne[data-etat="prevue"] .etat::before { border-style: dotted; }
+
+.raison {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.infos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin: 6px 0 0;
+  color: var(--doux);
+  font-size: 13px;
+}
+.infos span { min-width: 0; overflow-wrap: anywhere; }
+.a-confirmer { font-style: italic; }
+
+/* ---- messages : ce qui ne va pas, et quoi faire ---- */
+.message {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: 12px;
+}
+.message p { margin: 8px 0 0; overflow-wrap: anywhere; }
+.erreurs {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+.erreurs li { margin-bottom: 6px; overflow-wrap: anywhere; }
+
+@media (min-width: 640px) {
+  body { padding-top: 28px; }
+  .titre-de-vue { font-size: 23px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  nav a { transition: background-color 0.12s, color 0.12s; }
+}
