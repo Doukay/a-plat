@@ -152,7 +152,13 @@ La page s'ouvre d'un double-clic. Il n'y a rien à installer ni à lancer.
 
 Les corrections passant par la conversation, un serveur n'apporterait que l'écriture directe des corrections du bouton Copier. Cela ne justifie pas une installation de plus.
 
-Le dossier `maquettes/` étant fait de simples fichiers, il peut aussi être posé sur n'importe quel serveur web pour l'ouvrir depuis un téléphone. L'outil n'a pas à le savoir.
+### Sur un téléphone ou un autre appareil
+
+Le dossier `maquettes/` étant fait de simples fichiers, n'importe quel serveur web peut le servir, y compris un serveur à la maison. L'outil n'a pas à le savoir et n'ajoute aucun programme.
+
+Le README donne une règle : **ne servir que le dossier `maquettes/`, jamais le projet entier**, qui peut contenir des secrets (fichiers `.env`, clés).
+
+Si ce dossier arrive sur le serveur par une copie régulière, une correction ne s'y voit qu'à la copie suivante. Le code de l'écran reste le même partout : on peut lire sur le téléphone et corriger dans la conversation.
 
 ### Le contrôle automatique
 
@@ -196,13 +202,16 @@ Sur un projet inventé dont les manques sont connus d'avance :
 4. Parcours refait en partant d'une simple idée, puis en reprenant des maquettes existantes.
 5. Chaque réglage essayé et son effet constaté.
 6. Page contrôlée à la largeur d'un téléphone, en mode sombre, et sur une centaine d'écrans pour la vitesse.
-7. Ouverture d'un double-clic vérifiée sous Chrome, Edge et Firefox.
+7. Ouverture d'un double-clic vérifiée sous Chrome, Edge et Firefox, puis ouverture par un simple serveur web depuis un vrai téléphone.
 8. Aucune requête réseau depuis la page, vérifiée pendant l'essai.
 9. Essai et validation par une vraie personne.
 
 ## À essayer en premier
 
-Deux points techniques peuvent changer la construction. Ils sont essayés avant le reste :
+Deux points techniques peuvent changer la construction.
 
-1. **Les écrans dans la page.** Chaque écran s'affiche dans un cadre (`iframe`), ce qui isole ses couleurs et lui permet de s'ouvrir seul. Il faut vérifier, en double-clic, que toucher un élément remonte bien à la page, et qu'une centaine de cadres reste fluide.
-2. **L'installation.** Il faut vérifier la commande réelle du plugin, dans le terminal et dans l'application de bureau.
+1. **Les écrans dans la page.** Chaque écran s'affiche dans un cadre (`iframe`), ce qui isole ses couleurs et lui permet de s'ouvrir seul.
+   - Essai sans serveur sous Edge, avec des écrans jetables : un élément touché remonte à la page par un petit script (`postMessage`), les couleurs restent isolées et l'écran s'ouvre aussi seul. La page ne peut pas lire dans le cadre : le script est donc obligatoire dans chaque écran.
+   - Essai de 124 écrans jetables sous Edge sur ordinateur : page chargée en moins d'une seconde et défilement sans à-coup mesuré.
+   - Reste à faire : Chrome, Firefox, un vrai téléphone.
+2. **L'installation.** Les commandes attendues sont `/plugin marketplace add <compte>/a-plat` puis `/plugin install a-plat@a-plat`, d'après la présentation d'un autre plugin. Reste à les essayer pour de vrai, dans le terminal et dans l'application de bureau.
