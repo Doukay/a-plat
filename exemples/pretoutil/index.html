@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prêtoutil - Les outils du quartier</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div id="haut"></div>
+<main>
+  <h1>Les outils du quartier</h1>
+  <p>Votre voisin a la perceuse dont vous avez besoin une heure par an. Empruntez-la, rendez-la.</p>
+  <p class="info">Après chaque prêt, notez votre voisin : plus il y a de notes, plus on se fait confiance.</p>
+
+  <label for="recherche">Chercher un outil</label>
+  <input type="search" id="recherche" placeholder="perceuse, tondeuse...">
+  <label><input type="checkbox" id="libres"> Seulement ceux qui sont libres</label>
+
+  <ul class="outils" id="liste"></ul>
+</main>
+<div id="bas"></div>
+
+<script>
+habiller("accueil");
+
+const liste = document.getElementById("liste");
+const champ = document.getElementById("recherche");
+const libres = document.getElementById("libres");
+
+function afficher() {
+  const texte = champ.value.trim().toLowerCase();
+  const visibles = OUTILS.filter((o) => {
+    if (texte && o.nom.toLowerCase().indexOf(texte) === -1) return false;
+    if (libres.checked && pretEnCours(o.id)) return false;
+    return true;
+  });
+  liste.innerHTML = visibles.map((o) => {
+    const pret = pretEnCours(o.id);
+    const dispo = pret
+      ? '<span class="petit">Prêté jusqu\'au ' + dateFrancaise(pret.fin) + "</span>"
+      : '<span class="petit">Libre</span>';
+    return '<li><a href="outil.html?id=' + o.id + '">' + echapper(o.nom) + "</a> " +
+      '<span class="petit">' + echapper(o.categorie) + ", chez " + echapper(voisin(o.proprietaire).prenom) + "</span><br>" + dispo + "</li>";
+  }).join("");
+}
+
+champ.addEventListener("input", afficher);
+libres.addEventListener("change", afficher);
+afficher();
+</script>
+</body>
+</html>

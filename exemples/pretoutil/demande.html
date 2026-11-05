@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prêtoutil - Demande de prêt</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div id="haut"></div>
+<main>
+  <h1>Demander à emprunter</h1>
+  <p id="introuvable" hidden>Cet outil n'existe pas. <a href="index.html">Retour à la liste</a>.</p>
+
+  <form id="formulaire" hidden>
+    <p>Outil : <strong id="nom-outil"></strong>, chez <span id="chez"></span>.</p>
+
+    <label for="debut">À partir du</label>
+    <input type="date" id="debut" required>
+
+    <label for="fin">Jusqu'au</label>
+    <input type="date" id="fin" required>
+
+    <label for="message">Un mot pour votre voisin (facultatif)</label>
+    <textarea id="message" rows="3"></textarea>
+
+    <p class="petit">Un prêt dure 14 jours au plus. Aucun paiement n'est demandé.</p>
+    <p id="erreur" class="erreur" role="alert" hidden></p>
+
+    <button type="submit">Envoyer la demande</button>
+  </form>
+
+  <div id="confirmation" hidden>
+    <p class="ok" id="texte-confirmation"></p>
+    <p><a href="mes-prets.html">Voir mes prêts</a></p>
+  </div>
+</main>
+<div id="bas"></div>
+
+<script>
+habiller("accueil");
+
+const id = Number(new URLSearchParams(location.search).get("outil"));
+const outil = OUTILS.find((o) => o.id === id);
+const moi = utilisateur();
+const formulaire = document.getElementById("formulaire");
+const erreur = document.getElementById("erreur");
+
+if (!outil) {
+  document.getElementById("introuvable").hidden = false;
+} else {
+  formulaire.hidden = false;
+  document.getElementById("nom-outil").textContent = outil.nom;
+  document.getElementById("chez").textContent = voisin(outil.proprietaire).prenom;
+  document.getElementById("debut").min = aujourdhui();
+}
+
+formulaire.addEventListener("submit", (e) => {
+  e.preventDefault();
+  erreur.hidden = true;
+  const debut = document.getElementById("debut").value;
+  const fin = document.getElementById("fin").value;
+  if (fin < debut) {
+    console.error("Dates incohérentes : le retour (" + fin + ") est avant le début (" + debut + ").");
+    return;
+  }
+  if (jours(debut, fin) > REGLAGES.dureeMaxJours) {
+    erreur.textContent = "Un prêt dure " + REGLAGES.dureeMaxJours + " jours au plus.";
+    erreur.hidden = false;
+    return;
+  }
+  const prets = lirePrets();
+  prets.push({ id: prochainId(prets), outil: outil.id, emprunteur: moi.id, debut: debut, fin: fin, statut: "demandee" });
+  ecrirePrets(prets);
+  formulaire.hidden = true;
+  document.getElementById("texte-confirmation").textContent =
+    "Demande envoyée à " + voisin(outil.proprietaire).prenom + " pour la " + outil.nom.toLowerCase() + ".";
+  document.getElementById("confirmation").hidden = false;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prêtoutil - Connexion</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div id="haut"></div>
+<main>
+  <h1>Se connecter</h1>
+  <form id="formulaire" novalidate>
+    <label for="email">Adresse mail</label>
+    <input type="email" id="email" autocomplete="username">
+
+    <label for="mdp">Mot de passe</label>
+    <input type="password" id="mdp" autocomplete="current-password">
+
+    <p id="erreur" class="erreur" role="alert" hidden></p>
+
+    <button type="submit">Entrer</button>
+  </form>
+  <p><a href="mot-de-passe-oublie.html">Mot de passe oublié ?</a></p>
+  <p class="petit">Les comptes sont ouverts par le référent du quartier.</p>
+</main>
+<div id="bas"></div>
+
+<script>
+habiller("connexion");
+
+const erreur = document.getElementById("erreur");
+
+function montrerErreur(texte) {
+  erreur.textContent = texte;
+  erreur.hidden = false;
+}
+
+document.getElementById("formulaire").addEventListener("submit", (e) => {
+  e.preventDefault();
+  erreur.hidden = true;
+  const adresse = document.getElementById("email").value.trim().toLowerCase();
+  const mdp = document.getElementById("mdp").value;
+  const trouve = voisins().find((v) => v.email === adresse);
+  if (!trouve) {
+    montrerErreur("Aucun voisin n'a cette adresse.");
+    return;
+  }
+  if (mdp.length < 4) {
+    montrerErreur("Le mot de passe fait au moins 4 caractères.");
+    return;
+  }
+  ouvrirSession(trouve.id);
+  location.href = "index.html";
+});
+</script>
+</body>
+</html>

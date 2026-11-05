@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prêtoutil - Mes prêts</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div id="haut"></div>
+<main>
+  <h1>Mes prêts</h1>
+
+  <h2>Ce que j'emprunte</h2>
+  <table>
+    <thead><tr><th>Outil</th><th>Du</th><th>Au</th><th>État</th><th></th></tr></thead>
+    <tbody id="emprunts"></tbody>
+  </table>
+
+  <h2>Ce que je prête</h2>
+  <table>
+    <thead><tr><th>Outil</th><th>Voisin</th><th>Du</th><th>Au</th><th>État</th></tr></thead>
+    <tbody id="prets"></tbody>
+  </table>
+</main>
+<div id="bas"></div>
+
+<script>
+habiller("prets");
+
+const moi = exigerConnexion();
+if (moi) {
+  const tous = lirePrets();
+  const nomOutil = (id) => OUTILS.find((o) => o.id === id).nom;
+
+  const mesEmprunts = tous.filter((p) => p.emprunteur === moi.id);
+  document.getElementById("emprunts").innerHTML = mesEmprunts.map((p) =>
+    "<tr><td>" + echapper(nomOutil(p.outil)) + "</td><td>" + dateFrancaise(p.debut) + "</td><td>" + dateFrancaise(p.fin) +
+    "</td><td>" + STATUTS[p.statut] + "</td><td>" +
+    (p.statut === "en-cours" ? '<button type="button" onclick="prolonger(' + p.id + ')">Prolonger de 3 jours</button>' : "") +
+    "</td></tr>"
+  ).join("");
+
+  const mesPrets = tous.filter((p) => OUTILS.find((o) => o.id === p.outil).proprietaire === moi.id);
+  document.getElementById("prets").innerHTML = mesPrets.map((p) =>
+    "<tr><td>" + echapper(nomOutil(p.outil)) + "</td><td>" + echapper(voisin(p.emprunteur).prenom) + "</td><td>" +
+    dateFrancaise(p.debut) + "</td><td>" + dateFrancaise(p.fin) + "</td><td>" + STATUTS[p.statut] + "</td></tr>"
+  ).join("");
+}
+</script>
+</body>
+</html>

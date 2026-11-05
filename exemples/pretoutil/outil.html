@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prêtoutil - Fiche d'un outil</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div id="haut"></div>
+<main>
+  <p><a href="index.html">&larr; Tous les outils</a></p>
+  <h1 id="nom"></h1>
+  <p class="petit" id="categorie"></p>
+  <p id="description"></p>
+  <table>
+    <tr><th>Propriétaire</th><td id="proprietaire"></td></tr>
+    <tr><th>État</th><td id="etat"></td></tr>
+    <tr><th>Disponibilité</th><td id="dispo"></td></tr>
+  </table>
+  <div id="actions"></div>
+</main>
+<div id="bas"></div>
+
+<script>
+habiller("accueil");
+
+const id = Number(new URLSearchParams(location.search).get("id"));
+const outil = OUTILS.find((o) => o.id === id);
+const moi = utilisateur();
+const pret = pretEnCours(outil.id);
+const chez = voisin(outil.proprietaire);
+
+document.title = "Prêtoutil - " + outil.nom;
+document.getElementById("nom").textContent = outil.nom;
+document.getElementById("categorie").textContent = outil.categorie;
+document.getElementById("description").textContent = outil.description;
+document.getElementById("proprietaire").textContent = chez.prenom + ", " + chez.rue;
+document.getElementById("etat").textContent = outil.etat;
+document.getElementById("dispo").textContent = pret
+  ? "Prêté jusqu'au " + dateFrancaise(pret.fin)
+  : "Libre";
+
+const actions = document.getElementById("actions");
+if (moi && moi.id === outil.proprietaire) {
+  actions.innerHTML = '<p class="petit">C\'est votre outil.</p>';
+} else {
+  actions.innerHTML =
+    '<button type="button" data-aller="demande" data-outil="' + outil.id + '"' + (pret ? " disabled" : "") + ">Demander à emprunter</button> " +
+    '<button type="button" id="signaler">Signaler un problème</button>';
+  if (pret) actions.innerHTML += '<p class="petit">Déjà prêté : revenez après le ' + dateFrancaise(pret.fin) + ".</p>";
+}
+</script>
+</body>
+</html>

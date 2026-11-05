@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prêtoutil - Proposer un outil</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div id="haut"></div>
+<main>
+  <h1>Proposer un outil</h1>
+  <form id="formulaire">
+    <label for="nom">Nom de l'outil</label>
+    <input type="text" id="nom" required>
+
+    <label for="categorie">Catégorie</label>
+    <select id="categorie">
+      <option>Bricolage</option>
+      <option>Jardin</option>
+      <option>Cuisine</option>
+      <option>Autre</option>
+    </select>
+
+    <label for="description">Description</label>
+    <textarea id="description" rows="3" required></textarea>
+
+    <button type="submit">Proposer</button>
+  </form>
+
+  <div id="confirmation" hidden>
+    <p class="ok">Merci ! Votre outil sera visible après validation par le référent du quartier.</p>
+    <p><a href="index.html">Retour à l'accueil</a></p>
+  </div>
+</main>
+<div id="bas"></div>
+
+<script>
+habiller("ajouter");
+
+const moi = utilisateur();
+const formulaire = document.getElementById("formulaire");
+
+formulaire.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const ajoutes = lire("outilsAjoutes", []);
+  ajoutes.push({
+    id: 100 + ajoutes.length,
+    nom: document.getElementById("nom").value.trim(),
+    categorie: document.getElementById("categorie").value,
+    description: document.getElementById("description").value.trim(),
+    proprietaire: moi.id,
+    etat: "Bon état"
+  });
+  ecrire("outilsAjoutes", ajoutes);
+  formulaire.hidden = true;
+  document.getElementById("confirmation").hidden = false;
+});
+</script>
+</body>
+</html>

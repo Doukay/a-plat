@@ -1,0 +1,70 @@
+/* Prêtoutil : feuille de style commune. */
+body {
+  margin: 0;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 14px;
+  color: #222;
+  background: #f1ebdd;
+}
+#haut {
+  background: #2d4f73;
+  color: #fff;
+  padding: 10px 20px;
+  border-bottom: 4px solid #1b3350;
+}
+#haut .marque {
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+#haut nav { margin-top: 8px; }
+#haut nav a {
+  color: #fff;
+  margin-right: 14px;
+  text-decoration: underline;
+}
+#haut nav a.courante { font-weight: bold; text-decoration: none; background: #1b3350; padding: 2px 6px; }
+#haut .session { float: right; font-size: 12px; }
+#haut .session a { color: #ffd98a; }
+main {
+  max-width: 760px;
+  margin: 16px auto;
+  padding: 14px 20px 20px;
+  background: #fff;
+  border: 1px solid #b9ad92;
+}
+h1 { font-size: 20px; color: #2d4f73; border-bottom: 1px solid #b9ad92; padding-bottom: 4px; }
+h2 { font-size: 16px; margin-top: 22px; color: #3b3b3b; }
+a { color: #1f4f9a; }
+label { display: block; margin-top: 10px; font-weight: bold; }
+input[type=text], input[type=email], input[type=password], input[type=date], input[type=search], select, textarea {
+  width: 95%;
+  max-width: 420px;
+  padding: 4px;
+  border: 1px solid #8b8b8b;
+  font-family: inherit;
+  font-size: 14px;
+}
+button, .bouton {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 5px 12px;
+  background: #e6e0cf;
+  border: 2px outset #cfc6ad;
+  color: #222;
+  font-family: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+button:disabled { color: #888; cursor: default; }
+table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+th, td { border: 1px solid #b9ad92; padding: 5px 8px; text-align: left; }
+th { background: #e9e2cf; }
+ul.outils { list-style: none; padding: 0; }
+ul.outils li { padding: 8px 4px; border-bottom: 1px dotted #b9ad92; }
+.petit { font-size: 12px; color: #666; }
+.info { background: #fff6d6; border: 1px solid #d8c47a; padding: 6px 10px; }
+.erreur { color: #a21b1b; font-weight: bold; margin-top: 10px; }
+.ok { color: #1c6b2c; font-weight: bold; margin-top: 10px; }
+#bas { max-width: 760px; margin: 0 auto 20px; padding: 0 20px; font-size: 12px; color: #555; }

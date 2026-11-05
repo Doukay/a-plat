@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prêtoutil - Les voisins du quartier</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div id="haut"></div>
+<main>
+  <h1>Les voisins du quartier</h1>
+  <table>
+    <thead><tr><th>Voisin</th><th>Rue</th><th>Outils proposés</th></tr></thead>
+    <tbody id="voisins"></tbody>
+  </table>
+  <p><a class="bouton" href="#">Inviter un voisin</a></p>
+</main>
+<div id="bas"></div>
+
+<script>
+habiller("voisins");
+
+document.getElementById("voisins").innerHTML = voisins().map((v) => {
+  const siens = OUTILS.filter((o) => o.proprietaire === v.id);
+  const role = v.role === "referent" ? ' <span class="petit">(référent du quartier)</span>' : "";
+  return "<tr><td>" + echapper(v.prenom) + role + "</td><td>" + echapper(v.rue) + "</td><td>" +
+    siens.map((o) => '<a href="outil.html?id=' + o.id + '">' + echapper(o.nom) + "</a>").join(", ") + "</td></tr>";
+}).join("");
+</script>
+</body>
+</html>
