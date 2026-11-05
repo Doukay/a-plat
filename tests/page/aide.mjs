@@ -1,24 +1,20 @@
 // Aides communes aux tests de la page : assemblage d'un dossier de maquettes jetable
 // et ouverture de sa page en file://, dans un navigateur isolé.
 import { chromium } from "playwright";
-import { cpSync, mkdtempSync, rmSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve, dirname } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-
-const MODELE = fileURLToPath(new URL("../../skills/a-plat/modele", import.meta.url));
-const FIXTURES = fileURLToPath(new URL("../fixtures", import.meta.url));
+import { join, dirname } from "node:path";
+import { pathToFileURL } from "node:url";
+import { copierLeModeleEtLaFixture } from "../assembler.mjs";
 
 // Copie le modèle de page, puis la fixture par-dessus, dans un dossier temporaire.
-// Une fixture ne contient jamais de copie de la page.
+// Une fixture ne contient jamais de copie de la page. Une fixture donnée par un chemin absolu
+// (voir genererFixture) est prise telle quelle. La copie est celle de tests/assembler.mjs,
+// la même que pour la démo (tests/assembler-demo.mjs).
 // options.retirer : chemins (relatifs au dossier assemblé) à supprimer après la copie.
 export function assembler(fixture, options = {}) {
   const dossier = mkdtempSync(join(tmpdir(), "a-plat-test-"));
-  cpSync(MODELE, dossier, { recursive: true });
-  // resolve : une fixture donnée par un chemin absolu (voir genererFixture) est prise telle quelle.
-  const source = resolve(FIXTURES, fixture);
-  if (!existsSync(source)) throw new Error(`Fixture introuvable : ${fixture}`);
-  cpSync(source, dossier, { recursive: true });
+  copierLeModeleEtLaFixture(dossier, fixture);
   for (const chemin of options.retirer ?? []) rmSync(join(dossier, chemin), { recursive: true, force: true });
   return dossier;
 }

@@ -1,0 +1,264 @@
+/* Le style commun des écrans d'À plat.
+
+   Par défaut tout est gris : un écran se lit comme un plan, sans rien qui distraie.
+   Pour passer à la charte du projet, changez seulement les six variables ci-dessous (couleurs,
+   police, arrondi). Les écrans, eux, ne se modifient pas : ils n'écrivent aucune couleur.
+   Les écrans gardent leurs couleurs : la page d'À plat, en mode sombre, ne les touche pas. */
+:root {
+  --ecran-fond: #ffffff;
+  --ecran-texte: #1f1f1f;
+  --ecran-accent: #3d3d3d;
+  --ecran-trait: #8c8c8c;
+  --ecran-police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ecran-arrondi: 8px;
+
+  /* Calculées d'après les six premières : à laisser telles quelles en général.
+     --ecran-sur-accent est la couleur du texte posé sur l'accent (boutons, pastilles) :
+     à changer si l'accent de la charte est clair. */
+  --ecran-doux: color-mix(in srgb, var(--ecran-texte) 70%, var(--ecran-fond));
+  --ecran-filet: color-mix(in srgb, var(--ecran-trait) 45%, var(--ecran-fond));
+  --ecran-creux: color-mix(in srgb, var(--ecran-trait) 22%, var(--ecran-fond));
+  --ecran-sur-accent: var(--ecran-fond);
+
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  background: var(--ecran-fond);
+  color: var(--ecran-texte);
+  font: 16px/1.45 var(--ecran-police);
+}
+
+h1, h2, h3, p, ul, ol { margin: 0; padding: 0; }
+h1 { font-size: 22px; line-height: 1.25; }
+h2 { font-size: 18px; line-height: 1.3; }
+h3 { font-size: 16px; line-height: 1.3; }
+ul, ol { list-style: none; }
+a { color: inherit; }
+img { max-width: 100%; }
+
+:focus-visible { outline: 3px solid var(--ecran-accent); outline-offset: 2px; }
+
+/* ---- la structure d'un écran : un en-tête, la page, puis (parfois) la barre du bas ---- */
+.entete {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 4px 16px 4px 4px;
+  border-bottom: 1px solid var(--ecran-filet);
+}
+.entete h1 { flex: 1; min-width: 0; font-size: 18px; overflow-wrap: anywhere; }
+.entete > h1:first-child { padding-left: 12px; }
+
+.retour {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.onglets {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  background: var(--ecran-fond);
+  border-top: 1px solid var(--ecran-trait);
+}
+.onglets a {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  border-top: 4px solid transparent;
+  color: var(--ecran-doux);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.onglets a[aria-current="page"] {
+  border-top-color: var(--ecran-accent);
+  color: var(--ecran-texte);
+}
+
+/* ---- les classes de base : un bouton, un champ, une carte, une vignette ---- */
+.bouton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 2px solid var(--ecran-accent);
+  border-radius: var(--ecran-arrondi);
+  background: var(--ecran-accent);
+  color: var(--ecran-sur-accent);
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.bouton.discret {
+  background: transparent;
+  color: var(--ecran-accent);
+}
+.bouton:active { opacity: 0.8; }
+
+.champ {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 2px solid var(--ecran-trait);
+  border-radius: var(--ecran-arrondi);
+  background: var(--ecran-fond);
+  color: var(--ecran-texte);
+  font: inherit;
+}
+textarea.champ { min-height: 104px; resize: vertical; }
+.champ::placeholder { color: var(--ecran-doux); opacity: 1; }
+
+.etiquette { display: block; margin-bottom: 6px; font-weight: 600; }
+
+.carte {
+  display: block;
+  padding: 16px;
+  border: 1px solid var(--ecran-filet);
+  border-radius: var(--ecran-arrondi);
+  background: var(--ecran-creux);
+  color: inherit;
+  text-decoration: none;
+}
+/* Une carte qui se touche annonce où elle mène. */
+a.carte.ligne::after { content: "›"; margin-left: auto; padding-left: 4px; font-size: 24px; line-height: 1; color: var(--ecran-doux); }
+
+/* La place d'une image ou d'une photo : un aplat, avec son libellé. */
+.vignette {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 72px;
+  height: 72px;
+  padding: 4px;
+  border: 1px solid var(--ecran-filet);
+  border-radius: var(--ecran-arrondi);
+  background: color-mix(in srgb, var(--ecran-trait) 35%, var(--ecran-fond));
+  color: var(--ecran-texte);
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+}
+.vignette.grande { width: 100%; height: auto; aspect-ratio: 16 / 10; font-size: 15px; }
+
+/* ---- de quoi composer : lignes, piles, textes ---- */
+.ligne { display: flex; align-items: center; gap: 12px; }
+.pile { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pile.large { gap: 16px; }
+.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pousse { margin-left: auto; }
+.doux { color: var(--ecran-doux); }
+.petit { font-size: 14px; }
+.gras { font-weight: 700; }
+.centre { text-align: center; }
+
+.liste { display: flex; flex-direction: column; gap: 12px; }
+.puces { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.puce {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 2px 14px;
+  border: 1px solid var(--ecran-trait);
+  border-radius: 999px;
+  font-size: 14px;
+}
+.pastille {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: var(--ecran-arrondi);
+  background: var(--ecran-accent);
+  color: var(--ecran-sur-accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+.pastille.discrete {
+  background: transparent;
+  border: 1px solid var(--ecran-trait);
+  color: var(--ecran-texte);
+}
+
+/* Une remarque dans l'écran : un cadre en pointillés, sans fond, pour ne pas la prendre pour une carte. */
+.bandeau {
+  padding: 12px 14px;
+  border: 1px dashed var(--ecran-trait);
+  border-radius: var(--ecran-arrondi);
+}
+
+.faits { display: flex; flex-direction: column; }
+.faits li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ecran-filet);
+}
+.faits li:last-child { border-bottom: 0; }
+.faits li > :last-child { text-align: right; font-weight: 600; }
+
+.etapes { display: flex; flex-direction: column; gap: 14px; counter-reset: etape; }
+.etapes li { display: flex; align-items: flex-start; gap: 12px; counter-increment: etape; }
+.etapes li::before {
+  content: counter(etape);
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--ecran-trait);
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+}
+.etapes li.fait::before { background: var(--ecran-accent); border-color: var(--ecran-accent); color: var(--ecran-sur-accent); }
+
+.vide { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 16px; text-align: center; }
+.vide .vignette { width: 96px; height: 96px; border-radius: 50%; }
+.vide h2 { font-size: 24px; }
+
+.segments { display: flex; gap: 8px; }
+.segments a {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid var(--ecran-trait);
+  border-radius: var(--ecran-arrondi);
+  font-weight: 600;
+  text-decoration: none;
+}
+.segments a[aria-current="page"] { background: var(--ecran-accent); border-color: var(--ecran-accent); color: var(--ecran-sur-accent); }

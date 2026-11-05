@@ -432,7 +432,9 @@ test("un écran ouvert seul, hors de la page, s'affiche et ses liens marchent no
 });
 
 test("le style d'un écran ne change pas celui de la page, et la page ne change pas celui de l'écran", async () => {
-  await avecPage("complet", { adresse: "ecran/A2" }, async ({ page }) => {
+  // Sans commun.css (qui fait partie du modèle depuis la tâche 6), l'écran n'a que le style par défaut
+  // du navigateur : c'est ce qui prouve que le style de la page ne passe pas dans le cadre.
+  await avecPage("complet", { adresse: "ecran/A2", retirer: ["commun.css"] }, async ({ page }) => {
     const cadre = await cadreDe(page, "A2");
     await attendreMode(cadre, "corriger");
     const dansLaPage = await page.evaluate(() => {

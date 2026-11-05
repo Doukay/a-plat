@@ -362,3 +362,83 @@ test("le contrôle ne dépend pas du dossier courant", () => {
   const resultat = spawnSync(process.execPath, [VERIFIER, dossier], { encoding: "utf8", cwd: racine });
   assert.equal(resultat.status, 0, resultat.stdout + resultat.stderr);
 });
+
+// ---------------------------------------------------------------- un existant redessiné en HTML
+
+const ACTUEL_HTML = `<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Accueil actuel, redessiné d'après le code</title>
+<link rel="stylesheet" href="../commun.css"></head>
+<body>
+<h1>Prêtoutil</h1>
+<p>Liste des outils proches.</p>
+<a href="../ecrans/A2-fiche.html">Perceuse sans fil</a>
+<script src="../a-plat/relais.js"></script></body>
+</html>
+`;
+
+// Le dossier complet, dont l'accueil A1 a un existant redessiné : actuel/A1-accueil.html.
+function preparerAvecActuelHtml(contenu = ACTUEL_HTML) {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace(
+    /(code: "A1"[\s\S]*?)actuel: null/,
+    '$1actuel: { fichier: "actuel/A1-accueil.html", origine: "redessine" }'));
+  writeFileSync(join(dossier, "actuel/A1-accueil.html"), contenu);
+  return dossier;
+}
+
+test("un existant redessiné en HTML, avec relais.js, est accepté", () => {
+  const { code, sortie } = lancer(preparerAvecActuelHtml());
+  assert.equal(code, 0, sortie);
+  assert.match(sortie, /3 écrans/);
+});
+
+test("un existant en HTML sans relais.js : code 1, le fichier et relais.js sont cités", () => {
+  const { code, sortie } = lancer(preparerAvecActuelHtml(ACTUEL_HTML.replace('<script src="../a-plat/relais.js"></script>', "")));
+  assert.equal(code, 1);
+  assert.match(sortie, /actuel\/A1-accueil\.html/);
+  assert.match(sortie, /relais\.js/);
+});
+
+test("un relais.js seulement cité dans un commentaire de l'existant ne compte pas", () => {
+  const { code } = lancer(preparerAvecActuelHtml(ACTUEL_HTML.replace('<script src="../a-plat/relais.js"></script>', '<!-- <script src="../a-plat/relais.js"></script> -->')));
+  assert.equal(code, 1);
+});
+
+test("un existant en HTML dont une balise n'est pas fermée : code 1, le fichier est cité", () => {
+  const { code, sortie } = lancer(preparerAvecActuelHtml(ACTUEL_HTML.replace("<h1>", "<div><h1>")));
+  assert.equal(code, 1);
+  assert.match(sortie, /actuel\/A1-accueil\.html/);
+  assert.match(sortie, /div/);
+});
+
+test("un existant en HTML qui charge un script ou une feuille d'Internet : code 1", () => {
+  const script = lancer(preparerAvecActuelHtml(ACTUEL_HTML.replace("</body>", '<script src="https://exemple.test/lib.js"></script></body>')));
+  assert.equal(script.code, 1);
+  assert.match(script.sortie, /exemple\.test/);
+  assert.match(script.sortie, /actuel\/A1-accueil\.html/);
+  const style = lancer(preparerAvecActuelHtml(ACTUEL_HTML.replace("</head>", '<link rel="stylesheet" href="//exemple.test/s.css"></head>')));
+  assert.equal(style.code, 1);
+});
+
+test("un existant en HTML avec un lien vers un fichier absent : code 1", () => {
+  const { code, sortie } = lancer(preparerAvecActuelHtml(ACTUEL_HTML.replace("../ecrans/A2-fiche.html", "../ecrans/X9.html")));
+  assert.equal(code, 1);
+  assert.match(sortie, /X9\.html/);
+});
+
+test("un existant en HTML n'a pas besoin de data-ecran, et ses crochets ne sont pas signalés", () => {
+  const { code, sortie } = lancer(preparerAvecActuelHtml(ACTUEL_HTML.replace("<p>Liste des outils proches.</p>", "<p>[Texte du code]</p>")));
+  assert.equal(code, 0, sortie);
+  assert.doesNotMatch(sortie, /crochets/);
+});
+
+test("un existant en HTML qui sort du dossier des maquettes : code 1, rien n'est lu hors du dossier", () => {
+  const dossier = preparerAvecActuelHtml();
+  writeFileSync(join(racine, "autre.html"), ACTUEL_HTML);
+  modifier(dossier, "plan.js", (t) => t.replace("actuel/A1-accueil.html", "../autre.html"));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 1);
+  assert.match(sortie, /autre\.html/);
+  assert.match(sortie, /dossier/);
+});

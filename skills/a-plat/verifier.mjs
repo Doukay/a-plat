@@ -5,7 +5,7 @@
 // Ne demande que Node (18 ou plus), aucune bibliothèque.
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 
@@ -197,33 +197,40 @@ const LIEN_AVEC_PROTOCOLE = /^\s*[a-z][a-z0-9+.-]*:/i;
 const APPEL_DE_RELAIS = /(^|\/)relais\.js([?#].*)?$/i;
 const TEXTE_ENTRE_CROCHETS = /\[[^\[\]\n]*\S[^\[\]\n]*\]/g;
 
-function controlerEcran({ fichier, code, html, dossierDesEcrans, policeEnLigne }) {
+// Contrôle un fichier HTML : un écran (ecrans/) ou l'existant redessiné d'un écran (actuel/).
+//   chemin : le nom du fichier tel qu'on l'écrit dans les messages (« ecrans/A1.html »)
+//   dossierDesLiens : le dossier d'où partent ses liens relatifs
+//   estActuel : un existant n'a pas à dire son code (data-ecran) et ses crochets ne sont pas des
+//               textes à remplir ; le reste (fermeture, relais.js, Internet, liens) se contrôle de même.
+function controlerEcran({ chemin, code, html, dossierDesLiens, policeEnLigne, estActuel = false }) {
   const erreurs = [];
   const infos = [];
   const analyse = analyserHtml(html);
-  for (const e of analyse.erreurs) erreurs.push(`ecrans/${fichier}, ${e}`);
+  for (const e of analyse.erreurs) erreurs.push(`${chemin}, ${e}`);
 
-  const baliseHtml = analyse.balises.find((b) => b.nom === "html");
-  const dit = baliseHtml ? baliseHtml.attributs["data-ecran"] : undefined;
-  if (dit === undefined) {
-    erreurs.push(`ecrans/${fichier} : la balise <html> n'a pas de data-ecran (attendu : data-ecran="${code}").`);
-  } else if (dit !== code) {
-    erreurs.push(`ecrans/${fichier} : data-ecran vaut « ${dit} » mais le plan donne le code « ${code} » à cet écran.`);
+  if (!estActuel) {
+    const baliseHtml = analyse.balises.find((b) => b.nom === "html");
+    const dit = baliseHtml ? baliseHtml.attributs["data-ecran"] : undefined;
+    if (dit === undefined) {
+      erreurs.push(`${chemin} : la balise <html> n'a pas de data-ecran (attendu : data-ecran="${code}").`);
+    } else if (dit !== code) {
+      erreurs.push(`${chemin} : data-ecran vaut « ${dit} » mais le plan donne le code « ${code} » à cet écran.`);
+    }
   }
 
   const appelleLeRelais = analyse.balises.some((b) => b.nom === "script" && APPEL_DE_RELAIS.test(b.attributs.src ?? ""));
   if (!appelleLeRelais) {
-    erreurs.push(`ecrans/${fichier} : le script relais.js n'est pas appelé (ajouter <script src="../a-plat/relais.js"></script> avant </body>).`);
+    erreurs.push(`${chemin} : le script relais.js n'est pas appelé (ajouter <script src="../a-plat/relais.js"></script> avant </body>).`);
   }
 
   for (const balise of analyse.balises) {
     if (balise.nom === "script" && VIENT_D_INTERNET.test(balise.attributs.src ?? "")) {
-      erreurs.push(`ecrans/${fichier} : le script « ${balise.attributs.src} » vient d'Internet. Un écran ne charge rien depuis Internet.`);
+      erreurs.push(`${chemin} : le script « ${balise.attributs.src} » vient d'Internet. Un écran ne charge rien depuis Internet.`);
     }
     if (balise.nom === "link" && VIENT_D_INTERNET.test(balise.attributs.href ?? "")) {
       const adresse = balise.attributs.href;
       if (!(policeEnLigne && POLICES_EN_LIGNE.test(adresse.trim()))) {
-        erreurs.push(`ecrans/${fichier} : la ressource « ${adresse} » vient d'Internet. Seule une police peut en venir, et seulement si reglages.policeEnLigne vaut true.`);
+        erreurs.push(`${chemin} : la ressource « ${adresse} » vient d'Internet. Seule une police peut en venir, et seulement si reglages.policeEnLigne vaut true.`);
       }
     }
   }
@@ -233,25 +240,32 @@ function controlerEcran({ fichier, code, html, dossierDesEcrans, policeEnLigne }
     if (balise.nom !== "a" || typeof balise.attributs.href !== "string") continue;
     const lien = balise.attributs.href.trim();
     if (lien.startsWith("#") || lien.startsWith("//") || LIEN_AVEC_PROTOCOLE.test(lien)) continue;
-    const chemin = lien.replace(/[?#].*$/, "");
-    if (chemin === "" || liensVus.has(lien)) continue;
+    const cible = lien.replace(/[?#].*$/, "");
+    if (cible === "" || liensVus.has(lien)) continue;
     liensVus.add(lien);
-    let decode = chemin;
+    let decode = cible;
     try {
-      decode = decodeURIComponent(chemin);
+      decode = decodeURIComponent(cible);
     } catch (erreur) {
       // Un % mal formé : on garde le texte tel quel.
     }
-    if (!existsSync(resolve(dossierDesEcrans, decode))) {
-      erreurs.push(`ecrans/${fichier} : le lien « ${lien} » mène à un fichier absent.`);
+    if (!existsSync(resolve(dossierDesLiens, decode))) {
+      erreurs.push(`${chemin} : le lien « ${lien} » mène à un fichier absent.`);
     }
   }
 
-  const crochets = analyse.texte.match(TEXTE_ENTRE_CROCHETS) ?? [];
+  const crochets = estActuel ? [] : analyse.texte.match(TEXTE_ENTRE_CROCHETS) ?? [];
   if (crochets.length > 0) {
-    infos.push(`ecrans/${fichier} : ${pluriel(crochets.length, "texte entre crochets", "textes entre crochets")} : ${crochets.join(", ")}`);
+    infos.push(`${chemin} : ${pluriel(crochets.length, "texte entre crochets", "textes entre crochets")} : ${crochets.join(", ")}`);
   }
   return { erreurs, infos };
+}
+
+// Vrai si le chemin (relatif au dossier des maquettes) reste dans ce dossier.
+function resteDansLeDossier(dossier, relatif) {
+  const complet = resolve(dossier, relatif);
+  const base = resolve(dossier);
+  return complet === base || complet.startsWith(base + sep);
 }
 
 function estUnDossier(chemin) {
@@ -327,18 +341,36 @@ function controler(argument) {
     } else {
       controles++;
       const resultat = controlerEcran({
-        fichier: ecran.fichier,
+        chemin: `ecrans/${ecran.fichier}`,
         code: ecran.code,
         html: readFileSync(cheminDeLEcran, "utf8"),
-        dossierDesEcrans,
+        dossierDesLiens: dossierDesEcrans,
         policeEnLigne
       });
       erreurs.push(...resultat.erreurs);
       infos.push(...resultat.infos);
     }
     const actuel = ecran.actuel;
-    if (actuel && typeof actuel === "object" && typeof actuel.fichier === "string" && !estUnFichier(join(dossier, actuel.fichier))) {
-      erreurs.push(`L'écran ${ecran.code} cite la capture ${actuel.fichier}, qui est absente.`);
+    if (actuel && typeof actuel === "object" && typeof actuel.fichier === "string") {
+      if (!estUnFichier(join(dossier, actuel.fichier))) {
+        erreurs.push(`L'écran ${ecran.code} cite la capture ${actuel.fichier}, qui est absente.`);
+      } else if (/\.html?$/i.test(actuel.fichier)) {
+        // Un existant redessiné est une page comme un écran : même contrôle, sans le code ni les crochets.
+        if (!resteDansLeDossier(dossier, actuel.fichier)) {
+          erreurs.push(`L'écran ${ecran.code} cite l'existant ${actuel.fichier}, qui est hors du dossier des maquettes : il n'est pas lu.`);
+        } else {
+          const cheminDeLActuel = join(dossier, actuel.fichier);
+          const resultat = controlerEcran({
+            chemin: actuel.fichier.replace(/\\/g, "/"),
+            code: ecran.code,
+            html: readFileSync(cheminDeLActuel, "utf8"),
+            dossierDesLiens: dirname(cheminDeLActuel),
+            policeEnLigne,
+            estActuel: true
+          });
+          erreurs.push(...resultat.erreurs);
+        }
+      }
     }
   }
 

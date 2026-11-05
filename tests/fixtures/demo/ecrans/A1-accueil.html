@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr" data-ecran="A1">
+<head><meta charset="utf-8"><title>A1 · Accueil</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../commun.css"></head>
+<body>
+<header class="entete">
+  <h1>Prêtoutil</h1>
+</header>
+
+<main class="page">
+  <div>
+    <label class="etiquette" for="recherche">Que cherchez-vous ?</label>
+    <input class="champ" id="recherche" type="search" placeholder="Une perceuse, une échelle, une tente…">
+  </div>
+
+  <ul class="puces" aria-label="Catégories">
+    <li class="puce">Bricolage</li>
+    <li class="puce">Jardin</li>
+    <li class="puce">Cuisine</li>
+    <li class="puce">Fêtes</li>
+    <li class="puce">Sport</li>
+  </ul>
+
+  <h2>Près de chez vous</h2>
+  <ul class="liste">
+    <li>
+      <a class="carte ligne" href="A2-fiche.html" data-nom="Carte Perceuse sans fil">
+        <span class="vignette">Photo</span>
+        <span class="pile">
+          <strong>Perceuse sans fil</strong>
+          <span class="doux petit">Camille · à 300 m</span>
+          <span class="pastille discrete">Disponible</span>
+        </span>
+      </a>
+    </li>
+    <li>
+      <a class="carte ligne" href="A3-fiche-pretee.html" data-nom="Carte Échelle 3 mètres">
+        <span class="vignette">Photo</span>
+        <span class="pile">
+          <strong>Échelle 3 mètres</strong>
+          <span class="doux petit">Théo · à 450 m</span>
+          <span class="pastille discrete">Prêtée jusqu'au 12/11</span>
+        </span>
+      </a>
+    </li>
+    <li>
+      <div class="carte ligne" data-nom="Carte Tente 4 places">
+        <span class="vignette">Photo</span>
+        <span class="pile">
+          <strong>Tente 4 places</strong>
+          <span class="doux petit">Inès · à 1,2 km</span>
+          <span class="pastille discrete">Disponible</span>
+        </span>
+      </div>
+    </li>
+  </ul>
+
+  <p class="bandeau">Autour de vous : [nombre] outils proposés par vos voisins.</p>
+</main>
+
+<nav class="onglets" aria-label="Menu">
+  <a href="A1-accueil.html" aria-current="page">Accueil</a>
+  <a href="C1-mes-prets.html">Mes prêts</a>
+</nav>
+<script src="../a-plat/relais.js"></script></body>
+</html>

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr" data-ecran="B1">
+<head><meta charset="utf-8"><title>B1 · Demande de prêt</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../commun.css"></head>
+<body>
+<header class="entete">
+  <a class="retour" href="A2-fiche.html">‹ Retour</a>
+  <h1>Demande de prêt</h1>
+</header>
+
+<form class="page" action="B2-envoyee.html">
+  <p class="bandeau">Vous demandez la <strong>perceuse sans fil</strong>, prêtée par Camille.</p>
+
+  <div>
+    <label class="etiquette" for="debut">Je viens la chercher le</label>
+    <input class="champ" id="debut" type="text" value="samedi 7 novembre">
+  </div>
+
+  <div>
+    <label class="etiquette" for="fin">Je la rends le</label>
+    <input class="champ" id="fin" type="text" value="lundi 9 novembre">
+  </div>
+
+  <div>
+    <label class="etiquette" for="mot">Un mot pour Camille <span class="doux">(facultatif)</span></label>
+    <textarea class="champ" id="mot" placeholder="Bonjour, j'en ai besoin pour percer quelques trous dans un mur."></textarea>
+  </div>
+
+  <button class="bouton" type="submit" data-nom="Bouton Envoyer la demande">Envoyer la demande</button>
+</form>
+<script src="../a-plat/relais.js"></script></body>
+</html>
