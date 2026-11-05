@@ -508,6 +508,278 @@ button:focus-visible {
   font-weight: 600;
 }
 
+/* ---- « Validé » : le mot, en toutes lettres ; la couleur ne fait que l'appuyer ---- */
+.badge-valide {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1px solid var(--ok);
+  border-radius: 999px;
+  color: var(--ok);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.vignette-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+/* ---- l'existant introuvable : une phrase à la place de l'image ---- */
+.actuel-manque {
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: 8px;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+.actuel-manque p { margin: 0; }
+.actuel-manque p + p { margin-top: 6px; }
+.actuel-manque-titre { color: var(--manque); font-weight: 700; }
+
+/* ---- les corrections : le seul bleu de la page ---- */
+.ecran-corps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+  margin-top: 14px;
+}
+.ecran-corps > .comparaison {
+  flex: 0 1 auto;
+  max-width: 100%;
+  margin-top: 0;
+}
+
+.corrections {
+  flex: 1 1 280px;
+  min-width: min(280px, 100%);
+  max-width: 400px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: 12px;
+}
+.corrections-titre {
+  margin: 0 0 6px;
+  font-size: 16px;
+  line-height: 1.3;
+}
+.corrections-titre:focus { outline: none; }
+.corrections .consigne { margin-bottom: 10px; font-size: 13.5px; }
+.corrections-etat {
+  margin: 0 0 8px;
+  color: var(--crayon);
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.corrections-etat:empty { display: none; }
+.corrections-vide, .corrections-note { margin: 0 0 8px; font-size: 14px; }
+.corrections-note {
+  padding: 8px 10px;
+  border-left: 3px solid var(--attente);
+  border-radius: 6px;
+  background: var(--fond);
+}
+
+.corrections-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.correction {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  background: var(--fond);
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+}
+.correction-numero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--crayon-pale);
+  color: var(--crayon);
+  font-size: 13px;
+  font-weight: 700;
+}
+.correction-corps { min-width: 0; }
+.correction-corps p { margin: 0; }
+.correction-ou {
+  color: var(--crayon);
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.correction-texte {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.correction .bouton { margin-top: 6px; }
+
+.corrections-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.corrections-confirmation {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--crayon);
+  border-radius: 10px;
+  background: var(--crayon-pale);
+}
+.corrections-confirmation p { margin: 0; font-weight: 600; }
+.corrections-confirmation .corrections-actions { margin-top: 8px; }
+.corrections-secours { margin-top: 12px; }
+.corrections-texte-a-copier {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--crayon);
+  border-radius: 8px;
+  background: var(--fond);
+  color: var(--texte);
+  font: inherit;
+  font-size: 13.5px;
+  resize: vertical;
+}
+
+/* Les boutons : un principal en bleu, les autres sobres. Toujours 44 px de haut au moins. */
+.bouton {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--trait);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bouton:hover { border-color: var(--crayon); }
+.bouton-principal {
+  border-color: var(--crayon);
+  background: var(--crayon);
+  color: var(--surface);
+}
+.bouton-principal:hover { filter: brightness(1.08); }
+
+/* Le lien de la barre : le nombre de corrections, dès qu'il y en a une. */
+.barre-corrections {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-left: auto;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--crayon-pale);
+  color: var(--crayon);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.barre-corrections:hover { text-decoration: underline; }
+
+/* La saisie : un panneau collé au bas de la fenêtre, au-dessus de la zone sûre de l'appareil.
+   La page prend du bas pour que l'élément choisi ne passe jamais dessous (voir corrections.js). */
+.correction-saisie {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: var(--surface);
+  border-top: 2px solid var(--crayon);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.14);
+}
+.correction-saisie-dedans {
+  max-width: 760px;
+  margin: 0 auto;
+}
+.correction-etiquette {
+  display: block;
+  max-height: 4.2em;
+  margin-bottom: 6px;
+  overflow: auto;
+  color: var(--crayon);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.correction-champ {
+  display: block;
+  width: 100%;
+  min-height: 64px;
+  max-height: 30vh;
+  padding: 8px 10px;
+  border: 1px solid var(--crayon);
+  border-radius: 8px;
+  background: var(--fond);
+  color: var(--texte);
+  font: inherit;
+  font-size: 16px; /* 16 px : sinon certains téléphones zooment sur le champ */
+  resize: vertical;
+}
+.correction-champ:focus-visible { outline: 2px solid var(--crayon); outline-offset: 1px; }
+.correction-erreur { margin: 6px 0 0; color: var(--manque); font-size: 13.5px; font-weight: 600; }
+.correction-erreur:empty { display: none; }
+.correction-actions { display: flex; gap: 8px; margin-top: 8px; }
+.correction-actions .bouton { flex: 1 1 0; }
+body.correction-ouverte {
+  padding-bottom: calc(var(--saisie-hauteur, 200px) + 24px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Le petit message qui confirme une correction ajoutée quand le panneau est hors de vue. */
+.correction-message {
+  position: fixed;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 4px 6px 4px 14px;
+  transform: translateX(-50%);
+  background: var(--texte);
+  border-radius: 12px;
+  color: var(--surface);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  pointer-events: none; /* ne gêne pas le toucher d'un élément de l'écran derrière */
+}
+.correction-message .bouton { pointer-events: auto; }
+
+@media (min-width: 900px) {
+  .corrections {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+  }
+}
+
 @media (min-width: 640px) {
   body { padding-top: 28px; }
   .titre-de-vue { font-size: 23px; }

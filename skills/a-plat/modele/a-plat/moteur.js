@@ -444,7 +444,11 @@
       surPret(entree, donnee);
     } else if (donnee.type === "element") {
       if (entree.vignette || entree.lecture || typeof donnee.nom !== "string") return;
-      window.APlatMoteur.surElementTouche(entree.code, donnee.nom.slice(0, 200));
+      // Où l'élément se trouve dans le cadre (facultatif) : la page s'en sert pour le garder en vue.
+      var position = {};
+      if (typeof donnee.haut === "number" && isFinite(donnee.haut)) position.haut = donnee.haut;
+      if (typeof donnee.bas === "number" && isFinite(donnee.bas)) position.bas = donnee.bas;
+      window.APlatMoteur.surElementTouche(entree.code, donnee.nom.slice(0, 200), position);
     } else if (donnee.type === "lien") {
       if (entree.vignette || entree.lecture || mode !== "essayer" || typeof donnee.vers !== "string") return;
       surLien(donnee.vers);
@@ -452,7 +456,8 @@
   });
 
   // Appelée quand la personne touche un élément en mode « Corriger » : (code de l'écran, nom
-  // de l'élément). Elle ne fait rien pour l'instant : les corrections la rempliront.
+  // de l'élément, position { haut, bas } dans le cadre si l'écran l'a dite). Elle ne fait rien
+  // ici : corrections.js la remplace.
   function surElementTouche() {}
 
   function changerLeMode(nouveau) {
@@ -513,7 +518,10 @@
     // Un vrai lien, qui couvre toute la vignette (voir .vignette-lien::after dans le style).
     var lien = creer("a", "vignette-lien");
     lien.setAttribute("href", lienDeLEcran(ecran.code));
-    lien.appendChild(creer("span", "vignette-code", ecran.code));
+    var ligneDuCode = creer("span", "vignette-ligne");
+    ligneDuCode.appendChild(creer("span", "vignette-code", ecran.code));
+    if (ecran.statut === "valide") ligneDuCode.appendChild(creer("span", "badge-valide", "Validé"));
+    lien.appendChild(ligneDuCode);
     lien.appendChild(creer("span", "vignette-titre", nomCourt(ecran.titre)));
     element.appendChild(lien);
     return element;
@@ -601,6 +609,13 @@
       image.className = "actuel-image";
       image.setAttribute("src", chemin);
       image.setAttribute("alt", "Capture de l'existant pour l'écran " + ecran.code + " : " + nomCourt(ecran.titre));
+      // Une image absente ou illisible : une phrase à sa place, qui dit le fichier et quoi faire.
+      image.addEventListener("error", function () {
+        var manque = creer("div", "actuel-manque");
+        manque.appendChild(creer("p", "actuel-manque-titre", "Capture introuvable : " + chemin));
+        manque.appendChild(creer("p", "", "Demandez à Claude de refaire cette capture, ou de retirer l'existant de cet écran dans le plan."));
+        if (image.parentNode) image.parentNode.replaceChild(manque, image);
+      });
       volet.appendChild(image);
     }
     return volet;
@@ -646,10 +661,15 @@
 
     var entete = creer("div", "ecran-entete");
     entete.appendChild(creer("span", "ecran-code", ecran.code));
+    if (ecran.statut === "valide") entete.appendChild(creer("span", "badge-valide", "Validé"));
     entete.appendChild(creer("h2", "titre-de-vue", nomCourt(ecran.titre)));
     conteneur.appendChild(entete);
     conteneur.appendChild(creer("p", "consigne",
       "Pour corriger dans la conversation, commencez par le code de l'écran : « " + ecran.code + " : change le titre »."));
+    // Valider passe par la conversation, jamais par un bouton de la page.
+    conteneur.appendChild(creer("p", "consigne",
+      "Pour valider cet écran, écrivez « " + ecran.code + " validé » dans la conversation avec Claude. " +
+      "Utilisez le code affiché ici : il peut changer si les écrans sont réorganisés."));
 
     // Le mode : ce que fait un toucher dans l'écran.
     var choix = creer("div", "mode");
@@ -699,7 +719,12 @@
       proposition.appendChild(boiteRefusee(ecran.fichier, "ecrans", null));
     }
     comparaison.appendChild(proposition);
-    conteneur.appendChild(comparaison);
+    // Le corps de la vue : les écrans, et à côté d'eux (ou dessous) le panneau des corrections,
+    // que corrections.js y ajoute.
+    var corps = creer("div", "ecran-corps");
+    corps.setAttribute("data-code", ecran.code);
+    corps.appendChild(comparaison);
+    conteneur.appendChild(corps);
 
     // Précédent et suivant, dans l'ordre des écrans du plan.
     var voisins = creer("div", "voisins");
@@ -789,15 +814,27 @@
       ]);
       conteneur.appendChild(carte);
     }
+    // Dit aux autres fichiers de la page (corrections.js) que la vue vient d'être redessinée.
+    try {
+      document.dispatchEvent(new CustomEvent("a-plat:vue"));
+    } catch (erreur) {
+      // un navigateur sans CustomEvent : la vue reste affichée, sans corrections
+    }
   }
 
   // surElementTouche est appelée par la page à travers cet objet, pour qu'on puisse la remplacer.
+  // planCourant : le plan quand il est lisible, sinon null. creer : le petit outil du moteur.
   window.APlatMoteur = {
     afficher: afficher,
     lireStock: lireStock,
     garderStock: garderStock,
     surElementTouche: surElementTouche,
-    modeCourant: function () { return mode; }
+    modeCourant: function () { return mode; },
+    planCourant: function () {
+      var lecture = lirePlan();
+      return lecture.statut === "bon" ? lecture.plan : null;
+    },
+    creer: creer
   };
 
   window.addEventListener("hashchange", function () {

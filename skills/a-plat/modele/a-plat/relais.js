@@ -6,8 +6,10 @@
 // ne fait alors rien du tout.
 //
 // Messages, tous marqués { aPlat: 1 } :
-//   écran -> page : pret (avec la hauteur), element (avec le nom), lien (avec l'adresse touchée)
-//   page -> écran : mode ("corriger" ou "essayer")
+//   écran -> page : pret (avec la hauteur), element (avec le nom, et où il est : haut et bas),
+//                   lien (avec l'adresse touchée)
+//   page -> écran : mode ("corriger" ou "essayer"), choisi (actif : true ou false), qui entoure
+//                   ou n'entoure plus le dernier élément touché
 (function () {
   "use strict";
 
@@ -114,10 +116,49 @@
     envoyer({ type: "pret", hauteur: Math.ceil(document.documentElement.scrollHeight) });
   }
 
+  // ------------------------------------------------------------ l'élément choisi
+
+  // Le dernier élément touché en mode « Corriger », et celui qui est entouré en ce moment
+  // avec ce qu'il avait avant (son propre style n'est pas perdu).
+  var dernier = null;
+  var entoure = null;
+  var avant = null;
+
+  function retirerLEntourage() {
+    if (!entoure) return;
+    var restes = avant || {};
+    ["outline", "outline-offset"].forEach(function (propriete) {
+      var ancien = restes[propriete];
+      if (ancien && ancien.valeur) entoure.style.setProperty(propriete, ancien.valeur, ancien.priorite);
+      else entoure.style.removeProperty(propriete);
+    });
+    if (entoure.getAttribute("style") === "") entoure.removeAttribute("style");
+    entoure = null;
+    avant = null;
+  }
+
+  function entourerLeDernier() {
+    retirerLEntourage();
+    if (!dernier || !dernier.style) return;
+    entoure = dernier;
+    avant = {};
+    ["outline", "outline-offset"].forEach(function (propriete) {
+      avant[propriete] = { valeur: entoure.style.getPropertyValue(propriete), priorite: entoure.style.getPropertyPriority(propriete) };
+    });
+    entoure.style.setProperty("outline", "3px solid #2150c9", "important");
+    entoure.style.setProperty("outline-offset", "2px", "important");
+  }
+
   window.addEventListener("message", function (evenement) {
     var donnee = evenement.data;
     if (evenement.source !== window.parent || !donnee || typeof donnee !== "object") return;
-    if (donnee.aPlat !== 1 || donnee.type !== "mode") return;
+    if (donnee.aPlat !== 1) return;
+    if (donnee.type === "choisi") {
+      if (donnee.actif === true) entourerLeDernier();
+      else if (donnee.actif === false) retirerLEntourage();
+      return;
+    }
+    if (donnee.type !== "mode") return;
     if (donnee.mode !== "corriger" && donnee.mode !== "essayer") return;
     mode = donnee.mode;
     document.documentElement.setAttribute("data-a-plat-mode", mode);
@@ -134,7 +175,16 @@
       // Rien ne s'ouvre, rien ne s'envoie : on dit seulement quel élément a été touché.
       evenement.preventDefault();
       evenement.stopImmediatePropagation();
-      envoyer({ type: "element", nom: nomElement(elementVise(cible)) });
+      var vise = elementVise(cible);
+      dernier = vise;
+      var message = { type: "element", nom: nomElement(vise) };
+      // Où il est dans le cadre, pour que la page le garde en vue pendant la saisie.
+      if (vise && typeof vise.getBoundingClientRect === "function") {
+        var boite = vise.getBoundingClientRect();
+        message.haut = Math.round(boite.top);
+        message.bas = Math.round(boite.bottom);
+      }
+      envoyer(message);
       return;
     }
 

@@ -118,8 +118,8 @@ Un écran est un fichier HTML ordinaire :
 
 Messages entre l'écran et la page, tous avec `aPlat: 1`, envoyés en `postMessage(…, "*")` car une page en double-clic n'a pas d'origine stable. La page ne retient que les messages dont `event.source` est un de ses cadres.
 
-- écran vers page : `{aPlat:1, type:"pret", code, hauteur}`, `{aPlat:1, type:"element", code, nom}`, `{aPlat:1, type:"lien", code, vers}`
-- page vers écran : `{aPlat:1, type:"mode", mode:"corriger"|"essayer"}`
+- écran vers page : `{aPlat:1, type:"pret", code, hauteur}`, `{aPlat:1, type:"element", code, nom, haut?, bas?}` (`haut` et `bas`, facultatifs : où l'élément est dans le cadre, en pixels, pour que la page le garde en vue pendant la saisie d'une correction), `{aPlat:1, type:"lien", code, vers}`
+- page vers écran : `{aPlat:1, type:"mode", mode:"corriger"|"essayer"}`, `{aPlat:1, type:"choisi", actif:true|false}` (l'écran entoure le dernier élément touché quand `actif` vaut `true`, et ne l'entoure plus quand il vaut `false`)
 
 Adresses de la page : `#etat`, `#ensemble`, `#ecran/A2`. Adresse vide : `#etat`.
 
