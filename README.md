@@ -41,7 +41,25 @@ Vous pouvez aussi installer depuis un dossier, si vous avez téléchargé le dé
 /plugin install a-plat@a-plat
 ```
 
-Remplacez `<chemin du dossier>` par le chemin du dossier téléchargé, sans les crochets. Pour copier ce chemin : sous Windows, clic droit sur le dossier en gardant la touche Maj enfoncée, puis « Copier en tant que chemin d'accès » ; sous macOS, clic droit sur le dossier en gardant la touche Option enfoncée, puis « Copier … comme chemin d'accès ».
+Remplacez `<chemin du dossier>` par le chemin du dossier téléchargé, sans les crochets. Pour copier ce chemin : sous Windows, clic droit sur le dossier en gardant la touche Maj enfoncée, puis « Copier en tant que chemin d'accès » ; sous macOS, clic droit sur le dossier en gardant la touche Option enfoncée, puis « Copier … comme chemin d'accès » (le libellé peut varier selon la version).
+
+### Mettre à jour, désinstaller
+
+Pour passer à une nouvelle version, mettez à jour le catalogue, puis réinstallez le plugin :
+
+```text
+/plugin marketplace update a-plat
+/plugin install a-plat@a-plat
+```
+
+Pour retirer le plugin, puis son catalogue :
+
+```text
+/plugin uninstall a-plat@a-plat
+/plugin marketplace remove a-plat
+```
+
+Vos dossiers `maquettes/` restent dans vos projets : ils sont à vous, et la page continue de s'ouvrir sans le plugin. Une mise à jour ne touche pas non plus aux fichiers déjà copiés dans un dossier de maquettes : la copie n'écrase jamais un fichier qui existe.
 
 ## Premier essai
 
@@ -60,7 +78,9 @@ Ensuite, Claude avance par étapes et s'arrête à chacune pour attendre votre r
 3. Il propose des réglages d'après votre projet (voir plus bas).
 4. Il dessine 1 ou 2 écrans et vous demande si la direction vous convient. Il ne fait le reste qu'après.
 
-Tout est écrit dans un seul dossier, `maquettes/`. Claude doit vous le dire avant de copier la page, et l'application peut vous demander une autorisation pour cette copie. Claude vous donne à chaque fois le fichier à ouvrir : `maquettes/index.html`. Si un dossier `maquettes/` existe déjà avec d'autres fichiers, Claude n'y écrit rien et vous demande un autre nom de dossier.
+Tout est écrit dans un seul dossier, `maquettes/`. Claude doit vous le dire avant de copier la page, et l'application peut vous demander une autorisation pour cette copie. Claude vous donne à chaque fois le fichier à ouvrir : `maquettes/index.html`. Si un dossier `maquettes/` existe déjà avec d'autres fichiers, Claude n'y écrit rien et vous demande un autre nom de dossier. Les captures d'écran que Claude prend pour vérifier le rendu vont dans un dossier temporaire, jamais dans votre projet.
+
+**Faut-il garder `maquettes/` dans Git ?** Oui, c'est conseillé : c'est l'histoire de la conception de votre projet, écrans, décisions et questions comprises. Mais jamais vos secrets : les maquettes n'en contiennent pas, et une capture que vous fournissez ne doit pas montrer de données réelles.
 
 ## Corriger
 
@@ -90,11 +110,11 @@ Claude les propose d'après votre projet, avec une raison. Vous les changez à t
 
 ## Les règles de l'outil
 
-Ce sont des règles données à Claude, pas des verrous techniques. Claude les suit le plus souvent, mais les essais ont montré des écarts (voir « Limites connues ») : relisez ce qu'il dit et ce qu'il écrit. Deux points seulement sont contrôlés par des tests automatiques : rien ne vient d'Internet, et la copie de la page n'écrase jamais un fichier qui existe. Pour le premier, les tests couvrent le moteur de la page et les écrans d'essai ; pour vos propres écrans, le contrôle (`verifier.mjs`, voir « Node ») refuse tout ce qui vient d'Internet.
+Ce sont des règles données à Claude, pas des verrous techniques. Claude les suit, mais les essais ont montré des écarts (voir « Limites connues ») : relisez ce qu'il dit et ce qu'il écrit. Deux points seulement sont contrôlés par des tests automatiques : rien ne vient d'Internet, et la copie de la page n'écrase jamais un fichier qui existe. Pour le premier, les tests couvrent le moteur de la page et les écrans d'essai ; pour vos propres écrans, le contrôle (`verifier.mjs`, voir « Node ») refuse tout ce qui vient d'Internet.
 
 Les règles :
 
-- Il n'envoie rien : aucune mesure d'usage, aucun compte. La page ne fait aucune requête vers Internet, sauf un service de police en ligne si vous le demandez pour votre charte.
+- Il n'envoie rien : aucune mesure d'usage, aucun compte. La page ne fait aucune requête vers Internet, sauf un service de polices de caractères en ligne (Google Fonts) si vous le demandez pour votre charte.
 - Il ne modifie jamais le code de votre projet. Il n'écrit que dans le dossier de maquettes.
 - Il ne lance pas votre projet (installation, construction, démarrage) sans votre accord. Avant de le demander, il doit vous dire que cela peut écrire dans le projet et lire sa configuration.
 - Il n'ouvre pas vos fichiers de secrets (`.env`, clés). Il peut citer leur nom, jamais leur contenu.
@@ -130,9 +150,9 @@ Ce chiffre est fragile : un seul passage, un seul projet, le modèle Sonnet, com
 
 **Défauts de conduite vus pendant les essais.** Claude peut affirmer un rendu qu'il n'a pas vu (par exemple qu'un tableau déborde, sans avoir lu les styles du projet), reprendre des textes du projet alors qu'il dit n'avoir repris aucune donnée, ou retirer de la liste un manque que vous avez seulement laissé de côté. La méthode a reçu une règle contre chacun, mais ces règles n'ont pas été remesurées. Relisez ce qu'il dit.
 
-**Ce qui a été essayé pour la page.** Elle est contrôlée par des tests automatiques sous Edge et sous Chrome, en l'ouvrant par son adresse de fichier et par une adresse web locale, à 390 px de large, en clair et en sombre, avec un toucher simulé. Pendant ces tests, le moteur de la page et les écrans d'essai n'ont fait aucune requête hors de leur dossier ; pour vos propres écrans, le contrôle refuse tout ce qui vient d'Internet.
+**Ce qui a été essayé pour la page.** Elle est contrôlée par des tests automatiques sous Edge et sous Chrome, en l'ouvrant par son adresse de fichier (comme d'un double-clic) et par une adresse web locale (servie par un petit serveur sur l'ordinateur même, comme le ferait un serveur chez vous), à 390 px de large, en clair et en sombre, avec un toucher simulé. Pendant ces tests, le moteur de la page et les écrans d'essai n'ont fait aucune requête hors de leur dossier ; pour vos propres écrans, le contrôle refuse tout ce qui vient d'Internet.
 
-**Ce qui n'a pas été essayé.** Firefox et Safari ; un vrai téléphone, au doigt ; le vrai presse-papiers (il a été remplacé par un faux pendant les tests) ; l'installation par `/plugin marketplace add` de bout en bout (le plugin a seulement été chargé depuis son dossier) ; un essai par une personne qui n'a pas construit l'outil.
+**Ce qui n'a pas été essayé.** Firefox et Safari ; macOS et Linux (tout a été fait sous Windows) ; Node 18 (les scripts ont tourné avec une version plus récente) ; un vrai téléphone, au doigt ; le vrai presse-papiers (il a été remplacé par un faux pendant les tests) ; l'installation par `/plugin marketplace add` de bout en bout (le plugin a seulement été chargé depuis son dossier), la mise à jour et la désinstallation ; un essai par une personne qui n'a pas construit l'outil.
 
 **Pas dans cette version.** Zoom et déplacement libres sur le plan, modification directe dans la page, petit serveur avec écriture directe des corrections, publication privée pour le téléphone, autres assistants que Claude.
 

@@ -141,6 +141,29 @@ test("le README dit la licence MIT et finit par « Construit avec Claude Code. �
   assert.equal(texte.trimEnd().split("\n").pop(), "Construit avec Claude Code.");
 });
 
+test("le README dit comment mettre à jour et désinstaller, et que les maquettes restent", () => {
+  const texte = lire();
+  assert.ok(texte.includes("/plugin marketplace update a-plat"));
+  assert.ok(texte.includes("/plugin uninstall a-plat@a-plat"));
+  assert.ok(texte.includes("/plugin marketplace remove a-plat"));
+  assert.match(texte, /réinstallez/);
+  assert.match(texte, /dossiers `maquettes\/` restent dans vos projets/);
+});
+
+test("le README précise la police, les deux adresses, les captures, Git et le libellé macOS", () => {
+  const texte = lire();
+  assert.match(texte, /service de polices de caractères en ligne \(Google Fonts\)/);
+  assert.doesNotMatch(texte, /le plus souvent/);
+  assert.match(texte, /adresse de fichier \(comme d'un double-clic\)/);
+  assert.match(texte, /adresse web locale \(servie par un petit serveur/);
+  assert.match(texte, /captures d'écran que Claude prend pour vérifier le rendu vont dans un dossier temporaire/);
+  assert.match(texte, /garder `maquettes\/` dans Git \?\*\* Oui/);
+  assert.match(texte, /jamais vos secrets/);
+  assert.match(texte, /le libellé peut varier/);
+  const pasEssaye = texte.split(/\r?\n/).find((l) => l.startsWith("**Ce qui n'a pas été essayé.**")) ?? "";
+  for (const motif of [/macOS/, /Linux/, /Node 18/]) assert.match(pasEssaye, motif);
+});
+
 test("la note de conception dit qu'elle précède la construction et que le README fait foi", () => {
   const conception = readFileSync(join(RACINE, "docs", "conception.md"), "utf8");
   assert.match(conception.split("\n").slice(0, 4).join("\n"), /écrite avant la construction.*c'est le README qui fait foi/);
