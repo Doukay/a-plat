@@ -348,15 +348,6 @@
     var boite = creer("div", "cadre-boite");
     var cadre = document.createElement("iframe");
     cadre.className = "cadre";
-    // Servi sur le web, un écran aurait l'origine de la page : il est donc isolé (sandbox).
-    // Ses scripts tournent (relais.js), mais il ne peut ni lire la page ni la faire changer
-    // d'adresse ; liens et formulaires passent par relais.js et postMessage. allow-forms est
-    // nécessaire : sans lui, le navigateur ne lance même pas l'événement submit que relais.js
-    // intercepte, et un bouton d'envoi ne mène plus à l'écran suivant en « Essayer ».
-    // En double-clic (file:), le navigateur donne déjà à chaque fichier sa propre origine, et
-    // un cadre isolé n'aurait plus le droit de charger ../commun.css ni ../a-plat/relais.js :
-    // pas de sandbox.
-    if (window.location.protocol !== "file:") cadre.setAttribute("sandbox", "allow-scripts allow-forms");
     cadre.setAttribute("data-code", config.code);
     cadre.setAttribute("title", config.code + " · " + config.titre);
 

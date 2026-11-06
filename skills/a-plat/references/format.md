@@ -151,4 +151,4 @@ Si Node est absent, faire ces contrôles soi-même, le dire, et lister ceux qui 
 
 ## Servir sur le web
 
-Les fichiers s'ouvrent d'un double-clic, sans serveur. Pour les voir depuis un autre appareil, n'importe quel serveur web convient. Les écrans et la page ont alors la même origine ; la page affiche donc chaque écran dans un cadre isolé (`sandbox="allow-scripts allow-forms"`), qui ne peut ni la lire ni la faire changer d'adresse. Ne servir que des maquettes de confiance, et seulement le dossier `maquettes/`, jamais le projet entier, qui peut contenir des secrets. Un écran ouvert seul, hors de la page, n'est pas isolé.
+Les fichiers s'ouvrent d'un double-clic, sans serveur. Pour les voir depuis un autre appareil, n'importe quel serveur web convient. Les écrans et la page ont alors la même origine : ne servir que des maquettes de confiance, et seulement le dossier `maquettes/`, jamais le projet entier, qui peut contenir des secrets.

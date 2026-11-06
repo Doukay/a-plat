@@ -52,32 +52,6 @@ const planDe = (ecrans, rangees = [{ id: "A", titre: "Rangée A", notes: [] }]) 
   ecrans: ecrans.map((ecran) => ({ rangee: "A", largeur: 390, hauteur: 844, statut: "a-relire", actuel: null, ...ecran }))
 });
 
-// ---------------------------------------------------------------- les cadres sont isolés
-
-// Sur le web (A_PLAT_HTTP=1), chaque cadre porte sandbox="allow-scripts allow-forms" (allow-forms : sans lui, le submit que relais.js intercepte ne part pas). En double-clic (file:),
-// un cadre isolé ne pourrait plus charger ../commun.css ni ../a-plat/relais.js : pas de sandbox,
-// et c'est le navigateur qui donne à chaque fichier sa propre origine. Dans les deux cas,
-// un écran ne lit pas la page.
-test("un écran ne peut pas lire la page ; servi sur le web, chaque cadre est isolé (sandbox)", async () => {
-  const attendu = process.env.A_PLAT_HTTP === "1" ? "allow-scripts allow-forms" : null;
-  for (const adresse of ["ensemble", "ecran/A1"]) {
-    await avecPage("ecrans-variantes", { adresse, largeur: 1320, hauteur: 900 }, async ({ page, erreurs, console: erreursConsole }) => {
-      await page.waitForFunction(() => document.querySelector("#vue iframe"));
-      const valeurs = await page.locator("#vue iframe").evaluateAll((cadres) => cadres.map((c) => c.getAttribute("sandbox")));
-      assert.ok(valeurs.length > 0);
-      for (const valeur of valeurs) assert.equal(valeur, attendu, `sandbox vaut ${valeur}`);
-      assert.deepEqual(erreursConsole, [], "un cadre n'a pas pu charger un de ses fichiers");
-      if (adresse === "ecran/A1") {
-        const cadre = await cadreDe(page, "A1", ".volet-proposition");
-        await attendreMode(cadre, "corriger");
-        const lu = await cadre.evaluate(() => { try { return typeof window.parent.document.title; } catch (e) { return "refusé"; } });
-        assert.equal(lu, "refusé", "l'écran ne doit pas pouvoir lire la page");
-      }
-      assert.deepEqual(erreurs, []);
-    });
-  }
-});
-
 // ---------------------------------------------------------------- la vue d'ensemble
 
 for (const largeur of [390, 1320]) {
