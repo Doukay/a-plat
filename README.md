@@ -1,6 +1,6 @@
 # À plat
 
-À plat est un plugin pour Claude Code. Il met votre projet à plat sous forme de maquettes : ce qui existe, ce qui est à compléter, ce qui manque, écran par écran.
+À plat est un plugin pour Claude Code (un plugin est un complément qu'on ajoute à Claude Code). Il met votre projet à plat sous forme de maquettes : ce qui existe, ce qui est à compléter, ce qui manque, écran par écran.
 
 ## À quoi ça sert
 
@@ -27,7 +27,7 @@ Deux boutons règlent ce que fait un toucher sur un écran : **Corriger** désig
 
 ## Installation
 
-Il faut Claude Code. Dans Claude Code, tapez ces deux commandes, l'une après l'autre :
+Il faut Claude Code, l'outil d'Anthropic. Pour l'obtenir, cherchez « Claude Code » sur le site officiel d'Anthropic. Dans Claude Code, tapez ces deux commandes, l'une après l'autre. La première ajoute un catalogue de plugins (une « marketplace »), qui est ici le dépôt d'À plat (le dossier en ligne où est rangé son code) ; la seconde installe le plugin.
 
 ```text
 /plugin marketplace add Doukay/a-plat
@@ -40,6 +40,8 @@ Vous pouvez aussi installer depuis un dossier, si vous avez téléchargé le dé
 /plugin marketplace add <chemin du dossier>
 /plugin install a-plat@a-plat
 ```
+
+Remplacez `<chemin du dossier>` par le chemin du dossier téléchargé, sans les crochets. Pour copier ce chemin : sous Windows, clic droit sur le dossier en gardant la touche Maj enfoncée, puis « Copier en tant que chemin d'accès » ; sous macOS, clic droit sur le dossier en gardant la touche Option enfoncée, puis « Copier … comme chemin d'accès ».
 
 ## Premier essai
 
@@ -58,7 +60,7 @@ Ensuite, Claude avance par étapes et s'arrête à chacune pour attendre votre r
 3. Il propose des réglages d'après votre projet (voir plus bas).
 4. Il dessine 1 ou 2 écrans et vous demande si la direction vous convient. Il ne fait le reste qu'après.
 
-Tout est écrit dans un seul dossier, `maquettes/`. Claude vous le dit avant de copier la page, et l'application peut vous demander une autorisation pour cette copie. Claude vous donne à chaque fois le fichier à ouvrir : `maquettes/index.html`. Si un dossier `maquettes/` existe déjà avec d'autres fichiers, Claude n'y écrit rien et vous demande un autre nom de dossier.
+Tout est écrit dans un seul dossier, `maquettes/`. Claude doit vous le dire avant de copier la page, et l'application peut vous demander une autorisation pour cette copie. Claude vous donne à chaque fois le fichier à ouvrir : `maquettes/index.html`. Si un dossier `maquettes/` existe déjà avec d'autres fichiers, Claude n'y écrit rien et vous demande un autre nom de dossier.
 
 ## Corriger
 
@@ -68,7 +70,7 @@ Il y a deux façons, et vous choisissez.
   ```text
   B3 : change le titre
   ```
-- **Depuis la page.** En mode Corriger, touchez un élément : un champ s'ouvre, déjà situé (« B3 > Bouton Envoyer »). Écrivez ce que vous voulez, puis « Ajouter ». Le bouton **Copier pour Claude** copie toutes vos corrections. Collez-les dans la conversation. Si votre navigateur refuse la copie, le texte s'affiche dans un champ déjà sélectionné. C'est une aide, pas une obligation.
+- **Depuis la page.** En mode Corriger, touchez un élément : un champ s'ouvre, déjà situé (« B3 > Bouton Envoyer »). Écrivez ce que vous voulez, puis « Ajouter ». Le bouton **Copier pour Claude** copie toutes vos corrections dans le presse-papiers (la mémoire de votre appareil pour copier-coller). Collez-les dans la conversation. Si votre navigateur refuse la copie, le texte s'affiche dans un champ déjà sélectionné. C'est une aide, pas une obligation.
 
 Pour valider un écran, dites-le de la même façon : « B3 validé ». Claude ne valide jamais à votre place.
 
@@ -86,15 +88,18 @@ Claude les propose d'après votre projet, avec une raison. Vous les changez à t
 | Rythme | écran par écran, par lots, ou tout d'un coup |
 | Relecture par Claude avant de montrer | oui ou non |
 
-## Ce que l'outil ne fait jamais
+## Les règles de l'outil
 
-- Il n'envoie rien. La page n'envoie rien et ne charge rien : aucune mesure d'usage, aucun compte, aucune requête vers Internet. Les contrôles automatiques de la page vérifient qu'elle ne fait aucun appel en dehors de son propre dossier.
-- Il ne charge rien depuis Internet. Une police en ligne n'est utilisée que si vous la demandez pour votre charte.
+Ce sont des règles données à Claude, pas des verrous techniques. Claude les suit le plus souvent, mais les essais ont montré des écarts (voir « Limites connues ») : relisez ce qu'il dit et ce qu'il écrit. Deux points seulement sont contrôlés par des tests automatiques : la page ne fait aucune requête sur le réseau, et la copie de la page n'écrase jamais un fichier qui existe.
+
+Les règles :
+
+- Il n'envoie rien : aucune mesure d'usage, aucun compte. La page ne fait aucune requête vers Internet, sauf un service de police en ligne si vous le demandez pour votre charte.
 - Il ne modifie jamais le code de votre projet. Il n'écrit que dans le dossier de maquettes.
-- Il ne lance pas votre projet (installation, construction, démarrage) sans votre accord. Avant de le demander, il vous dit que cela peut écrire dans le projet et lire sa configuration.
-- Il n'ouvre jamais vos fichiers de secrets (`.env`, clés). Il peut citer leur nom, jamais leur contenu.
+- Il ne lance pas votre projet (installation, construction, démarrage) sans votre accord. Avant de le demander, il doit vous dire que cela peut écrire dans le projet et lire sa configuration.
+- Il n'ouvre pas vos fichiers de secrets (`.env`, clés). Il peut citer leur nom, jamais leur contenu.
 - Il ne met aucune donnée réelle dans les maquettes : ni nom de client, ni adresse, ni secret, ni donnée de départ de votre projet. Les exemples sont inventés, avec un seul jeu d'exemples pour tout le projet.
-- Il n'annonce pas qu'une page marche s'il ne l'a pas vue marcher.
+- Il ne dit pas qu'une page marche, ni comment elle s'affiche, s'il ne l'a pas vue.
 
 ## Sur un téléphone ou un autre appareil (serveur web)
 
@@ -117,7 +122,7 @@ Sans Node, tout marche quand même. Claude écrit alors lui-même les fichiers d
 
 À plat est une première version. Voici ce qu'on sait, et ce qu'on ne sait pas.
 
-**Ce que la méthode donne sur un projet qu'elle n'a jamais vu.** Sur un projet inventé dont les manques étaient connus d'avance, Claude en a trouvé **13 sur 19**, soit environ 68 %. Il n'y a eu aucune invention : aucun manque n'a été ajouté qui n'existait pas. Les 3 fausses pistes sont tombées. Les 6 manques ratés sont surtout au niveau du routeur et du chargement des données (accès refusé sans explication, données illisibles, adresse inconnue, retour à la bonne page après la connexion) et dans des tâches d'un rôle qui n'ont aucun écran. Voir [l'essai sur Jardins](docs/essais/2026-11-06-jardins.md).
+**Ce que la méthode donne sur un projet qu'elle n'a jamais vu.** Sur un projet inventé dont les manques étaient connus d'avance, Claude en a trouvé **13 sur 19**, soit environ 68 %. Il n'y a eu aucune invention, selon le comptage de l'auteur de l'essai. Les 3 fausses pistes sont tombées. Les 6 manques ratés sont surtout au niveau du routeur (la partie qui choisit la page à montrer selon l'adresse) et du chargement des données (accès refusé sans explication, données illisibles, adresse inconnue, retour à la bonne page après la connexion) et dans des tâches d'un rôle qui n'ont aucun écran. Voir [l'essai sur Jardins](docs/essais/2026-11-06-jardins.md).
 
 Ce chiffre est fragile : un seul passage, un seul projet, le modèle Sonnet, compté par une seule personne. Un autre passage pourrait trouver plus ou moins.
 
@@ -125,7 +130,7 @@ Ce chiffre est fragile : un seul passage, un seul projet, le modèle Sonnet, com
 
 **Défauts de conduite vus pendant les essais.** Claude peut affirmer un rendu qu'il n'a pas vu (par exemple qu'un tableau déborde, sans avoir lu les styles du projet), reprendre des textes du projet alors qu'il dit n'avoir repris aucune donnée, ou retirer de la liste un manque que vous avez seulement laissé de côté. La méthode a reçu une règle contre chacun, mais ces règles n'ont pas été remesurées. Relisez ce qu'il dit.
 
-**Ce qui a été essayé pour la page.** Elle est contrôlée par des tests automatiques sous Edge et sous Chrome, en l'ouvrant d'un double-clic et par une adresse web locale, à 390 px de large, en clair et en sombre, avec un toucher simulé. Elle ne fait aucune requête hors de son dossier.
+**Ce qui a été essayé pour la page.** Elle est contrôlée par des tests automatiques sous Edge et sous Chrome, en l'ouvrant par son adresse de fichier et par une adresse web locale, à 390 px de large, en clair et en sombre, avec un toucher simulé. Elle ne fait aucune requête hors de son dossier.
 
 **Ce qui n'a pas été essayé.** Firefox et Safari ; un vrai téléphone, au doigt ; le vrai presse-papiers (il a été remplacé par un faux pendant les tests) ; l'installation par `/plugin marketplace add` de bout en bout (le plugin a seulement été chargé depuis son dossier) ; un essai par une personne qui n'a pas construit l'outil.
 

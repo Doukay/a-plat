@@ -28,7 +28,7 @@ test("le README a les sections attendues", () => {
     /premier essai/,
     /corriger/,
     /réglages/,
-    /ne fait jamais/,
+    /règles de l'outil/,
     /serveur web|téléphone/,
     /node/,
     /limites/,
@@ -67,6 +67,34 @@ test("le README dit que l'outil n'envoie rien et ne fait pas ce qu'il ne doit pa
   assert.match(texte, /ne modifie jamais le code|ne modifie pas le code/i);
   assert.match(texte, /sans votre accord|sans accord/i);
   assert.match(texte, /donnée réelle|données réelles/i);
+});
+
+test("le README dit que les règles ne sont pas des verrous et ce que les tests contrôlent", () => {
+  const texte = lire();
+  assert.match(texte, /règles données à Claude, pas des verrous techniques/);
+  assert.match(texte, /Deux points seulement sont contrôlés par des tests automatiques/);
+  assert.doesNotMatch(texte, /ne fait jamais/i);
+  assert.match(texte, /doit vous le dire avant de copier/);
+});
+
+test("le README explique plugin, marketplace, dépôt, routeur, presse-papiers et le chemin du dossier", () => {
+  const texte = lire();
+  assert.match(texte, /un plugin est un complément/);
+  assert.match(texte, /« marketplace »/);
+  assert.match(texte, /le dossier en ligne où est rangé son code/);
+  assert.match(texte, /routeur \(la partie qui/);
+  assert.match(texte, /presse-papiers \(la mémoire/);
+  assert.match(texte, /sans les crochets/);
+  assert.match(texte, /Windows/);
+  assert.match(texte, /macOS/);
+});
+
+test("le README dit où trouver Claude Code, sans adresse", () => {
+  assert.match(lire(), /site officiel d'Anthropic/);
+});
+
+test("le README dit que l'absence d'invention vient du comptage de l'auteur de l'essai", () => {
+  assert.match(lire(), /aucune invention, selon le comptage de l'auteur de l'essai/);
 });
 
 test("le README donne la règle : ne servir que le dossier maquettes/", () => {
