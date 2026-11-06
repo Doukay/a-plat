@@ -5,6 +5,8 @@ Le projet d'essai est `exemples/pretoutil/`, un site inventé de prêt d'outils 
 
 ## En bref
 
+**Mesure sur un projet jamais vu :** un second essai a porté sur `exemples/jardins/`, que la méthode n'avait jamais lu. Il donne 13 manques trouvés sur 19, 6 ratés, aucune invention, et les 3 fausses pistes tombées. C'est ce chiffre, et non le 17 sur 17 ci-dessous, qui dit ce que la méthode donne sur un projet nouveau, avec ses propres limites : un seul passage, compté par une seule personne. Voir [l'essai sur Jardins](2026-11-06-jardins.md).
+
 - **Compte :** 17 manques trouvés sur 17. Aucun manque raté, aucune invention, et les 3 fausses pistes sont tombées. Le même compte sort d'un second essai fait après les corrections.
 - **Limite de ce compte, à lire avant le chiffre :** c'est une note sur le projet qui a servi à mettre la méthode au point. La tâche 7 a fait 7 passes d'essai sur ce même projet, et ses pièges sont décrits dans le plan de construction. Ce score ne dit pas ce que donne la méthode sur un projet qu'elle n'a jamais vu.
 - **Ce qui a bloqué :** la copie du modèle de page. Claude Code la classe comme une modification de fichier sensible, parce que le modèle est rangé dans le dossier `skills/` du plugin. Sans une personne pour accepter la demande, elle est refusée. **Corrigé depuis :** la copie passe par un script du plugin, qui tourne sans aucune demande (voir « Après correction »).
