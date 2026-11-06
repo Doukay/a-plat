@@ -19,8 +19,8 @@ Chaque bloc : la rubrique, la ligne à comparer avec ce que l'outil rapporte, co
 ### J2
 - Rubrique : Page absente
 - Manque : Aucune page de demande d'adhésion en ligne pour un nouveau membre, décidée à l'assemblée.
-- Pour confirmer : le compte rendu (point 7) la décide ; `src/routes.js` n'a ni adresse d'adhésion ni d'inscription, et `src/session.js` ne sait que connecter un membre existant.
-- Fichiers : `docs/compte-rendu-ag.md`, `src/routes.js`, `src/session.js`
+- Pour confirmer : le compte rendu (point 7) la décide ; `src/routes.js` n'a ni adresse d'adhésion ni d'inscription de membre, et `src/session.js` ne sait que connecter un membre existant. Le formulaire de la liste d'attente (`src/vues/attente.js`) ne crée ni membre ni code : il n'ajoute qu'une ligne à la liste d'attente.
+- Fichiers : `docs/compte-rendu-ag.md`, `src/routes.js`, `src/session.js`, `src/vues/attente.js`
 
 ### J3
 - Rubrique : Page absente
@@ -42,7 +42,7 @@ Chaque bloc : la rubrique, la ligne à comparer avec ce que l'outil rapporte, co
 
 ### J6
 - Rubrique : État oublié
-- Manque : Un accès refusé (page réservée sans être connecté, ou espace du bureau pour un simple membre) renvoie sans explication vers une autre page.
+- Manque : Quand on tape ou qu'on a mis en favori l'adresse d'une page réservée (sans être connecté, ou espace du bureau pour un simple membre), on est renvoyé sans explication vers une autre page.
 - Pour confirmer : dans `src/routes.js`, `afficher` change l'adresse vers `#/connexion` ou `#/` quand `accessible` est faux, sans rien afficher ni retenir ; aucun message n'explique la redirection (le seul « connectez-vous » est sur l'accueil, lu au hasard d'un passage, pas à ce moment-là).
 - Fichiers : `src/routes.js`
 
@@ -84,7 +84,7 @@ Chaque bloc : la rubrique, la ligne à comparer avec ce que l'outil rapporte, co
 
 ### J13
 - Rubrique : Parcours incomplet
-- Manque : Quand le bureau libère une parcelle, rien ne la propose à la première personne de la liste d'attente.
+- Manque : Quand le bureau libère une parcelle, l'action « Libérer » n'utilise pas la liste d'attente : rien ne la propose à la première personne.
 - Pour confirmer : dans `src/vues/bureau.js`, l'action « Libérer » appelle `liberer` (`src/donnees.js`) qui vide le titulaire, puis redessine ; la liste d'attente n'est ni lue ni mise à jour, il n'y a pas de proposition, de délai de réponse ni de retrait de la liste (voir `src/vues/attente.js`, qui n'a aucun lien avec la gestion des parcelles).
 - Fichiers : `src/vues/bureau.js`, `src/donnees.js`, `src/vues/attente.js`
 
@@ -96,13 +96,13 @@ Chaque bloc : la rubrique, la ligne à comparer avec ce que l'outil rapporte, co
 
 ### J15
 - Rubrique : Parcours incomplet
-- Manque : Après s'être connecté, on arrive toujours à l'accueil, jamais sur la page qu'on voulait ouvrir (cabane, arrosage, compte).
+- Manque : Quand on tape ou qu'on a mis en favori l'adresse d'une page réservée sans être connecté, après la connexion on arrive toujours à l'accueil, jamais sur la page qu'on voulait ouvrir (cabane, arrosage, compte).
 - Pour confirmer : `afficher` dans `src/routes.js` renvoie vers `#/connexion` sans garder l'adresse demandée ; `src/vues/connexion.js` envoie toujours vers `#/` après une connexion réussie.
 - Fichiers : `src/routes.js`, `src/vues/connexion.js`
 
 ### J16
 - Rubrique : Parcours incomplet
-- Manque : Le bureau ne peut pas composer ni prolonger le tour d'arrosage : il est figé à huit semaines données au départ, et personne ne peut y être ajouté ou retiré.
+- Manque : Il n'existe pas d'écran de gestion du tour d'arrosage pour le bureau : le tour est figé à huit semaines données au départ, le bureau ne peut ni le composer, ni le prolonger, ni y ajouter ou retirer quelqu'un. (Compte aussi bien dit comme écran manquant que comme parcours incomplet : la chose qui manque est cet écran de gestion du tour pour le bureau.)
 - Pour confirmer : les tours sont écrits en dur dans `src/donnees.js` (de début avril à fin mai 2027) sans fonction pour en créer ou changer les binômes ; `src/vues/bureau.js` ne propose rien sur l'arrosage ; `src/vues/arrosage.js` ne sait qu'afficher et marquer « fait ».
 - Fichiers : `src/donnees.js`, `src/vues/bureau.js`, `src/vues/arrosage.js`
 
@@ -142,6 +142,7 @@ Chaque bloc : la rubrique, la ligne à comparer avec ce que l'outil rapporte, co
 
 Un lecteur peut aussi rapporter ceci, sans que cela compte comme un manque trouvé ni comme une invention :
 
+- Règles de compte : une ligne de lecteur qui couvre à la fois J2 et J3 (par exemple « pas de gestion des membres ni d'adhésion ») compte pour un seul des deux, l'autre reste non trouvé. Une ligne qui regroupe J6, J8 et J15 sous « redirections silencieuses » ne compte chacun que si la ligne nomme son cas (accès refusé, adresse inconnue, retour à la page voulue après connexion). J17 peut être rapporté en deux éléments (hors connexion, installable sur téléphone) : l'un ou l'autre compte pour J17, une seule fois. J16 compte qu'il soit dit « écran de gestion du tour d'arrosage manquant pour le bureau » ou « parcours incomplet » : ce qui manque est cet écran du bureau.
 - Lire J9 comme une page absente (« mot de passe ou code oublié ») : c'est le même défaut vu autrement, à compter une seule fois.
 - Lire J10 (échanges de tours) ou J14 (annulation d'une réservation) comme « annoncé mais pas construit », puisque le compte rendu les décide aussi : même défaut, rubrique voisine.
 - Ranger J19 (export `.ics`) comme une page ou une fonction « Prévue » plutôt que comme un manque : le README la dit à venir.
@@ -162,4 +163,11 @@ Connus de l'auteur, vérifiables dans le code, comptés à part s'ils sont rappo
 - La liste d'attente affiche à tout visiteur, même non connecté, les prénoms et dates d'inscription des personnes en attente.
 - `aujourdhui()` dans `src/outils.js` utilise la date en UTC (`toISOString`) : près de minuit, la date du jour peut être celle de la veille.
 - `afficher` dans `src/routes.js` n'a aucune protection contre deux navigations rapides : une vue plus lente à charger peut s'afficher après la suivante.
+- `attribuer` (`src/donnees.js`) écrase le titulaire actuel d'une parcelle sans prévenir (aucune confirmation dans `src/vues/bureau.js`).
+- Les personnes en liste d'attente ne sont pas des membres : le bureau ne peut pas leur attribuer une parcelle, car le choix de `src/vues/bureau.js` ne liste que les membres.
+- Aucun moyen de se retirer de la liste d'attente, ni d'en retirer quelqu'un (aucune fonction dans `src/donnees.js`, aucun bouton dans `src/vues/attente.js` ni `src/vues/bureau.js`).
+- Aucun bouton « Supprimer » pour une actualité (`src/vues/actualites.js`, `src/donnees.js`).
+- Le courriel demandé à l'inscription en liste d'attente est enregistré mais n'est jamais utilisé ni affiché.
+- Un membre peut marquer comme fait son propre tour d'arrosage avant qu'il ait eu lieu : `marquerFait` (`src/donnees.js`) ne regarde pas la date.
+- La session est gardée dans `sessionStorage` (`src/session.js`) : fermer l'onglet déconnecte.
 - Les droits (membre, bureau) ne sont contrôlés que dans le navigateur ; sans serveur, n'importe qui peut modifier les données de son propre navigateur.

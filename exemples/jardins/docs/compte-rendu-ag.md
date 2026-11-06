@@ -2,25 +2,25 @@
 
 Compte rendu rédigé par Aubépine (présidente), relu par Romarin (trésorier).
 
-**Présents** : 14 membres sur 19, dont Pervenche, Capucine, Alisier, Mirabelle, Fenouil et Cerfeuil. 3 pouvoirs.
-Le quorum est atteint. L'assemblée s'est tenue à la cabane, de 10 h à 12 h 15.
+**Présents** : 7 membres sur 8 : Aubépine, Romarin, Pervenche, Capucine, Alisier, Mirabelle et Cerfeuil.
+Fenouil, excusé, a donné pouvoir à Alisier. Le quorum est atteint. L'assemblée s'est tenue à la cabane, de 10 h à 12 h 15.
 
 ## 1. Rapport moral et rapport financier
 
-La présidente rappelle l'année : deux nouvelles parcelles ouvertes au Verger, une saison d'arrosage sans
-incident, la cabane rangée deux fois. Le trésorier présente les comptes : les cotisations couvrent l'eau,
+La présidente rappelle l'année : une saison d'arrosage sans incident, les deux parcelles du Verger désormais
+bien installées, la cabane rangée deux fois. Le trésorier présente les comptes : les cotisations couvrent l'eau,
 l'assurance et le petit matériel, avec une réserve d'environ un an de dépenses.
 Les deux rapports sont approuvés à l'unanimité.
 
 ## 2. Cotisation 2027
 
 Maintien à 25 € par parcelle. Elle se règle auprès du trésorier à la permanence du samedi matin.
-Voté à l'unanimité, une abstention.
+Voté à l'unanimité.
 
 ## 3. Règlement intérieur
 
 Le règlement révisé est lu article par article (horaires, usage de l'eau, produits interdits, entretien des allées,
-changement de parcelle). Il est adopté par 16 voix pour, 1 contre.
+changement de parcelle). Il est adopté par 7 voix pour, 1 contre (pouvoir compris).
 **Décision** : il sera mis en ligne sur le site, pour que chacun puisse le relire sans venir à la cabane.
 
 ## 4. Arrosage
