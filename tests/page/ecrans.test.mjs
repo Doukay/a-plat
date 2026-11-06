@@ -156,6 +156,8 @@ test("toucher une vignette ouvre l'écran seul", async () => {
       // Le toucher tombe au milieu de la vignette, donc sur l'image : il doit quand même ouvrir l'écran.
       await toucherLeMilieu(page, '#vue .vignette[data-code="A2"] .cadre-boite');
       assert.equal(await page.evaluate(() => location.hash), "#ecran/A2");
+      // L'adresse change tout de suite, la page se redessine à l'événement qui suit : on l'attend.
+      await page.waitForFunction(() => document.body.dataset.vue === "ecran");
       assert.equal(await page.locator('nav a[aria-current="page"]').innerText(), "Écrans");
       assert.equal(await page.locator("#vue .ecran-code").innerText(), "A2");
     });
@@ -235,6 +237,7 @@ test("précédent et suivant suivent l'ordre des écrans du plan", async () => {
     assert.ok((await precedent.boundingBox()).height >= 44 && (await suivant.boundingBox()).height >= 44);
     await suivant.click();
     assert.equal(await page.evaluate(() => location.hash), "#ecran/B1");
+    await page.waitForFunction(() => document.querySelector("#vue .ecran-code")?.textContent === "B1");
     assert.equal(await page.locator("#vue .voisin-suivant").count(), 0, "le dernier écran n'a pas de suivant");
     assert.equal(await page.locator("#vue .voisin-precedent").getAttribute("href"), "#ecran/A2");
   });

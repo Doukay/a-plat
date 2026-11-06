@@ -1,11 +1,47 @@
 // Aides communes aux tests de la page : assemblage d'un dossier de maquettes jetable
 // et ouverture de sa page en file://, dans un navigateur isolé.
+// Avec A_PLAT_HTTP=1, la page est servie par un petit serveur web local (127.0.0.1 seulement,
+// ce seul dossier) et ouverte par son adresse http, comme depuis un téléphone sur un serveur.
 import { chromium } from "playwright";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
+import { join, dirname, extname, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { copierLeModeleEtLaFixture } from "../assembler.mjs";
+
+const TYPES = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".json": "application/json; charset=utf-8"
+};
+
+// Sert un dossier, et lui seul, sur 127.0.0.1 à un port libre. Renvoie { origine, fermer }.
+export function servirEnLocal(dossier) {
+  const racine = resolve(dossier);
+  const serveur = createServer((requete, reponse) => {
+    try {
+      const chemin = decodeURIComponent(new URL(requete.url, "http://127.0.0.1").pathname);
+      const cible = resolve(join(racine, chemin === "/" ? "index.html" : chemin));
+      if (cible !== racine && !cible.startsWith(racine + sep)) throw Object.assign(new Error("hors du dossier"), { code: 403 });
+      if (!statSync(cible).isFile()) throw Object.assign(new Error("pas un fichier"), { code: 404 });
+      reponse.writeHead(200, { "Content-Type": TYPES[extname(cible).toLowerCase()] ?? "application/octet-stream" });
+      reponse.end(readFileSync(cible));
+    } catch (erreur) {
+      reponse.writeHead(erreur.code === 403 ? 403 : 404, { "Content-Type": "text/plain; charset=utf-8" });
+      reponse.end("introuvable");
+    }
+  });
+  return new Promise((ok) => {
+    serveur.listen(0, "127.0.0.1", () => {
+      const { port } = serveur.address();
+      ok({ origine: `http://127.0.0.1:${port}`, fermer: () => new Promise((fini) => { serveur.close(fini); serveur.closeAllConnections?.(); }) });
+    });
+  });
+}
 
 // Copie le modèle de page, puis la fixture par-dessus, dans un dossier temporaire.
 // Une fixture ne contient jamais de copie de la page. Une fixture donnée par un chemin absolu
@@ -37,6 +73,7 @@ function reglagesDuNavigateur() {
 export async function avecPage(fixture, options, travail) {
   const dossier = assembler(fixture, { retirer: options.retirer });
   const navigateur = await chromium.launch(reglagesDuNavigateur());
+  const serveur = process.env.A_PLAT_HTTP === "1" ? await servirEnLocal(dossier) : null;
   try {
     const contexte = await navigateur.newContext({
       viewport: { width: options.largeur ?? 1320, height: options.hauteur ?? 900 },
@@ -52,14 +89,16 @@ export async function avecPage(fixture, options, travail) {
     });
     page.on("pageerror", (erreur) => releve.erreurs.push(String(erreur.message || erreur)));
     page.on("request", (requete) => {
-      if (!requete.url().startsWith("file://")) releve.requetes.push(requete.url());
+      const adresse = requete.url();
+      if (!adresse.startsWith("file://") && !(serveur && adresse.startsWith(serveur.origine + "/"))) releve.requetes.push(adresse);
     });
     if (options.avant) await page.addInitScript(options.avant);
-    const adresse = pathToFileURL(join(dossier, "index.html")).href + (options.adresse ? "#" + options.adresse : "");
-    await page.goto(adresse);
+    const base = serveur ? serveur.origine + "/index.html" : pathToFileURL(join(dossier, "index.html")).href;
+    await page.goto(base + (options.adresse ? "#" + options.adresse : ""));
     return await travail({ page, dossier, ...releve });
   } finally {
     await navigateur.close();
+    if (serveur) await serveur.fermer();
     rmSync(dossier, { recursive: true, force: true });
   }
 }
