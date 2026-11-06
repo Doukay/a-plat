@@ -36,7 +36,7 @@ Une page peut porter plusieurs manques : une seule ligne par page, les manques d
 
 ## Le cas de l'idée
 
-Les pages viennent des réponses de la personne : chacune est `prevue`, avec `source: "dit par la personne"` et `aConfirmer: false`. Ce qu'un parcours exige et que la personne n'a pas cité est une question, pas une ligne.
+Les pages viennent des réponses de la personne : chacune est `prevue`, avec `source: "dit par la personne"` et `aConfirmer: false`, car elle n'est pas lue dans un code : c'est la personne qui la dit. Une fois la liste acceptée, les 1 ou 2 premiers écrans sont ceux du début du parcours principal (voir `SKILL.md`, étape 4). Ce qu'un parcours exige et que la personne n'a pas cité est une question, pas une ligne.
 
 ## Le message à la personne
 

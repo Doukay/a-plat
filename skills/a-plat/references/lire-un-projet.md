@@ -1,6 +1,6 @@
 # Lire un projet
 
-À suivre dans l'ordre, quel que soit le langage ou l'outil du projet. Le but : savoir ce qui existe et trouver ce qui manque, avec une source pour chaque affirmation. Lire ne modifie rien.
+À suivre dans l'ordre, quel que soit le langage ou l'outil du projet. Le but : savoir ce qui existe et trouver ce qui manque, avec une source pour chaque affirmation. Lire ne modifie rien et ne lance rien : ni installation, ni construction, ni démarrage du projet sans l'accord de la personne (voir « Lancer le projet » dans `SKILL.md`).
 
 Tenir une liste au fil de la lecture, une ligne par constat : `constat | fichier:ligne | vu marcher ou seulement lu`. C'est elle qui donne l'état des lieux.
 
@@ -90,4 +90,4 @@ Un manque doit tenir en une phrase avec sa preuve. Sans preuve dans le projet, c
 
 Finir par la liste : fichiers non ouverts et pourquoi (secrets, trop gros, binaires, dossiers écartés), parties survolées, et ce qui n'a pas été vu marcher.
 
-`aConfirmer` vaut `true` pour tout ce qui a seulement été lu. Il ne vaut `false` que si l'application a vraiment tourné devant Claude et que la page a été vue, ou si la personne l'a confirmé.
+`aConfirmer` vaut `true` pour tout ce qui a seulement été lu. Il ne vaut `false` que si la personne a accepté qu'on lance l'application, qu'elle a tourné devant Claude et que la page a été vue, ou si la personne l'a confirmé.

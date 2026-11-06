@@ -17,7 +17,7 @@ Le format exact d'un écran est dans `references/format.md`. Ici : quoi dessiner
 | Existe | L'`actuel` et la proposition, côte à côte. Sans demande de changement, la proposition reprend le même contenu et le met au propre. |
 | À compléter | Pareil, et seul ce qui change est mis en avant, par un `.bandeau` autour de l'élément et une `.pastille` « Nouveau ». |
 | Manque | Rien, sauf si la personne l'a demandé. |
-| Prévue | Rien, sauf si la personne l'a demandé. |
+| Prévue | Rien, sauf si la personne l'a demandé. Pour une idée, toutes les pages sont prévues : l'accord sur la liste vaut demande, en commençant par le début du parcours principal. |
 
 **Ce qui entre dans une proposition :** le contenu de la page, ce que le projet annonce pour elle, et ce que la personne a demandé ou accepté. Le reste ne se résout pas : il reste à l'écran sous la forme `[à décider : …]`, ou passe en note `a-trancher`. Ne pas ajouter de bouton, de champ, d'étape ou de page de soi-même.
 
@@ -25,9 +25,9 @@ Le niveau de détail suit le projet et la demande : un projet à ses débuts, pe
 
 ## L'existant : capture ou redessin
 
-Dès qu'une page qui existe est dessinée, demander une seule fois si la personne a des captures, avec les autres questions, à la fin du message. Rappeler qu'une capture peut montrer des données réelles : mieux vaut qu'elle n'en contienne pas.
+Demander une seule fois si la personne a des captures des pages qui existent, à l'arrêt de l'étape 2 ou de l'étape 3, avant tout dessin, avec les autres questions, à la fin du message. Rappeler qu'une capture peut montrer des données réelles : mieux vaut qu'elle n'en contienne pas.
 
-- **Capture fournie :** la copier dans `actuel/`, avec `origine: "capture"`. Ne pas lancer l'application pour en faire.
+- **Capture fournie :** la regarder avant de la copier. Si elle montre des données qui semblent réelles (noms, adresses, montants, identifiants), ne pas la copier, le dire à la personne, et lui demander une capture sans elles. Sinon, la copier dans `actuel/`, avec `origine: "capture"`. Claude n'en fait pas lui-même en lançant l'application, sauf accord de la personne (voir « Lancer le projet » dans `SKILL.md`).
 - **Pas de capture :** redessiner la page d'après le code, dans `actuel/`, avec `origine: "redessine"`. Reprendre sa structure, ses libellés et ses couleurs, avec le même jeu d'exemples. Ajouter `relais.js`, comme indiqué dans `references/format.md`. Le redessin montre ce que la page fait, défauts compris, y compris un bouton sans effet : c'est ce qui permet la comparaison. Il tient dans la largeur de l'écran : si un tableau dépasse, le mettre dans un bloc qui défile, pour que rien ne soit coupé.
 - **Pas de page existante :** `actuel: null`.
 
@@ -39,10 +39,10 @@ Dès qu'une page qui existe est dessinée, demander une seule fois si la personn
 
 ## Un seul jeu d'exemples
 
-Choisir au premier écran un jeu inventé mais crédible, et le réutiliser partout : mêmes personnes, mêmes objets, mêmes lieux, mêmes montants. L'écrire en commentaire en tête de `plan.js`, pour le retrouver :
+Choisir au premier écran un jeu inventé mais crédible, propre au domaine du projet, et le réutiliser partout : mêmes personnes, mêmes objets, mêmes lieux, mêmes montants. Il tient en une ligne : deux ou trois personnes avec des prénoms courants et variés, un lieu ordinaire, les objets ou services que le projet manipule, des montants et des dates plausibles. L'écrire en commentaire en tête de `plan.js`, pour le retrouver :
 
 ```js
-// Jeu d'exemples (inventé) : Inès et Marc, 2 rue du Moulin, commande n° 1042.
+// Jeu d'exemples (inventé) : <prénoms>, <lieu>, <objets ou services>, <montants et dates>.
 ```
 
 Il ne reprend ni les données du projet (base, fichiers d'exemple, captures), ni les noms de vrais clients, ni rien qui ressemble à un secret. Si le projet contient des données d'exemple, en inventer d'autres.

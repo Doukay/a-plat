@@ -538,6 +538,9 @@ test("pas de bouton « Valider » : l'aide dit d'écrire « A2 validé » dans l
     const aide = espaces(await page.locator("#vue").innerText());
     assert.match(aide, /Pour valider cet écran, écrivez « A2 validé » dans la conversation avec Claude/);
     assert.match(aide, /code affiché/);
+    // Un code ne change jamais une fois donné : l'aide ne doit pas dire le contraire.
+    assert.match(aide, /ne change jamais/);
+    assert.doesNotMatch(aide, /peut changer/);
   });
 });
 

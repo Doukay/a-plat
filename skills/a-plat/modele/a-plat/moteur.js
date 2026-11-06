@@ -669,7 +669,7 @@
     // Valider passe par la conversation, jamais par un bouton de la page.
     conteneur.appendChild(creer("p", "consigne",
       "Pour valider cet écran, écrivez « " + ecran.code + " validé » dans la conversation avec Claude. " +
-      "Utilisez le code affiché ici : il peut changer si les écrans sont réorganisés."));
+      "Utilisez le code affiché ici : il ne change jamais, même si les écrans sont réorganisés."));
 
     // Le mode : ce que fait un toucher dans l'écran.
     var choix = creer("div", "mode");

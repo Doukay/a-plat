@@ -117,6 +117,42 @@ test("les obligations de la méthode sont écrites", () => {
   for (const [motif, sens] of obligations) assert.match(texte, motif, `il manque : ${sens}`);
 });
 
+test("la description parle comme une personne qui ne code pas", () => {
+  const { description } = enTete(texteDuSkill);
+  assert.doesNotMatch(description, /\bUX\b|\bUI\b|passage au code/);
+});
+
+test("lancer le projet demande l'accord de la personne, et sans lui tout reste à confirmer", () => {
+  const regle = texteDuSkill.split(/\r?\n/).find((ligne) => ligne.includes("**Lancer le projet.**")) ?? "";
+  assert.match(regle, /installer/);
+  assert.match(regle, /construire/);
+  assert.match(regle, /démarrer/);
+  assert.match(regle, /accord de la personne/);
+  assert.match(regle, /écrire dans le projet/);
+  assert.match(regle, /configuration/);
+  assert.match(regle, /aConfirmer: true/);
+});
+
+test("une copie interrompue se reprend, et une reprise ne réécrit ni rangées, ni écrans, ni réglages", () => {
+  assert.match(texteDuSkill, /`a-plat\/moteur\.js`/);
+  assert.match(texteDuSkill, /ne jamais réécrire `rangees`, `ecrans` ni `reglages`/);
+});
+
+test("la forme PowerShell copie comme la forme Bash", () => {
+  const lignes = texteDuSkill.split(/\r?\n/).filter((ligne) => ligne.includes("PowerShell"));
+  assert.ok(lignes.length > 0, "SKILL.md ne donne pas de forme PowerShell");
+  for (const ligne of lignes) {
+    assert.doesNotMatch(ligne, /plan\.js/, "la forme PowerShell ne doit pas copier plan.js");
+    assert.doesNotMatch(ligne, /"<skill>\\modele"/, "la forme PowerShell ne doit pas copier le dossier modele en entier");
+  }
+});
+
+test("pour une idée, le premier dessin a une règle, et les captures de rendu restent hors du projet", () => {
+  assert.match(texteDuSkill, /Pour une idée, l'accord sur la liste vaut demande de dessiner/);
+  assert.match(texteDuSkill, /\*\*Page prévue :\*\*/);
+  assert.match(texteDuSkill, /dossier temporaire, jamais dans le projet/);
+});
+
 test("la méthode reste générale : aucun trait du projet d'essai", () => {
   for (const fichier of fichiersDeLaMethode()) {
     assert.doesNotMatch(readFileSync(fichier, "utf8"), /pr[êe]toutil/i, `${nomRelatif(fichier)} parle du projet d'essai`);

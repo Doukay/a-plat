@@ -9,7 +9,7 @@ maquettes/
   index.html      la page, copiée du modèle, jamais modifiée
   a-plat/         le moteur de la page, copié du modèle, jamais modifié
   plan.js         réglages, état des lieux, rangées, écrans, notes : écrit par Claude
-  commun.css      le style commun : seules ses variables du haut changent
+  commun.css      le style commun : ses variables du haut font la charte ; une classe qui manque s'ajoute à la fin
   ecran-type.html le point de départ d'un écran, à copier dans ecrans/
   ecrans/         un fichier HTML par écran
   actuel/         l'existant : captures, ou pages redessinées
@@ -89,7 +89,7 @@ Un écran est un fichier HTML ordinaire, qui s'ouvre aussi seul :
 
 - `modele/ecran-type.html` montre toutes les classes de base. Il se copie dans `ecrans/` sous le nom de l'écran, car ses liens relatifs (`../commun.css`, `../a-plat/relais.js`) ne marchent que de là. Remplacer `X0` par le code dans `data-ecran` et dans `<title>`, retirer le grand commentaire du haut.
 - `data-ecran` vaut exactement le code du plan.
-- Un écran n'écrit aucune couleur ni aucun style à lui : tout passe par les classes de `commun.css` (`.entete`, `.retour`, `.page`, `.onglets`, `.bouton`, `.discret`, `.champ`, `.etiquette`, `.carte`, `.vignette`, `.ligne`, `.pile`, `.deux`, `.doux`, `.petit`, `.gras`, `.centre`, `.liste`, `.puces`, `.puce`, `.pastille`, `.bandeau`, `.faits`, `.etapes`, `.vide`, `.segments`). Si un écran a besoin d'autre chose, ajouter la classe dans `commun.css`.
+- Un écran n'écrit aucune couleur ni aucun style à lui : tout passe par les classes de `commun.css` (`.entete`, `.retour`, `.page`, `.onglets`, `.bouton`, `.discret`, `.champ`, `.etiquette`, `.carte`, `.vignette`, `.ligne`, `.pile`, `.deux`, `.doux`, `.petit`, `.gras`, `.centre`, `.liste`, `.puces`, `.puce`, `.pastille`, `.bandeau`, `.faits`, `.etapes`, `.vide`, `.segments`). Si un écran a besoin d'autre chose, ajouter la classe à la fin de `commun.css`, en n'y écrivant que ses variables, jamais une couleur en dur : la charte passe alors aussi par elle.
 - Les écrans se relient par des liens ordinaires vers le fichier de l'écran suivant : `<a href="B4-merci.html">`. Un lien doit mener à un fichier qui existe.
 - `data-nom="Bouton Envoyer"` donne le nom qui apparaîtra dans la correction. À mettre sur les éléments qu'on voudra citer et qui n'ont pas de texte clair.
 - `relais.js` est obligatoire, juste avant `</body>` : sans lui, la page ne sait pas quel élément a été touché.
