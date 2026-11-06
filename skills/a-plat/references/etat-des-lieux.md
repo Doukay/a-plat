@@ -6,7 +6,7 @@ La liste des pages, chacune avec un état et une courte raison. La personne la v
 
 | `etat` | Il s'applique quand | Ce que dit la page |
 |---|---|---|
-| `existe` | La page est dans le projet, rien de ce qu'elle annonce ne lui manque, et chaque tâche des rôles qui s'en servent y a son écran ou son action. | Existe |
+| `existe` | La page est dans le projet, rien de ce qu'elle annonce ne lui manque et, si c'est l'espace d'un rôle, chaque tâche que les documents lui donnent y a son écran ou son action. | Existe |
 | `a-completer` | La page est là, et il lui manque quelque chose qu'on peut montrer. | À compléter |
 | `manque` | Annoncée, attendue par le projet ou nécessaire à un parcours du projet, et absente. | Manque |
 | `prevue` | Une décision écrite (ou dite par la personne) la prévoit, et elle n'est pas construite. | Prévue |
@@ -24,7 +24,7 @@ La liste des pages, chacune avec un état et une courte raison. La personne la v
 | Choix écarté exprès | Aucune ligne. |
 | Idée de Claude que rien dans le projet n'annonce ni n'exige | Aucune ligne. |
 
-Une page peut porter plusieurs manques : une seule ligne par page, les manques dans la raison. Si la raison dépasse deux phrases courtes, la page mérite une ligne par sujet.
+Une page peut porter plusieurs manques : une seule ligne par page, les manques dans la raison. Si la raison dépasse deux phrases courtes, la page mérite une ligne par sujet ; la phrase « Laissé de côté par la personne le … » ne compte pas dans ces deux phrases.
 
 ## Remplir une ligne
 
@@ -83,7 +83,7 @@ Comparer la nouvelle lecture avec `etatDesLieux` et les écrans, puis commencer 
 - Écrans déjà validés touchés par ces changements : <codes>. Ils ne sont pas modifiés : à vous de dire.
 ```
 
-S'il n'y a rien de changé, le dire. Ne pas renuméroter, et garder notes et statuts. Une ligne dont l'état change garde sa place, et l'ancien état se note dans une note de type `source` de la rangée.
+S'il n'y a rien de changé, le dire. Ne pas renuméroter, et garder notes et statuts. Une ligne dont l'état change garde sa place, et l'ancien état se note dans une note de type `source` de la rangée. Une ligne dont la `raison` finit par « Laissé de côté par la personne le … » garde cette phrase et sa date : ne pas reposer la question, ne pas la retirer.
 
 ## Corrections de la liste
 

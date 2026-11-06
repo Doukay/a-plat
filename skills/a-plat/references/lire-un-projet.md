@@ -70,7 +70,7 @@ Comparer aussi les pages entre elles : deux pages qui disent le contraire sont u
 
 Si le projet annonce des rôles (visiteur, membre, administrateur, modérateur, propriétaire…) : chercher pour chacun où il est défini, où il est contrôlé, et les pages qui lui sont propres. Une page réservée sans contrôle est un manque. Un rôle annoncé sans aucun écran aussi.
 
-Avant de marquer une page « Existe », lister les tâches que les documents donnent à chaque rôle qui s'en sert (ajouter, modifier, retirer, valider…), et pour chacune l'écran ou l'action qui la fait. Une tâche sans écran ni action met la page en `a-completer`, la tâche dans la raison : l'espace d'un rôle qui existe mais où il manque une tâche n'est pas « Existe ».
+Avant de marquer « Existe » l'espace d'un rôle, lister les tâches que les documents donnent à ce rôle (ajouter, modifier, retirer, valider…), et pour chacune l'écran ou l'action qui la fait. Une tâche sans écran ni action met la page en `a-completer`, la tâche dans la raison : l'espace d'un rôle qui existe mais où il manque une tâche n'est pas « Existe ».
 
 ## 7. Avant d'écrire « manque » : les deux contrôles
 

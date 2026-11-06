@@ -25,12 +25,14 @@ Le format exact d'un écran est dans `references/format.md`. Ici : quoi dessiner
 
 Le niveau de détail suit le projet et la demande : un projet à ses débuts, peu de détail ; une appli en ligne, ses vrais libellés.
 
+Dans une proposition, préférer des lignes (`.ligne`, `.liste`) à un tableau plus large que l'écran.
+
 ## L'existant : capture ou redessin
 
 Demander une seule fois si la personne a des captures des pages qui existent, à l'arrêt de l'étape 2 ou de l'étape 3, avant tout dessin, avec les autres questions, à la fin du message. Rappeler qu'une capture peut montrer des données réelles : mieux vaut qu'elle n'en contienne pas.
 
 - **Capture fournie :** la regarder avant de la copier. Si elle montre des données qui semblent réelles (noms, adresses, montants, identifiants), ne pas la copier, le dire à la personne, et lui demander une capture sans elles. Sinon, la copier dans `actuel/`, avec `origine: "capture"`. Claude n'en fait pas lui-même en lançant l'application, sauf accord de la personne (voir « Lancer le projet » dans `SKILL.md`).
-- **Pas de capture :** redessiner la page d'après le code, dans `actuel/`, avec `origine: "redessine"`. Lire ses styles avant, puis reprendre sa structure, ses libellés et ses règles de style, avec le même jeu d'exemples. Seul ce que le code et les styles du projet contiennent y entre, et rien n'y est ajouté : ni largeur, ni règle, ni élément. Ajouter seulement `relais.js`, comme indiqué dans `references/format.md`. Le redessin montre ce que la page fait, défauts compris, y compris un bouton sans effet : c'est ce qui permet la comparaison. Un style qui n'a pas pu être lu se dit dans le compte rendu, et ne se remplace pas.
+- **Pas de capture :** redessiner la page d'après le code, dans `actuel/`, avec `origine: "redessine"`. Lire ses styles avant, puis reprendre sa structure, ses libellés et ses règles de style, avec le même jeu d'exemples. Seul ce que le code et les styles du projet contiennent y entre, et rien n'y est ajouté, hors les exemples inventés : ni largeur, ni règle, ni élément. Ajouter seulement `relais.js`, comme indiqué dans `references/format.md`. Le redessin montre ce que la page fait, défauts compris, y compris un bouton sans effet : c'est ce qui permet la comparaison. Un style qui n'a pas pu être lu se dit dans le compte rendu, et ne se remplace pas.
 - **Pas de page existante :** `actuel: null`.
 
 ## Les textes
@@ -47,7 +49,7 @@ Choisir au premier écran un jeu inventé mais crédible, propre au domaine du p
 // Jeu d'exemples (inventé) : <prénoms>, <lieu>, <objets ou services>, <montants et dates>.
 ```
 
-Il ne reprend ni les données du projet (base, fichiers d'exemple, captures), ni les noms de vrais clients, ni rien qui ressemble à un secret. Les noms, objets, notes et textes écrits dans les fichiers de données ou de départ du projet sont remplacés par le jeu inventé, même s'ils semblent inventés. Ce qui se reprend du projet : la structure, les noms des champs et les libellés de l'interface. Le compte rendu dit ce qui a été pris au projet et ce qui a été inventé, sans jamais écrire que rien n'a été repris si c'est faux.
+Il ne reprend ni les données du projet (base, fichiers d'exemple, captures), ni les noms de vrais clients, ni rien qui ressemble à un secret. Les valeurs saisies ou d'exemple écrites dans les fichiers de données ou de départ du projet (noms, objets, notes, textes) sont remplacées par le jeu inventé, même si elles semblent inventées. Ce qui se reprend du projet : la structure, les noms des champs et les libellés de l'interface. Un libellé fixe de l'interface (un statut, une catégorie) se garde, même écrit dans un fichier de données. Le compte rendu dit ce qui a été pris au projet et ce qui a été inventé, sans jamais écrire que rien n'a été repris si c'est faux.
 
 ## Relier les écrans
 

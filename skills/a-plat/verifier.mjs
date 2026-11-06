@@ -322,10 +322,11 @@ function controler(argument) {
 
   const fichiersDuPlan = new Set(ecrans.map((e) => e.fichier));
   let fichiersPresents = [];
+  // Claude ne crée aucun dossier vide : ecrans/ n'est exigé que si le plan liste des écrans.
   if (estUnDossier(dossierDesEcrans)) {
     fichiersPresents = readdirSync(dossierDesEcrans).filter((nom) => /\.html$/i.test(nom)).sort();
-  } else {
-    erreurs.push("Le dossier ecrans est absent.");
+  } else if (Array.isArray(plan.ecrans) && plan.ecrans.length > 0) {
+    erreurs.push("Le dossier ecrans est absent, alors que le plan liste des écrans.");
   }
   for (const nom of fichiersPresents) {
     if (!fichiersDuPlan.has(nom)) {

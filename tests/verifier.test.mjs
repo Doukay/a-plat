@@ -277,6 +277,37 @@ test("le dossier ecrans/ absent ne plante pas : code 1", () => {
   assert.match(sortie, /A1-accueil\.html/);
 });
 
+// Claude ne crée aucun dossier vide : sans écran dans le plan, ecrans/ peut manquer.
+function preparerSansEcran(avecDossier) {
+  const dossier = join(racine, `maquettes-${++numero}`);
+  mkdirSync(dossier, { recursive: true });
+  if (avecDossier) mkdirSync(join(dossier, "ecrans"));
+  writeFileSync(join(dossier, "plan.js"), "window.A_PLAT = { version: 1, projet: \"Essai\", etatDesLieux: [], rangees: [], ecrans: [] };\n");
+  return dossier;
+}
+
+test("sans écran dans le plan, le dossier ecrans/ absent est accepté", () => {
+  const { code, sortie } = lancer(preparerSansEcran(false));
+  assert.equal(code, 0, sortie);
+  assert.match(sortie, /0 écran vérifié/);
+});
+
+test("sans écran dans le plan, un fichier oublié dans ecrans/ reste une erreur", () => {
+  const dossier = preparerSansEcran(true);
+  writeFileSync(join(dossier, "ecrans/Z9-oublie.html"), "<!doctype html><html></html>");
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 1);
+  assert.match(sortie, /Z9-oublie\.html/);
+});
+
+test("des écrans dans le plan et pas de dossier ecrans/ : code 1, le dossier est cité", () => {
+  const dossier = preparer();
+  rmSync(join(dossier, "ecrans"), { recursive: true });
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 1);
+  assert.match(sortie, /dossier ecrans/);
+});
+
 test("les erreurs de plusieurs écrans sont toutes listées", () => {
   const dossier = preparer();
   modifier(dossier, "ecrans/A1-accueil.html", (t) => t.replace('data-ecran="A1"', 'data-ecran="A9"'));

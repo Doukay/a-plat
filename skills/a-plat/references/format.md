@@ -38,7 +38,7 @@ window.A_PLAT = {
     page: "Nom de la page",
     groupe: "Nom du groupe",       // les pages sont rangées par groupe, dans l'ordre d'apparition
     etat: "a-completer",           // existe | a-completer | manque | prevue
-    raison: "Une phrase courte : ce qui a été constaté.", // laissé de côté par la personne : la ligne reste, la raison le dit avec la date
+    raison: "Une phrase courte : ce qui a été constaté.", // laissé de côté par la personne : la ligne reste, la raison finit par « Laissé de côté par la personne le AAAA-MM-JJ. »
     source: "src/page.js",         // d'où vient l'affirmation : fichier, et ligne si elle aide
     aConfirmer: true,              // true tant que ce n'a pas été vu marcher
     ecrans: ["A2"]                 // codes des écrans dessinés pour cette page ; [] sinon
@@ -68,7 +68,7 @@ Règles que le contrôle vérifie :
 
 - `version`, `rangees`, `ecrans` et `etatDesLieux` sont obligatoires, même vides : `[]`.
 - Chaque code d'écran est unique. Chaque code cité dans `etatDesLieux[].ecrans` existe dans `ecrans`.
-- Chaque écran du plan a son fichier dans `ecrans/`, et chaque fichier HTML de `ecrans/` a son écran dans le plan. Le dossier `ecrans/` doit exister, même vide.
+- Chaque écran du plan a son fichier dans `ecrans/`, et chaque fichier HTML de `ecrans/` a son écran dans le plan. Le dossier `ecrans/` doit exister dès qu'un écran est écrit ; sans écran dans le plan, il peut manquer.
 - Un `fichier` ne contient ni `..`, ni adresse complète, ni barre oblique inverse : la page le refuserait.
 
 Pour le format `les-deux`, chaque version est un écran à part, avec son code, sa largeur et sa hauteur.

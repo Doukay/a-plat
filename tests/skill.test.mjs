@@ -212,7 +212,7 @@ test("une page n'est « Existe » que si chaque rôle annoncé y a toutes ses t�
   assert.match(roles, /« Existe »/);
   assert.match(roles, /`a-completer`/);
   const etat = lire("references", "etat-des-lieux.md");
-  assert.match(ligneDe(etat, "| `existe` |"), /tâche/);
+  assert.match(ligneDe(etat, "| `existe` |"), /si c'est l'espace d'un rôle, chaque tâche que les documents lui donnent/);
   assert.match(ligneDe(etat, "| Tâche d'un rôle"), /`a-completer`/);
 });
 
@@ -223,15 +223,22 @@ test("un manque laissé de côté par la personne reste dans la liste, marqué a
   assert.match(regle, /jamais retirée/);
   assert.match(regle, /Laissé de côté par la personne le AAAA-MM-JJ/);
   assert.match(regle, /compte/);
-  assert.match(ligneDe(lire("references", "format.md"), "raison:"), /laissé de côté/i);
+  assert.match(ligneDe(lire("references", "format.md"), "raison:"), /Laissé de côté par la personne le AAAA-MM-JJ\./);
   assert.match(ligneDe(texteDuSkill, "**Manques.**"), /laisse de côté reste dans la liste/);
+  assert.match(ligneDe(etat, "Une page peut porter plusieurs manques"), /Laissé de côté par la personne.*ne compte pas/);
+  const reprise = section(etat, "Reprendre des maquettes");
+  assert.match(reprise, /Laissé de côté par la personne le/);
+  assert.match(reprise, /garde cette phrase et sa date/);
+  assert.match(reprise, /ne pas reposer la question/i);
+  assert.match(reprise, /ne pas la retirer/i);
 });
 
 test("l'existant redessiné ne reprend que le code et les styles du projet, et un rendu non vu ne s'affirme pas", () => {
   const ecrans = lire("references", "ecrans.md");
   const regle = ligneDe(ecrans, "**Pas de capture :**");
   assert.match(regle, /lire ses styles/i);
-  assert.match(regle, /rien n'y est ajouté : ni largeur, ni règle, ni élément/);
+  assert.match(regle, /rien n'y est ajouté, hors les exemples inventés : ni largeur, ni règle, ni élément/);
+  assert.match(ecrans, /Dans une proposition, préférer des lignes \(`\.ligne`, `\.liste`\) à un tableau plus large que l'écran\./);
   assert.doesNotMatch(ecrans, /bloc qui défile/, "le redessin n'ajoute pas de bloc qui défile");
   assert.match(ligneDe(lire("references", "format.md"), "**Redessiné :**"), /rien d'autre/);
   const vu = ligneDe(texteDuSkill, "**Ce qui est vu.**");
@@ -241,9 +248,12 @@ test("l'existant redessiné ne reprend que le code et les styles du projet, et u
 
 test("aucune donnée du projet dans les maquettes, et le compte rendu dit ce qui vient du projet", () => {
   const ecrans = lire("references", "ecrans.md");
-  assert.match(ecrans, /fichiers de données ou de départ/);
-  assert.match(ecrans, /même s'ils semblent inventés/);
-  assert.match(ligneDe(texteDuSkill, "**Données réelles.**"), /même s'ils semblent inventés/);
+  const valeurs = /les valeurs saisies ou d'exemple écrites dans les fichiers de données ou de départ du projet/i;
+  assert.match(ecrans, valeurs);
+  assert.match(ecrans, /même si elles semblent inventées/);
+  assert.match(ecrans, /libellé fixe de l'interface.*se garde, même écrit dans un fichier de données/);
+  assert.match(ligneDe(texteDuSkill, "**Données réelles.**"), valeurs);
+  assert.match(ligneDe(texteDuSkill, "**Données réelles.**"), /même si elles semblent inventées/);
   const compteRendu = ligneDe(texteDuSkill, "**Compte rendu**");
   assert.match(compteRendu, /ce qui vient du projet/);
   assert.match(compteRendu, /ce qui est inventé/);
@@ -257,11 +267,20 @@ test("une commande par appel, jamais enchaînée, dit une seule fois dans SKILL.
   assert.equal(texteDuSkill.split("**Commandes.**").length, 2);
 });
 
-test("sans Node, les dossiers ecrans/ et actuel/ sont créés, et rien d'autre", () => {
+test("sans Node, Claude ne crée aucun dossier vide, et ecrans/ n'est exigé qu'avec un écran", () => {
   const regle = texteDuSkill.split(/\r?\n/).find((ligne) => /Sans Node/.test(ligne) && /lire/i.test(ligne)) ?? "";
-  assert.match(regle, /`ecrans\/` et `actuel\/`/);
-  assert.match(regle, /rien d'autre/);
+  assert.match(regle, /aucun dossier vide/);
   assert.match(regle, /`\.gitkeep`/);
+  assert.doesNotMatch(regle, /Créer aussi les dossiers/);
+  const format = lire("references", "format.md");
+  assert.match(format, /Le dossier `ecrans\/` doit exister dès qu'un écran est écrit/);
+  assert.doesNotMatch(format, /doit exister, même vide/);
+});
+
+test("la description de l'outil suit les règles plus strictes du redessin et des données", () => {
+  const conception = readFileSync(fileURLToPath(new URL("../docs/conception.md", import.meta.url)), "utf8");
+  assert.match(conception, /redessiné d'après le code et les styles du projet, et rien d'autre/);
+  assert.match(conception, /y compris ses données de départ ou d'exemple/);
 });
 
 test("les nombres du message se comptent sur le tableau montré, en reprise aussi", () => {

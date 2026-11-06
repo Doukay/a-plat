@@ -69,11 +69,11 @@ Claude dessine 1 ou 2 écrans et demande si la direction et le niveau de détail
 
 ### 5. Les écrans
 
-- **Page qui existe :** l'écran actuel et la proposition, côte à côte. L'actuel est une capture si la personne en a une, sinon il est redessiné d'après le code et marqué comme tel.
+- **Page qui existe :** l'écran actuel et la proposition, côte à côte. L'actuel est une capture si la personne en a une, sinon il est redessiné d'après le code et les styles du projet, et rien d'autre, et marqué comme tel.
 - **Page à compléter :** seul ce qui change est mis en avant.
 - **Page qui manque :** dessinée seulement si la personne le demande.
 
-Les textes sont de vrais textes et les exemples sont inventés mais crédibles, avec un seul jeu d'exemples pour tout le projet. Aucune donnée réelle du projet ne passe dans les maquettes (noms de clients, adresses, secrets).
+Les textes sont de vrais textes et les exemples sont inventés mais crédibles, avec un seul jeu d'exemples pour tout le projet. Aucune donnée réelle du projet ne passe dans les maquettes (noms de clients, adresses, secrets), y compris ses données de départ ou d'exemple.
 
 Les écrans sont reliés entre eux : on peut essayer le parcours en touchant les boutons.
 
