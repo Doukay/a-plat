@@ -15,6 +15,8 @@ maquettes/
   actuel/         l'existant : captures, ou pages redessinées
 ```
 
+La page se copie avec `<skill>/copier.mjs` (voir `SKILL.md`), qui ne remplace jamais un fichier déjà là. Le modèle contient aussi `modele/plan.exemple.js`, un plan vide qui montre le format : il n'est jamais copié, car `plan.js` s'écrit pour chaque projet.
+
 La page et le contrôle marchent quel que soit le nom du dossier. `plan.js` est un script et pas du JSON : une page ouverte d'un double-clic n'a pas le droit de lire un fichier JSON voisin.
 
 ## Le plan
@@ -42,7 +44,7 @@ window.A_PLAT = {
     ecrans: ["A2"]                 // codes des écrans dessinés pour cette page ; [] sinon
   }],
   rangees: [{
-    id: "A",                       // la lettre des codes de ses écrans
+    id: "A",                       // une lettre, que prennent les codes de ses nouveaux écrans
     titre: "Nom de la rangée",
     notes: [{ type: "decision", date: "2026-01-31", texte: "Note courte.", ancien: "Valeur d'avant" }]
     // type : decision | a-trancher | a-verifier | a-coder | source

@@ -70,7 +70,7 @@ test("les six références existent et SKILL.md les cite toutes", () => {
 });
 
 test("tout fichier cité par la méthode existe dans le skill", () => {
-  const cites = /(?:<skill>\/)?((?:references|modele)\/[\p{L}\p{N}_./-]*[\p{L}\p{N}_-]|verifier\.mjs)/gu;
+  const cites = /(?:<skill>\/)?((?:references|modele)\/[\p{L}\p{N}_./-]*[\p{L}\p{N}_-]|(?:verifier|copier)\.mjs)/gu;
   for (const fichier of fichiersDeLaMethode()) {
     for (const [, cible] of readFileSync(fichier, "utf8").matchAll(cites)) {
       assert.ok(existsSync(join(SKILL, cible)), `${nomRelatif(fichier)} cite ${cible}, qui n'existe pas`);
@@ -78,15 +78,56 @@ test("tout fichier cité par la méthode existe dans le skill", () => {
   }
 });
 
-// plan.js n'y est pas : Claude l'écrit. Le copier après coup écraserait l'état des lieux.
-test("les commandes de copie citent tous les fichiers du modèle, sauf plan.js", () => {
-  const modele = join(SKILL, "modele");
-  for (const fichier of fichiers(modele)) {
-    const nom = relative(modele, fichier).split("\\").join("/");
-    const cite = texteDuSkill.includes(`"<skill>/modele/${nom}"`);
-    if (nom === "plan.js") assert.ok(!cite, "SKILL.md ne doit pas copier modele/plan.js");
-    else assert.ok(cite, `SKILL.md ne copie pas modele/${nom}`);
+// La copie passe par un script : une commande cp ou Copy-Item depuis le dossier du skill est
+// classée par Claude Code comme la modification d'un fichier sensible (essai de la tâche 9).
+test("la copie passe par copier.mjs, et SKILL.md ne donne aucune autre commande de copie", () => {
+  assert.ok(texteDuSkill.includes('node "<skill>/copier.mjs" "<dossier>"'), "SKILL.md doit lancer copier.mjs");
+  for (const motif of [/\bcp\s+["-]/, /Copy-Item/i, /New-Item/i, /mkdir -p/]) {
+    assert.doesNotMatch(texteDuSkill, motif, `SKILL.md ne doit plus donner de commande de copie (${motif})`);
   }
+  const regle = texteDuSkill.split(/\r?\n/).find((ligne) => ligne.includes("autre commande de copie")) ?? "";
+  assert.match(regle, /jamais/i, "il faut interdire de donner une autre commande de copie");
+  for (const interdit of [/joker|\*/, /-Recurse/, /-Force/, /&&/, /;/]) assert.match(regle, interdit, `la règle doit citer ${interdit}`);
+});
+
+test("sans Node, Claude copie chaque fichier du modèle avec ses outils de fichiers, sans rien écraser, et le dit", () => {
+  const regle = texteDuSkill.split(/\r?\n/).find((ligne) => /Sans Node/.test(ligne) && /lire/i.test(ligne)) ?? "";
+  assert.match(regle, /lire/i);
+  assert.match(regle, /écrire|l'écrire|les écrire/i);
+  assert.match(regle, /jamais un fichier qui existe|sans jamais écraser|n'écrase jamais/i);
+  assert.match(regle, /le dire/i);
+  assert.match(regle, /plan\.exemple\.js/);
+});
+
+test("le modèle de plan s'appelle plan.exemple.js et ne se copie jamais", () => {
+  assert.ok(!existsSync(join(SKILL, "modele", "plan.js")), "modele/plan.js ne doit plus exister");
+  assert.ok(existsSync(join(SKILL, "modele", "plan.exemple.js")));
+  assert.match(lire("references", "format.md"), /plan\.exemple\.js/);
+});
+
+test("un dossier de la personne : on ne propose qu'un nouveau dossier, jamais d'écrire à côté de ses fichiers", () => {
+  const ligne = texteDuSkill.split(/\r?\n/).find((l) => l.startsWith("| Un dossier `maquettes/` d'autres fichiers")) ?? "";
+  assert.match(ligne, /nouveau dossier/);
+  assert.match(ligne, /jamais proposer d'écrire dans ce dossier/i);
+});
+
+test("pendant l'étape 1 d'une idée : une seule question, un seul point d'interrogation par message", () => {
+  assert.match(texteDuSkill, /une seule question, un seul point d'interrogation/i);
+});
+
+test("changer le rangement après coup : les codes restent, rangees et rangee changent, et la personne est prévenue", () => {
+  const texte = lire("references", "corrections-et-notes.md");
+  assert.match(texte, /Changer le rangement/);
+  assert.match(texte, /`rangees`/);
+  assert.match(texte, /`rangee` de chaque écran/);
+  assert.match(texte, /lettre d'un code peut ne plus correspondre à sa rangée/);
+});
+
+test("ecrans.md : proposer avant d'ajouter un écran non demandé, et d'autres prénoms à chaque projet", () => {
+  const texte = lire("references", "ecrans.md");
+  assert.match(texte, /écran que la personne n'a pas demandé/);
+  assert.match(texte, /le proposer d'abord/i);
+  assert.match(texte, /prénoms différents à chaque projet/i);
 });
 
 test("la méthode dit où trouver ses propres fichiers, relativement au dossier du skill", () => {
@@ -136,15 +177,6 @@ test("lancer le projet demande l'accord de la personne, et sans lui tout reste �
 test("une copie interrompue se reprend, et une reprise ne réécrit ni rangées, ni écrans, ni réglages", () => {
   assert.match(texteDuSkill, /`a-plat\/moteur\.js`/);
   assert.match(texteDuSkill, /ne jamais réécrire `rangees`, `ecrans` ni `reglages`/);
-});
-
-test("la forme PowerShell copie comme la forme Bash", () => {
-  const lignes = texteDuSkill.split(/\r?\n/).filter((ligne) => ligne.includes("PowerShell"));
-  assert.ok(lignes.length > 0, "SKILL.md ne donne pas de forme PowerShell");
-  for (const ligne of lignes) {
-    assert.doesNotMatch(ligne, /plan\.js/, "la forme PowerShell ne doit pas copier plan.js");
-    assert.doesNotMatch(ligne, /"<skill>\\modele"/, "la forme PowerShell ne doit pas copier le dossier modele en entier");
-  }
 });
 
 test("pour une idée, le premier dessin a une règle, et les captures de rendu restent hors du projet", () => {

@@ -44,6 +44,8 @@ Ne jamais valider à la place de la personne, ni déduire une validation d'un «
 
 La personne le dit (« passe en ordinateur », « on arrête la relecture ») : changer `reglages`, dire ce que ça change pour les écrans déjà faits, et demander avant de les reprendre s'il y en a beaucoup.
 
+**Changer le rangement** quand des écrans existent est permis. Les codes restent tels quels. Mettre à jour `rangees` (titres et ordre ; une nouvelle rangée prend une lettre libre) et la `rangee` de chaque écran, et déplacer avec un écran les notes qui ne parlent que de lui. Dire à la personne que la lettre d'un code peut ne plus correspondre à sa rangée. Les nouveaux écrans prennent la lettre de leur rangée.
+
 ## Les notes
 
 Les notes sont dans `rangees[].notes`, à côté des écrans, jamais dessinées dessus. Une note tient en une phrase courte.

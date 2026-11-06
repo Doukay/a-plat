@@ -14,6 +14,7 @@ export const FIXTURES = fileURLToPath(new URL("./fixtures", import.meta.url));
 export function copierLeModeleEtLaFixture(destination, fixture) {
   const source = resolve(FIXTURES, fixture);
   if (!existsSync(source)) throw new Error(`Fixture introuvable : ${fixture}`);
-  cpSync(MODELE, destination, { recursive: true });
+  // plan.exemple.js n'est qu'un exemple de format : comme copier.mjs, on ne le copie pas.
+  cpSync(MODELE, destination, { recursive: true, filter: (chemin) => !chemin.endsWith("plan.exemple.js") });
   cpSync(source, destination, { recursive: true });
 }

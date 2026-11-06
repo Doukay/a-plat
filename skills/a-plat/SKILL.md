@@ -13,6 +13,7 @@ Il montre, en maquettes, ce qui existe, ce qui est à compléter et ce qui manqu
 Au chargement de ce skill, Claude reçoit une ligne « Base directory for this skill: … ». Ce dossier s'appelle ici `<skill>`. Les fichiers de l'outil y sont, et pas dans le projet :
 
 - `<skill>/modele/` : la page à copier ;
+- `<skill>/copier.mjs` : la copie de la page dans le dossier de maquettes ;
 - `<skill>/verifier.mjs` : le contrôle ;
 - `<skill>/references/` : le détail de chaque étape.
 
@@ -39,7 +40,7 @@ Chercher un `plan.js` contenant `window.A_PLAT`, dans `maquettes/` puis ailleurs
 |---|---|
 | Un `plan.js` d'À plat | Reprendre : ne rien recopier, lire le plan et les écrans, relire le projet (étape 1), puis signaler ce qui a changé (étape 2). |
 | Un dossier qui contient `a-plat/moteur.js` sans `plan.js` d'À plat, ou un `maquettes/` vide | C'est le dossier de l'outil, copie interrompue ou pas commencée : reprendre la copie (étape 2) dans ce dossier, sans rien retirer. |
-| Un dossier `maquettes/` d'autres fichiers, sans `plan.js` d'À plat | Ne rien y écrire, ne rien écraser. Demander d'abord où écrire, par exemple `maquettes-a-plat/` (la page et le contrôle marchent avec n'importe quel nom de dossier), et attendre la réponse avant de lire le projet. |
+| Un dossier `maquettes/` d'autres fichiers, sans `plan.js` d'À plat | Ne rien y écrire, ne rien écraser. Demander d'abord dans quel nouveau dossier écrire, par exemple `maquettes-a-plat/` (la page et le contrôle marchent avec n'importe quel nom de dossier). Ne jamais proposer d'écrire dans ce dossier, même à côté de ses fichiers. Attendre la réponse avant de lire le projet. |
 | Ni l'un ni l'autre, et un projet avec du code ou des documents | Étape 1, en écrivant ensuite dans `maquettes/`. |
 | Ni l'un ni l'autre, et presque rien dans le dossier | Étape 1, cas de l'idée. |
 
@@ -53,7 +54,7 @@ Les huit étapes se font dans l'ordre. **Arrêt** veut dire : finir le message p
 
 **S'il y a un projet :** lire `references/lire-un-projet.md` en entier avant d'ouvrir le projet, puis le suivre. Rien n'est modifié à cette étape.
 
-**S'il n'y a qu'une idée :** poser des questions courtes, une à la fois, une par message, et attendre chaque réponse. Quatre ou cinq suffisent : à quoi ça sert, pour qui, ce que la personne y fait d'abord, sur quel appareil, ce qui est déjà décidé. S'arrêter dès que la liste des pages peut être faite. Rien n'est dessiné avant que la personne ait vu la liste.
+**S'il n'y a qu'une idée :** poser des questions courtes, une à la fois, et attendre chaque réponse : dans chaque message, une seule question, un seul point d'interrogation. Quatre ou cinq suffisent : à quoi ça sert, pour qui, ce que la personne y fait d'abord, sur quel appareil, ce qui est déjà décidé. S'arrêter dès que la liste des pages peut être faite. Rien n'est dessiné avant que la personne ait vu la liste.
 
 **S'il y a déjà des maquettes :** relire aussi le projet comme ci-dessus, et comparer avec `etatDesLieux`. Seul `etatDesLieux` se met à jour : ne jamais réécrire `rangees`, `ecrans` ni `reglages` en reprise. Ils ne changent que sur une demande de la personne (étape 6). Les codes d'écran, les notes et les écrans validés ne bougent pas.
 
@@ -61,12 +62,10 @@ Les huit étapes se font dans l'ordre. **Arrêt** veut dire : finir le message p
 
 Lire `references/etat-des-lieux.md`, puis :
 
-1. Dire ce qui va être créé et où (dossier, fichiers), et prévenir que l'application peut demander une autorisation pour copier le modèle.
-2. Dossier neuf, vide ou copie interrompue : y copier le modèle par ces commandes, l'une après l'autre, sans jamais retaper le moteur à la main. Avec un autre nom de dossier, remplacer `maquettes`. Si une commande est refusée, l'écrire ainsi : « La copie des fichiers de l'outil a été refusée. Sans eux, la page ne peut pas s'afficher. Voulez-vous l'autoriser ? »
-   - Bash : `mkdir -p maquettes/a-plat maquettes/ecrans maquettes/actuel`
-   - Bash : `cp "<skill>/modele/index.html" "<skill>/modele/commun.css" "<skill>/modele/ecran-type.html" maquettes/`
-   - Bash : `cp "<skill>/modele/a-plat/moteur.js" "<skill>/modele/a-plat/logique.js" "<skill>/modele/a-plat/corrections.js" "<skill>/modele/a-plat/relais.js" "<skill>/modele/a-plat/style.css" maquettes/a-plat/`
-   - PowerShell, à la place : `New-Item -ItemType Directory -Force maquettes\a-plat, maquettes\ecrans, maquettes\actuel`, puis `Copy-Item "<skill>\modele\index.html", "<skill>\modele\commun.css", "<skill>\modele\ecran-type.html" maquettes\`, puis `Copy-Item "<skill>\modele\a-plat\*" maquettes\a-plat\`
+1. Dire ce qui va être créé et où (dossier, fichiers), et prévenir que l'application peut demander une autorisation pour lancer la copie.
+2. Dossier neuf, vide ou copie interrompue : y copier la page par une seule commande, `node "<skill>/copier.mjs" "<dossier>"` (par exemple `maquettes`), telle quelle, sans jamais retaper le moteur à la main. Le script crée le dossier, ne remplace jamais un fichier qui existe, refuse un dossier qui n'est pas à l'outil (code 2) et dit ce qu'il a copié. Si la commande est refusée, l'écrire ainsi : « La copie des fichiers de l'outil a été refusée. Sans eux, la page ne peut pas s'afficher. Voulez-vous l'autoriser ? »
+   - Sans Node : lire chaque fichier du modèle (`index.html`, `commun.css`, `ecran-type.html`, et chaque fichier de `a-plat/`), puis l'écrire dans le dossier avec les outils de fichiers, sans jamais écraser un fichier qui existe, jamais `plan.exemple.js`, et le dire à la personne.
+   - Ne jamais donner à la personne une autre commande de copie, et ne jamais copier les fichiers du modèle avec un joker (`*`), `-Recurse`, `-Force`, `&&` ou `;`.
 3. Écrire `plan.js` après la copie : `etatDesLieux`, avec `rangees: []` et `ecrans: []` tant que rien n'est dessiné, et sans `reglages` tant qu'ils ne sont pas acceptés. Le format est dans `references/format.md`.
 4. Lancer le contrôle.
 5. Montrer l'état des lieux dans la conversation aussi : le compte clair par état, toutes les pages, ce qui n'a pas été lu, puis les questions.

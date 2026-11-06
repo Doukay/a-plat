@@ -9,6 +9,8 @@ Le format exact d'un écran est dans `references/format.md`. Ici : quoi dessiner
 - Un code ne change jamais et ne resservira pas, même si l'écran est retiré : c'est lui qui sert dans les corrections.
 - Remplir `etatDesLieux[].ecrans` avec les codes de chaque page.
 - Un état d'une page (vide, erreur, refus) qui mérite d'être vu est un écran à lui, avec son code. Chaque écran de plus se justifie : une page, un état demandé.
+- Avant d'ajouter un écran que la personne n'a pas demandé (un état, une autre version, la retouche d'un écran qu'elle n'a pas cité), le proposer d'abord en une ligne, et attendre sa réponse.
+- Après un changement de rangement, un écran garde son code : sa lettre peut ne plus être celle de sa rangée (voir `references/corrections-et-notes.md`).
 
 ## Quoi dessiner, selon l'état de la page
 
@@ -39,7 +41,7 @@ Demander une seule fois si la personne a des captures des pages qui existent, à
 
 ## Un seul jeu d'exemples
 
-Choisir au premier écran un jeu inventé mais crédible, propre au domaine du projet, et le réutiliser partout : mêmes personnes, mêmes objets, mêmes lieux, mêmes montants. Il tient en une ligne : deux ou trois personnes avec des prénoms courants et variés, un lieu ordinaire, les objets ou services que le projet manipule, des montants et des dates plausibles. L'écrire en commentaire en tête de `plan.js`, pour le retrouver :
+Choisir au premier écran un jeu inventé mais crédible, propre au domaine du projet, et le réutiliser partout : mêmes personnes, mêmes objets, mêmes lieux, mêmes montants. Il tient en une ligne : deux ou trois personnes avec des prénoms courants et variés, des prénoms différents à chaque projet (pas ceux d'un autre projet ni toujours les mêmes), un lieu ordinaire, les objets ou services que le projet manipule, des montants et des dates plausibles. L'écrire en commentaire en tête de `plan.js`, pour le retrouver :
 
 ```js
 // Jeu d'exemples (inventé) : <prénoms>, <lieu>, <objets ou services>, <montants et dates>.
