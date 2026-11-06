@@ -520,6 +520,18 @@ button:focus-visible {
   line-height: 1.5;
   white-space: nowrap;
 }
+/* « Inchangé » : l'existant, sans proposition ; neutre, pour ne pas le confondre avec « Validé ». */
+.badge-inchange {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1px dashed var(--doux);
+  border-radius: 999px;
+  color: var(--doux);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
 .vignette-ligne {
   display: flex;
   flex-wrap: wrap;

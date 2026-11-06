@@ -8,7 +8,8 @@ Le format exact d'un écran est dans `references/format.md`. Ici : quoi dessiner
 - Chaque écran a un code fait de sa lettre et d'un numéro dans la rangée : A1, A2, B1. Fichier : `A2-fiche.html`.
 - Un code ne change jamais et ne resservira pas, même si l'écran est retiré : c'est lui qui sert dans les corrections.
 - Remplir `etatDesLieux[].ecrans` avec les codes de chaque page.
-- Un état d'une page (vide, erreur, refus) qui mérite d'être vu est un écran à lui, avec son code. Chaque écran de plus se justifie : une page, un état demandé.
+- Un état d'une page (vide, erreur, refus) qui mérite d'être vu est un écran à lui, avec son code. Chaque écran de plus se justifie : une vue, un état demandé.
+- Avec le format `les-deux`, une vue n'a sa version ordinateur que si sa disposition y change vraiment (colonnes, menu de côté, tableau au lieu de cartes). Sinon un seul écran, au format principal (celui que la personne met en premier, sinon le téléphone), et la raison en une ligne dans le compte rendu.
 - Avant d'ajouter un écran que la personne n'a pas demandé (un état, une autre version, la retouche d'un écran qu'elle n'a pas cité), le proposer d'abord en une ligne, et attendre sa réponse.
 - Après un changement de rangement, un écran garde son code : sa lettre peut ne plus être celle de sa rangée (voir `references/corrections-et-notes.md`).
 
@@ -16,10 +17,15 @@ Le format exact d'un écran est dans `references/format.md`. Ici : quoi dessiner
 
 | Page | Ce qui est dessiné |
 |---|---|
-| Existe | L'`actuel` et la proposition, côte à côte. Sans demande de changement, la proposition reprend le même contenu et le met au propre. |
-| À compléter | Pareil, et seul ce qui change est mis en avant, par un `.bandeau` autour de l'élément et une `.pastille` « Nouveau ». |
+| Existe, sans changement | Un seul dessin, avec `commun.css` comme les autres écrans : ce que la page montre aujourd'hui, au propre, avec `inchange: true` et `actuel: null`. Pas de redessin de l'existant à côté : deux fois le même contenu n'apprend rien, et coûte le double. |
+| Existe, avec un changement demandé ou accepté par la personne | L'`actuel` et la proposition, côte à côte. |
+| À compléter | L'`actuel` et la proposition, côte à côte, et seul ce qui change est mis en avant, par un `.bandeau` autour de l'élément et une `.pastille` « Nouveau ». Si rien de ce qui manque ne se voit à l'écran (une redirection, un envoi), un seul dessin `inchange: true`, et le manque en note. |
 | Manque | Rien, sauf si la personne l'a demandé. |
 | Prévue | Rien, sauf si la personne l'a demandé. Pour une idée, toutes les pages sont prévues : l'accord sur la liste vaut demande, en commençant par le début du parcours principal. |
+
+**Un écran inchangé** suit les règles du redessin (plus bas) pour le contenu : la structure et les libellés de la page, mot pour mot, ce que le code contient et rien d'autre, avec le jeu d'exemples. Seul l'habillage change : les classes de `commun.css`, comme les autres écrans. Si la personne veut ensuite que la vraie page change, voir `references/corrections-et-notes.md` : le code de l'écran ne change pas.
+
+**Un comportement n'est pas un écran.** Ce qui ne se voit pas à l'écran (une redirection après la connexion, un envoi, un calcul) n'a pas d'écran à lui, sauf s'il montre quelque chose de nouveau (un message, un état). S'il manque ou reste à décider, il va dans la raison de la page d'où il part, à l'état des lieux, et en note `a-coder` ou `a-trancher` dans la rangée de son écran.
 
 **Ce qui entre dans une proposition :** le contenu de la page, ce que le projet annonce pour elle, et ce que la personne a demandé ou accepté. Le reste ne se résout pas : il reste à l'écran sous la forme `[à décider : …]`, ou passe en note `a-trancher`. Ne pas ajouter de bouton, de champ, d'étape ou de page de soi-même.
 
@@ -29,7 +35,7 @@ Dans une proposition, préférer des lignes (`.ligne`, `.liste`) à un tableau p
 
 ## L'existant : capture ou redessin
 
-Demander une seule fois si la personne a des captures des pages qui existent, à l'arrêt de l'étape 2 ou de l'étape 3, avant tout dessin, avec les autres questions, à la fin du message. Rappeler qu'une capture peut montrer des données réelles : mieux vaut qu'elle n'en contienne pas.
+Dire une seule fois que des captures des pages qui existent sont les bienvenues, à l'arrêt de l'étape 2 ou de l'étape 3, avant tout dessin, en une phrase et pas comme une question de plus. Elles servent pour les pages qui changent : une page inchangée n'a pas d'actuel. Rappeler qu'une capture peut montrer des données réelles : mieux vaut qu'elle n'en contienne pas.
 
 - **Capture fournie :** la regarder avant de la copier. Si elle montre des données qui semblent réelles (noms, adresses, montants, identifiants), ne pas la copier, le dire à la personne, et lui demander une capture sans elles. Sinon, la mettre dans `actuel/`, avec `origine: "capture"` : demander à la personne d'y poser le fichier elle-même, ou le copier par une seule commande de copie ordinaire qui nomme ce seul fichier, sa source et sa destination, jamais avec un joker (`*`). Claude n'en fait pas lui-même en lançant l'application, sauf accord de la personne (voir « Lancer le projet » dans `SKILL.md`).
 - **Pas de capture :** redessiner la page d'après le code, dans `actuel/`, avec `origine: "redessine"`. Lire ses styles avant, puis reprendre sa structure, ses libellés et ses règles de style, avec le même jeu d'exemples. Seul ce que le code et les styles du projet contiennent y entre, et rien n'y est ajouté, hors les exemples inventés : ni largeur, ni règle, ni élément. Ajouter seulement `relais.js`, comme indiqué dans `references/format.md`. Le redessin montre ce que la page fait, défauts compris, y compris un bouton sans effet : c'est ce qui permet la comparaison. Un style qui n'a pas pu être lu se dit dans le compte rendu, et ne se remplace pas.

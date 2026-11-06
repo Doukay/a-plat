@@ -209,3 +209,43 @@ test("fichierSur garde un bon fichier et refuse les autres", () => {
   assert.equal(fichierSur("actuel/A2-fiche.png"), "actuel/A2-fiche.png");
   for (const fichier of [...FICHIERS_REFUSES, "", undefined, 3, "a\u0001.html"]) assert.equal(fichierSur(fichier), null, String(fichier));
 });
+
+test("validerPlan accepte un écran inchange: true sans actuel", () => {
+  const plan = chargerPlanComplet();
+  plan.ecrans.find((e) => !e.actuel).inchange = true;
+  assert.deepEqual(validerPlan(plan), []);
+});
+
+test("validerPlan refuse un inchange qui n'est pas true ou false, et le cite", () => {
+  const plan = chargerPlanComplet();
+  plan.ecrans[0].inchange = "oui";
+  const texte = erreursDe(plan);
+  assert.match(texte, new RegExp(plan.ecrans[0].code));
+  assert.match(texte, /inchange/);
+});
+
+test("validerPlan accepte inchange: false, avec ou sans actuel", () => {
+  const plan = chargerPlanComplet();
+  for (const ecran of plan.ecrans) ecran.inchange = false;
+  assert.deepEqual(validerPlan(plan), []);
+});
+
+test("validerPlan refuse inchange: true avec un actuel incomplet ({} ou sans fichier)", () => {
+  for (const actuel of [{}, { origine: "capture" }]) {
+    const plan = chargerPlanComplet();
+    const ecran = plan.ecrans.find((e) => !e.actuel);
+    ecran.inchange = true;
+    ecran.actuel = actuel;
+    assert.match(erreursDe(plan), /inchange/, JSON.stringify(actuel));
+  }
+});
+
+test("validerPlan refuse un écran inchange: true qui a aussi un actuel", () => {
+  const plan = chargerPlanComplet();
+  const ecran = plan.ecrans.find((e) => e.actuel && e.actuel.fichier);
+  ecran.inchange = true;
+  const texte = erreursDe(plan);
+  assert.match(texte, new RegExp(ecran.code));
+  assert.match(texte, /inchange/);
+  assert.match(texte, /actuel/);
+});

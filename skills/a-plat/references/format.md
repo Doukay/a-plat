@@ -60,6 +60,8 @@ window.A_PLAT = {
     statut: "a-relire",            // a-relire | valide
     actuel: { fichier: "actuel/A2-fiche.png", origine: "capture" }
     // origine : capture | redessine ; actuel: null quand il n'y a pas d'existant
+    // inchange: true (facultatif) : page qui existe, sans changement proposé ; le fichier
+    // dessine l'existant, seul, et actuel vaut null. La page l'affiche « Inchangé ».
   }]
 };
 ```
@@ -71,8 +73,9 @@ Règles que le contrôle vérifie :
 - Chaque écran du plan a son fichier dans `ecrans/`, et chaque fichier HTML de `ecrans/` a son écran dans le plan. Le dossier `ecrans/` doit exister dès qu'un écran est écrit ; sans écran dans le plan, il peut manquer.
 - Un `fichier` (d'un écran ou d'un `actuel`) ne contient ni `..`, ni adresse complète, ni barre au début, ni barre oblique inverse : la page le refuserait. Deux écrans n'ont jamais le même `fichier`, et deux rangées jamais le même `id`.
 - Un `actuel.fichier` se cherche dans `actuel/`, qu'il commence par `actuel/` ou non.
+- `inchange`, s'il est là, vaut `true` ou `false`. Un écran `inchange: true` n'a pas d'actuel.
 
-Pour le format `les-deux`, chaque version est un écran à part, avec son code, sa largeur et sa hauteur.
+Pour le format `les-deux`, chaque version, quand elle existe (voir `references/ecrans.md`), est un écran à part, avec son code, sa largeur et sa hauteur.
 
 ## Un écran
 

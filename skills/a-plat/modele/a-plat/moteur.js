@@ -521,6 +521,7 @@
     var ligneDuCode = creer("span", "vignette-ligne");
     ligneDuCode.appendChild(creer("span", "vignette-code", ecran.code));
     if (ecran.statut === "valide") ligneDuCode.appendChild(creer("span", "badge-valide", "Validé"));
+    if (ecran.inchange === true) ligneDuCode.appendChild(creer("span", "badge-inchange", "Inchangé"));
     lien.appendChild(ligneDuCode);
     lien.appendChild(creer("span", "vignette-titre", nomCourt(ecran.titre)));
     element.appendChild(lien);
@@ -662,6 +663,7 @@
     var entete = creer("div", "ecran-entete");
     entete.appendChild(creer("span", "ecran-code", ecran.code));
     if (ecran.statut === "valide") entete.appendChild(creer("span", "badge-valide", "Validé"));
+    if (ecran.inchange === true) entete.appendChild(creer("span", "badge-inchange", "Inchangé"));
     entete.appendChild(creer("h2", "titre-de-vue", nomCourt(ecran.titre)));
     conteneur.appendChild(entete);
     conteneur.appendChild(creer("p", "consigne",
@@ -708,7 +710,8 @@
     var aUnActuel = estObjet(ecran.actuel) && estTexte(ecran.actuel.fichier);
     if (aUnActuel) comparaison.appendChild(dessinerActuel(ecran, largeur, hauteur));
 
-    var proposition = creerVolet("volet-proposition", aUnActuel ? "Proposition" : "", largeur);
+    var titreDuVolet = aUnActuel ? "Proposition" : (ecran.inchange === true ? "Existant, sans changement proposé" : "");
+    var proposition = creerVolet("volet-proposition", titreDuVolet, largeur);
     var fichier = fichierSur(ecran.fichier);
     if (fichier) {
       proposition.appendChild(fabriquerCadre({

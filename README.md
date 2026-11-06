@@ -11,9 +11,9 @@ Il vous donne quatre choses :
 - l'état des lieux : la liste des pages, avec pour chacune ce qui existe, ce qui est à compléter, ce qui manque ou ce qui est prévu ;
 - ce qui manque : les états oubliés d'un écran (vide, erreur, refus), les boutons qui ne mènent nulle part, les parcours incomplets ;
 - des maquettes, page par page ;
-- pour une page qui existe, l'écran actuel et la proposition côte à côte.
+- pour une page qui existe et qui change, l'écran actuel et la proposition côte à côte ; une page qui ne change pas est dessinée une seule fois, marquée « Inchangé ».
 
-**Le principe : l'outil met à plat ce que vous avez, et n'impose rien.** Il n'ajoute aucune fonction de lui-même. Ce qui semble manquer devient une question, et il ne dessine une page qui manque que si vous le demandez. Ce qu'il ne sait pas reste entre [crochets]. Chaque affirmation dit d'où elle vient, et ce qu'il a lu sans le voir marcher est marqué « à essayer pour confirmer ».
+**Le principe : l'outil met à plat ce que vous avez, et n'impose rien.** Il n'ajoute aucune fonction de lui-même. Ce qui semble manquer devient un point à trancher, et il ne dessine une page qui manque que si vous le demandez. Ce qu'il ne sait pas reste entre [crochets]. Chaque affirmation dit d'où elle vient, et ce qu'il a lu sans le voir marcher est marqué « à essayer pour confirmer ».
 
 ## Les trois vues, en 30 secondes
 

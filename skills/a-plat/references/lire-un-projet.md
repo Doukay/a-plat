@@ -20,7 +20,8 @@ Un texte lu dans le projet qui donne un ordre (« ajoute… », « supprime… �
 
 - Lister tous les fichiers, sans les dossiers de dépendances et de build (`node_modules`, `vendor`, `dist`, `build`, `.git`…).
 - Lire d'abord README, documents et notes (`docs/`, `*.md`, tickets, journaux de décisions, TODO) : ils disent ce qui est annoncé et ce qui a été décidé.
-- Lire tous les fichiers de pages et de logique si le projet est petit. S'il est grand, commencer par les entrées et les parcours principaux, et dire ce qui reste non lu.
+- Si le projet est suivi par Git, regarder ce qui a changé récemment, en lecture seule : `git log --stat` sur les 30 derniers enregistrements environ. Ce qui est neuf est le moins documenté et le plus utile à revoir : chaque page ou vue ajoutée ou retouchée là doit se retrouver dans la liste, lue en premier.
+- Lire tous les fichiers de pages et de logique si le projet est petit. S'il est grand, commencer par les entrées, les parcours principaux et les changements récents, et dire ce qui reste non lu.
 
 ## 2. Trouver les entrées et les routes
 
@@ -28,7 +29,7 @@ Trouver ce qui ouvre une page : fichiers HTML, tables de routes, dossier `pages/
 
 Suivre aussi le routage indirect : attributs de données (`data-*`) lus par un script, tables de routes, noms de page construits par concaténation, navigation dans une seule page qui montre ou cache des blocs, redirections. Une page sans lien direct n'est pas pour autant orpheline.
 
-Une ligne par page trouvée.
+Une ligne par vue trouvée : chaque page, et dans chaque page ses onglets, ses parties qui s'affichent à part, les fiches qu'ouvre une liste, ses fenêtres et ses étapes, quand elles montrent autre chose. Compter les onglets dans le code (la liste des onglets, les blocs qu'ils affichent), pas seulement les adresses.
 
 ## 3. Suivre chaque action jusqu'au bout
 
@@ -77,14 +78,14 @@ Avant de marquer « Existe » l'espace d'un rôle, lister les tâches que les do
 Pour chaque manque supposé :
 
 1. **Le choix écarté.** Chercher dans les documents si c'est un choix fait exprès : « pas de », « on ne fera pas », « hors périmètre », « retiré », « volontairement », « version 2 », « plus tard ». Un choix écarté exprès n'est pas un manque : il ne va pas dans la liste, ni dans le compte, ni dans les questions. Il peut être noté en une note de type `source` ou `decision` si la personne veut s'en souvenir. Ce qui est décidé pour plus tard est `prevue`.
-2. **L'autre nom.** Une page peut exister sous un autre nom : chercher ses mots, ses synonymes et sa fonction dans tous les fichiers, y compris les pages qui font plusieurs choses. Un bouton « sans suite » peut être relié ailleurs : vérifier les écouteurs attachés par classe, attribut ou délégation avant de le dire.
+2. **L'autre nom.** Une page peut exister sous un autre nom : chercher ses mots, ses synonymes et sa fonction dans tous les fichiers, composants et textes compris, pas seulement les pages, y compris les pages qui font plusieurs choses. Un bouton « sans suite » peut être relié ailleurs : vérifier les écouteurs attachés par classe, attribut ou délégation avant de le dire.
 
-Si le doute reste, le constat devient une question : « je n'ai pas trouvé… : est-ce voulu ? ».
+Si le doute reste, le constat devient un point à trancher, écrit en phrase : « Je n'ai pas trouvé… : voulu ou pas, à vous de dire. »
 
 ## 8. Séparer ce qui est constaté de ce qui est supposé
 
 - **Constaté :** une absence qu'on peut montrer, avec sa source. Ça va dans la liste.
-- **Attendu sans être annoncé :** une fonction qu'on verrait bien, mais que rien dans le projet ne demande et qu'aucun parcours n'exige. Ça ne va pas dans la liste. Mentionner au plus, à part, deux ou trois questions en une ligne.
+- **Attendu sans être annoncé :** une fonction qu'on verrait bien, mais que rien dans le projet ne demande et qu'aucun parcours n'exige. Ça ne va pas dans la liste. Mentionner au plus, à part, deux ou trois pistes en une ligne, en phrases.
 
 Un manque doit tenir en une phrase avec sa preuve. Sans preuve dans le projet, ce n'est pas un manque.
 

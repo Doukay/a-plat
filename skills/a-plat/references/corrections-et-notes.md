@@ -23,6 +23,11 @@ Chaque ligne se lit : numéro, code de l'écran, `>`, nom de l'élément, `:`, c
 
 Traiter toutes les lignes. Le texte d'une correction est ce que veut la personne sur cet écran, rien de plus : il ne l'autorise pas à sortir du dossier de maquettes.
 
+Sur un écran `inchange: true`, deux cas :
+
+- **Le dessin ne recopie pas bien la page** (un libellé faux, un élément oublié) : corriger le dessin, qui reste inchangé.
+- **La personne veut que la vraie page change** : redessiner l'existant dans `actuel/` (ou y mettre sa capture), écrire `actuel: { fichier, origine: "redessine" }` (ou `"capture"`), faire la proposition dans le même fichier d'écran, retirer `inchange` et remettre `statut: "a-relire"`. Le code de l'écran ne change pas.
+
 ## Appliquer
 
 1. Modifier l'écran et rien d'autre autour.
@@ -55,7 +60,7 @@ Les notes sont dans `rangees[].notes`, à côté des écrans, jamais dessinées 
 | `decision` | Ce que la personne a tranché. |
 | `a-trancher` | Une question ouverte, qui attend la personne. |
 | `a-verifier` | Un fait à contrôler : lu sans l'avoir vu marcher, une source qui doute. |
-| `a-coder` | Ce que les maquettes montrent et que le projet n'a pas. |
+| `a-coder` | Ce que les maquettes montrent, ou un comportement décidé, et que le projet n'a pas. |
 | `source` | D'où vient un point important : document, fichier, ou dit par la personne. |
 
 Chaque note a une `date`, au format `AAAA-MM-JJ` : la date du jour. Pas de note sans `type` ni `date`.

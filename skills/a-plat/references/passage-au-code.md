@@ -17,7 +17,7 @@ Date : <AAAA-MM-JJ>. <n> écrans validés sur <m>.
 Les maquettes s'ouvrent avec index.html. Chaque écran est un vrai fichier HTML, à prendre comme référence.
 
 ## Écrans validés
-| Code | Écran | Fichier | Page du projet concernée |
+| Code | Écran (« inchangé » s'il l'est) | Fichier | Page du projet concernée |
 
 ## Écrans encore à relire
 | Code | Écran | Fichier |
@@ -32,7 +32,7 @@ Les maquettes s'ouvrent avec index.html. Chaque écran est un vrai fichier HTML,
 - <notes a-verifier, et lignes de l'état des lieux où aConfirmer vaut true>
 
 ## À coder
-- <notes a-coder et différences entre l'actuel et la proposition>, avec le code de l'écran et le fichier du projet à toucher (`source`).
+- <notes a-coder et différences entre l'actuel et la proposition>, avec le code de l'écran et le fichier du projet à toucher (`source`). Un écran inchangé n'a rien à coder, sauf ses notes `a-coder`.
 
 ## Pages qui manquent encore
 - <lignes manque ou prevue, sans écran, avec leur source>

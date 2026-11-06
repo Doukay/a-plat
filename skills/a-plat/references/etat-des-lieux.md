@@ -19,7 +19,7 @@ La liste des pages, chacune avec un état et une courte raison. La personne la v
 | Bouton qui ne mène nulle part | La page qui porte le bouton passe en `a-completer` ; si le bouton vise une page absente, une ligne `manque` en plus. |
 | Parcours incomplet | Une ligne `manque` pour l'étape absente, ou `a-completer` si l'étape existe sans sa suite. |
 | Tâche d'un rôle, donnée par les documents, sans écran ni action | La page de ce rôle passe en `a-completer`, la tâche dans la raison ; une ligne `manque` si le rôle n'a aucune page. |
-| Annoncé mais pas construit | Une ligne `manque`, même si ce n'est pas une page : la `source` est le document qui l'annonce. |
+| Annoncé mais pas construit | Une page ou une vue : une ligne `manque`, la `source` est le document qui l'annonce. Un comportement (un envoi, une redirection, un calcul) : la page d'où il part passe en `a-completer`, le manque dans la raison, sans ligne à lui. |
 | Décidé pour plus tard | Une ligne `prevue`. |
 | Choix écarté exprès | Aucune ligne. |
 | Idée de Claude que rien dans le projet n'annonce ni n'exige | Aucune ligne. |
@@ -28,7 +28,8 @@ Une page peut porter plusieurs manques : une seule ligne par page, les manques d
 
 ## Remplir une ligne
 
-- `page` : le nom que le projet lui donne, sinon un nom simple.
+- `page` : le nom que le projet lui donne, sinon un nom simple. Une page à onglets, à fiches ouvertes depuis une liste, à fenêtres ou à étapes a une ligne par vue qui montre autre chose, nommée « Page › vue » (« Réglages › Sécurité »). Une vue qui ne fait que répéter la page avec d'autres données n'en a pas.
+- Un comportement sans écran à lui (une redirection, un envoi, un calcul) n'est pas une ligne. S'il manque ou reste à décider, il va dans la raison de la page d'où il part.
 - `groupe` : un regroupement par parcours ou par usage, dans l'ordre où on s'en sert.
 - `raison` : ce qui a été constaté, en phrases simples. Pas de conseil ni de solution : « Le bouton Partager n'a aucun effet », pas « il faudrait ajouter le partage ».
 - `source` : le fichier d'où vient l'affirmation, avec la ligne si elle aide ; deux sources si deux fichiers se contredisent. Pour une idée : « dit par la personne ».
@@ -57,10 +58,10 @@ Le montrer dans la conversation aussi, sans renvoyer seulement à la page, et da
 
 **Écarté exprès, donc pas compté :** <une ligne, si les documents en parlent>.
 
-**Questions :**
-1. <manque, en une phrase> : à dessiner, à laisser de côté, ou à garder comme question ?
-2. …
-3. Pages à compléter : lesquelles voulez-vous voir dessinées avec ce qui leur manque ? Toutes, certaines (lesquelles), ou aucune pour l'instant ?
+**À trancher plus tard, sans urgence :**
+- <manque, en une phrase> : à dessiner, à laisser de côté, ou à garder en suspens.
+- …
+- Si vous ne dites rien sur ces points, les pages à compléter seront dessinées avec ce qui leur manque, sur la page elle-même, et les manques resteront en suspens.
 
 La liste est aussi dans <dossier>/index.html, à ouvrir d'un double-clic.
 
@@ -69,7 +70,8 @@ Cette liste vous convient, ou voulez-vous corriger quelque chose ?
 
 - Le compte se fait sur les lignes du tableau montré, les mêmes que dans `plan.js` : recompter avant d'envoyer, en reprise aussi, et chaque nombre du message doit tomber juste sur ce tableau.
 - Toutes les lignes sont dans le tableau, sans « etc. ».
-- Une question par manque, ou par groupe de manques qui se décident ensemble.
+- Un point à trancher par manque, ou par groupe de manques qui se décident ensemble, écrit comme une phrase, pas comme une question. Le message ne pose qu'une question, la dernière : la personne répond aux points qu'elle veut, quand elle veut.
+- Ce que couvre « si vous ne dites rien » : seulement l'élément qui manque, dessiné sur la page elle-même. Un écran de plus (un état vide, une erreur) se propose toujours d'abord en une ligne (voir `references/ecrans.md`).
 
 ## Reprendre des maquettes
 
@@ -80,7 +82,7 @@ Comparer la nouvelle lecture avec `etatDesLieux` et les écrans, puis commencer 
 - <page> : <ancien état> → <nouvel état>, parce que <constat> (<source>).
 - Nouveau dans le projet : …
 - N'existe plus : …
-- Écrans déjà validés touchés par ces changements : <codes>. Ils ne sont pas modifiés : à vous de dire.
+- Écrans déjà validés, ou marqués « Inchangé », touchés par ces changements : <codes>. Ils ne sont pas modifiés : à vous de dire.
 ```
 
 S'il n'y a rien de changé, le dire. Ne pas renuméroter, et garder notes et statuts. Une ligne dont l'état change garde sa place, et l'ancien état se note dans une note de type `source` de sa rangée, si la page a déjà une rangée. Une ligne dont la `raison` finit par « Laissé de côté par la personne le … » garde cette phrase et sa date : ne pas reposer la question, ne pas la retirer.

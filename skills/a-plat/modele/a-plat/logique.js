@@ -125,6 +125,12 @@
       } else {
         fichiers[ecran.fichier] = estTexte(ecran.code) ? ecran.code : "ecrans[" + i + "]";
       }
+      // inchange: true dit qu'aucun changement n'est proposé : le dessin est l'existant, seul.
+      if (ecran.inchange !== undefined && typeof ecran.inchange !== "boolean") {
+        erreurs.push(nom + " a un inchange " + montrer(ecran.inchange) + " qui n'est pas permis (inchange : true ou false).");
+      } else if (ecran.inchange === true && ecran.actuel !== null && ecran.actuel !== undefined) {
+        erreurs.push(nom + " a inchange: true et un actuel : un écran inchangé n'a pas d'actuel à côté (actuel: null).");
+      }
       if (estObjet(ecran.actuel) && estTexte(ecran.actuel.fichier) && !fichierSur(ecran.actuel.fichier)) {
         erreurs.push(nom + " a un actuel.fichier " + montrer(ecran.actuel.fichier) + " refusé : " + regleDuFichier("actuel"));
       }

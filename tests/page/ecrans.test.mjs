@@ -217,6 +217,21 @@ test("sans actuel, la proposition est seule", async () => {
   });
 });
 
+test("un écran inchange: true est seul, étiqueté « Existant, sans changement proposé », et marqué « Inchangé » partout", async () => {
+  const dossier = genererFixture({
+    plan: planDe([{ code: "A1", titre: "Réglages", fichier: "A1.html", inchange: true }]),
+    ecrans: { "A1.html": ecranHtml("A1", "<h1>Réglages</h1>") }
+  });
+  await avecPage(dossier, { adresse: "ecran/A1", largeur: 1320 }, async ({ page }) => {
+    assert.equal(await page.locator(".volet").count(), 1);
+    assert.equal(espaces(await page.locator(".volet-proposition .volet-titre").innerText()), "Existant, sans changement proposé");
+    assert.equal(espaces(await page.locator(".ecran-entete .badge-inchange").innerText()), "Inchangé");
+  });
+  await avecPage(dossier, { adresse: "ensemble", largeur: 1320 }, async ({ page }) => {
+    assert.equal(espaces(await page.locator(".vignette .badge-inchange").innerText()), "Inchangé");
+  });
+});
+
 test("le code de l'écran est du texte visible et sélectionnable, avec son titre", async () => {
   await avecPage("complet", { adresse: "ecran/A2" }, async ({ page }) => {
     const code = page.locator("#vue .ecran-code");
