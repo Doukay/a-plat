@@ -5,10 +5,11 @@ Le projet d'essai est `exemples/pretoutil/`, un site inventé de prêt d'outils 
 
 ## En bref
 
-- **Compte :** 17 manques trouvés sur 17. Aucun manque raté, aucune invention, et les 3 fausses pistes sont tombées.
-- **Ce qui a bloqué :** la copie du modèle de page. Claude Code la classe comme une modification de fichier sensible, parce que le modèle est rangé dans le dossier `skills/` du plugin. Sans une personne pour accepter la demande, elle est refusée.
+- **Compte :** 17 manques trouvés sur 17. Aucun manque raté, aucune invention, et les 3 fausses pistes sont tombées. Le même compte sort d'un second essai fait après les corrections.
+- **Limite de ce compte, à lire avant le chiffre :** c'est une note sur le projet qui a servi à mettre la méthode au point. La tâche 7 a fait 7 passes d'essai sur ce même projet, et ses pièges sont décrits dans le plan de construction. Ce score ne dit pas ce que donne la méthode sur un projet qu'elle n'a jamais vu.
+- **Ce qui a bloqué :** la copie du modèle de page. Claude Code la classe comme une modification de fichier sensible, parce que le modèle est rangé dans le dossier `skills/` du plugin. Sans une personne pour accepter la demande, elle est refusée. **Corrigé depuis :** la copie passe par un script du plugin, qui tourne sans aucune demande (voir « Après correction »).
 - **Les autres étapes ont marché :** l'idée seule, la reprise, le dossier `maquettes/` étranger, les corrections par la page, « B1 validé », le passage au code et les 16 valeurs de réglage.
-- **Défauts de conduite vus :**
+- **Défauts de conduite vus au premier essai** (chacun a reçu une règle depuis, voir « Après correction ») :
   - les commandes de copie sont enchaînées ou modifiées ;
   - en cas d'échec, Claude propose une commande de copie qui prendrait aussi le `plan.js` vide du modèle ;
   - il pose parfois deux questions dans le même message ;
@@ -121,7 +122,7 @@ L'état des lieux du tour 1 de l'étape 1, comparé au fichier de réponses.
 | M9 Signaler un problème | oui | Fiche d'un outil : « « Signaler un problème » n'a aucun effet. » |
 | M10 Prolonger | oui | Mes prêts : « « Prolonger de 3 jours » ne fait qu'écrire dans la console : la date ne change pas » |
 | M11 Inviter un voisin | oui | Les voisins : « Le bouton « Inviter un voisin » mène à `#` : il ne fait rien. » |
-| M12 Réponse du prêteur | oui | Côté prêteur (manque) : « Le prêteur ne peut ni accepter, ni refuser, ni marquer « en cours » ou « rendu ». » |
+| M12 Réponse du prêteur | oui | Côté prêteur (manque) : « Le prêteur ne peut ni accepter, ni refuser, ni marquer « en cours » ou « rendu ». L'état « refusé » n'existe pas non plus. » La seconde phrase fait partie de ce même manque : sans réponse du prêteur, il n'y a pas de refus. |
 | M13 Outil proposé invisible | oui | Proposer un outil : « L'outil proposé est gardé mais n'apparaît nulle part. » Accueil : « Les outils proposés par les voisins (`outilsAjoutes`) ne sont jamais lus. » |
 | M14 Retour après connexion | oui | Connexion : « Après la connexion, on arrive toujours sur l'accueil : l'adresse `?retour=` posée par les autres pages n'est jamais lue. » |
 | M15 Noter un voisin | oui | Noter un voisin (manque) : « Note de 1 à 5 après un prêt, et moyenne affichée sur le profil : rien n'est construit. » |
@@ -139,18 +140,17 @@ L'état des lieux du tour 1 de l'étape 1, comparé au fichier de réponses.
 **Le reste :**
 
 - **Cas toléré :** la messagerie, citée seulement comme choix écarté.
-- **Autres défauts réels, comptés à part :** deux constats qui ne sont pas dans le fichier de réponses, et que j'ai vérifiés dans le code.
-  - « « si personne d'autre n'attend » n'est pas vérifié » : les notes produit l'annoncent pour la prolongation, et la fonction `prolonger` ne regarde rien.
-  - « L'état « refusé » n'existe pas non plus » : les notes disent que le prêteur peut refuser, et la liste des états n'a pas de refus.
+- **Autre défaut réel, compté à part :** un constat qui n'est pas dans le fichier de réponses, et que j'ai vérifié dans le code. « « si personne d'autre n'attend » n'est pas vérifié » : les notes produit l'annoncent pour la prolongation, et la fonction `prolonger` ne regarde rien.
 - **Liste « Autres défauts réels » du fichier de réponses :** aucun de ses 4 points n'est dans l'état des lieux. Le « 14 jours » écrit en dur dans la page de demande a été relevé plus tard, en dessinant la demande, à l'étape 6.
-- **Inventions :** aucune.
+- **Inventions :** aucune, d'après mon seul jugement. Personne d'autre n'a refait le compte, et le texte entier de cet état des lieux n'a pas été gardé : seules les citations ci-dessus restent. Celui du second essai, plus bas, est gardé en entier dans le rapport de la tâche.
 - **Petites erreurs de source :** une ligne décalée (`docs/notes-produit.md:30` au lieu de 29, corrigée par Claude lui-même à la reprise). Une source vers l'intitulé d'une section plutôt que vers la phrase.
+- **`plan.js` et le message :** `plan.js` a été écrit au tour 4, une fois la copie faite. Je l'ai relu à ce moment-là : mêmes 13 pages, mêmes états, mêmes raisons et mêmes sources que le message du tour 1. La comparaison est faite à l'œil, sans outil de différence.
 
 **Résultat :** 17 trouvés, 0 raté, 0 invention, 3 fausses pistes tombées sur 3.
 
-Il fallait refaire l'essai si plus d'un tiers des manques étaient ratés, soit 6 ou plus. Aucun ne l'est : `references/lire-un-projet.md` n'a pas été changé, et il n'y a pas de second compte.
+Il fallait refaire l'essai si plus d'un tiers des manques étaient ratés, soit 6 ou plus. Aucun ne l'est : `references/lire-un-projet.md` n'a pas été changé.
 
-**Limite de ce compte :** `lire-un-projet.md` a été mis au point pendant la tâche 7, sur ce même projet d'essai, sans le fichier de réponses. Un 17 sur 17 ici ne prouve donc pas la même justesse sur un projet que l'outil n'a jamais vu. Le compte a été fait par une seule personne, qui avait le fichier de réponses sous les yeux.
+**Limite de ce compte :** `lire-un-projet.md` a été mis au point pendant la tâche 7, avec 7 passes d'essai sur ce même projet et sans le fichier de réponses. Les pièges du projet sont décrits dans le plan de construction. Un 17 sur 17 ici ne prouve donc pas la même justesse sur un projet que l'outil n'a jamais vu.
 
 ## Étape 3 : une simple idée
 
@@ -239,21 +239,74 @@ Toujours sous Edge, avec Playwright, en ouvrant `index.html` directement depuis 
   - une ligne de l'état des lieux par page, avec sa source.
 - **Piège des captures :** une capture de toute la page montre blancs les cadres d'écran situés plus bas que la fenêtre (proposition à 390 px, vignettes de la rangée B). Une fois le cadre amené dans la fenêtre, il est bien rempli : j'ai vérifié son texte et sa capture pour A1, B1 et C1. Je n'ai pas vérifié si une personne qui fait défiler la page voit un blanc avant le remplissage.
 
+## Après correction : la copie par un script
+
+Les corrections tirées des essais ci-dessus :
+
+- **La copie :** elle passe par un script du plugin, `node "<skill>/copier.mjs" "<dossier>"`.
+  - Il crée le dossier et copie la page et son moteur.
+  - Il ne remplace jamais un fichier déjà là, et il dit ce qu'il a gardé.
+  - Il refuse un dossier qui n'est pas à l'outil.
+- **Le modèle de plan :** il s'appelle désormais `plan.exemple.js` et ne se copie jamais.
+- **Sans Node :** Claude lit chaque fichier du modèle et l'écrit lui-même, sans rien écraser. Le skill ne donne plus aucune commande `cp` ni `Copy-Item`, et interdit d'en proposer une autre.
+- **Les autres règles :**
+  - pour un dossier de la personne, seul un nouveau dossier est proposé ;
+  - pour l'idée, une seule question et un seul point d'interrogation par message ;
+  - un écran non demandé se propose avant d'être ajouté ;
+  - les prénoms changent d'un projet à l'autre ;
+  - changer le rangement met à jour les rangées, et les codes restent.
+
+Quatre essais ont suivi, sans gestionnaire de demandes, et toute demande d'autorisation était refusée et notée (`--permission-prompts none`). Les outils permis étaient les mêmes que plus haut, sans `cp` ni `mkdir`. Il y a eu 8 tours en Sonnet, pour 2,05 $ en tout.
+
+| Essai | Ce qui a été fait | Ce qui s'est passé | Coût |
+|---|---|---|---|
+| (a) Première fois, avec Node | Copie neuve du projet, puis `/a-plat`. Outils : `Read Glob Grep Edit Write`, `Bash(node:*)` et `Bash(ls:*)`. | En un tour, la copie se fait par `copier.mjs` sans **aucune** demande d'autorisation (liste des refus vide), et donc sans message « sensitive file ». Le script dit « Copie terminée : 8 fichiers copiés ». `plan.js` est écrit, et le contrôle passe. | 0,35 $ |
+| (b) Sans Node | Même chose, avec `Bash(node:*)` et PowerShell interdits. | Tour 1 : la commande `node` est refusée, et Claude pose la question prévue. Tour 2 : la personne dit que Node n'est pas installé. Claude lit les 8 fichiers du modèle et les écrit lui-même : ils sont identiques au modèle, octet pour octet. Il le dit, ainsi que « le contrôle n'a pas tourné ». | 0,38 $ puis 0,98 $ |
+| (b) Second passage | Nouvelle conversation `/a-plat` sur le même dossier, toujours sans Node. | Reprise : « rien n'a changé ». Les 10 fichiers de `maquettes/`, dont `plan.js`, ont les mêmes empreintes SHA-1 qu'avant : rien n'est écrasé. | 0,22 $ |
+| (c) `maquettes/` de la personne | `photo.png` et `notes.txt`, sans `plan.js`. | « Dans quel nouveau dossier voulez-vous que j'écrive les maquettes ? Je vous propose `maquettes-a-plat/` ». Écrire dans `maquettes/` n'est plus proposé. Les deux fichiers sont intacts, et le projet n'est pas lu avant la réponse. | 0,06 $ |
+| (d) Une idée | Dossier vide, même phrase d'idée, 3 tours. | Un seul point d'interrogation par message, à chaque fois. Mais 2 messages sur 3 joignent deux questions dans une seule phrase, par exemple « qui va utiliser l'appli, et que fait cette personne en premier quand elle l'ouvre ? ». | 0,07 $ |
+
+**Second compte, sur l'état des lieux de (a) :**
+
+- **Manques :** 17 trouvés sur 17, avec des mots proches du premier essai. M2 et M13 sont même mieux séparés : la validation par le référent et l'espace du référent font deux lignes.
+- **Fausses pistes :** les 3 sont tombées.
+- **Inventions :** aucune.
+- **Autre défaut réel de la liste du fichier de réponses :** il est relevé cette fois. « `config.js` règle un envoi de courrier (expéditeur, clé dans `.env`), mais aucune page ne l'utilise. » Seul le nom du `.env` est cité.
+- **Cas toléré :** « le mot de passe n'est pas vérifié ».
+- **Petite liberté :** « 1 à 5 étoiles », alors que les notes disent seulement « de 1 à 5 ».
+- **`plan.js` :** il a les mêmes 15 lignes et les mêmes états que le message. La comparaison est faite sur les noms et les états des pages.
+- **Le texte entier :** il est gardé dans le rapport de la tâche, pas dans le dépôt.
+
+Le compte des manques ne change pas, et il garde la même limite.
+
+**Défauts encore vus :**
+
+- **Le compte d'une reprise est faux :** en (b), au second passage, le message annonce « 15 pages… 8 à compléter », alors que son tableau en a 14, dont 7 à compléter. `plan.js` n'a pas été réécrit et garde les bons chiffres.
+- **Sans Node, deux écarts :**
+  - Claude a ajouté un fichier vide `ecrans/.gitkeep`, pour que le dossier `ecrans/` existe, et il l'a dit ;
+  - il n'a pas créé `actuel/`.
+- **La règle de la question unique :** elle est tenue à la lettre, avec un seul point d'interrogation, mais pas toujours dans l'esprit, puisque deux questions peuvent tenir dans une seule phrase.
+
 ## Coût total
 
-Environ 2,99 $ :
+Environ 5,04 $ :
 
 - étapes 1 et 6, une seule conversation : 2,29 $ ;
 - étape 3 : 0,31 $ ;
 - étape 4 : 0,30 $ ;
 - étape 5 : 0,08 $ ;
-- sondes d'autorisation : 0,02 $.
+- sondes d'autorisation : 0,02 $ ;
+- essais après correction : 2,05 $.
 
-Il y a eu 20 tours en Sonnet et 5 sondes en Haiku.
+Il y a eu 28 tours en Sonnet et 5 sondes en Haiku.
 
 ## Pas vérifié
 
 - **La demande d'autorisation en vrai :** son texte, le nombre de demandes et ce qui se passe quand on l'accepte, dans le terminal ou dans l'application de bureau. Le gestionnaire de l'essai remplace la personne.
+- **Ce que le gestionnaire a refusé :** des commandes qu'une vraie personne aurait peut-être acceptées, comme la commande PowerShell composée de l'étape 3 ou la copie suivie de `&& ls -R`. Le nombre de demandes vu ici n'est donc pas celui qu'une personne verrait.
+- **Le texte de la vraie demande :** il présente la copie comme la **modification d'un fichier sensible** du plugin. Une personne pourrait refuser une demande ainsi formulée. Ce point ne vaut plus pour `copier.mjs`, qui n'a déclenché aucune demande en (a).
+- **La forme PowerShell du skill :** elle n'a jamais été essayée telle quelle. Elle est retirée depuis.
+- **`copier.mjs` lancé par PowerShell :** il n'a pas été essayé. Il a été lancé par l'outil Bash seulement, et par les tests.
 - **Le cas où l'outil est installé** avec `/plugin install`, son modèle rangé dans le dossier de configuration de Claude Code : seule une copie chargée par `--plugin-dir` a été essayée.
 - **Le vrai presse-papiers :** il a été remplacé par un faux pendant l'essai de « Copier pour Claude ».
 - **Le rendu vu par Claude lui-même :** l'essai n'avait pas de navigateur à lui donner, et il a écrit chaque fois « je n'ai pas vu le rendu ».
