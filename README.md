@@ -70,7 +70,7 @@ Il y a deux façons, et vous choisissez.
   ```text
   B3 : change le titre
   ```
-- **Depuis la page.** En mode Corriger, touchez un élément : un champ s'ouvre, déjà situé (« B3 > Bouton Envoyer »). Écrivez ce que vous voulez, puis « Ajouter ». Le bouton **Copier pour Claude** copie toutes vos corrections dans le presse-papiers (la mémoire de votre appareil pour copier-coller). Collez-les dans la conversation. Si votre navigateur refuse la copie, le texte s'affiche dans un champ déjà sélectionné. C'est une aide, pas une obligation.
+- **Depuis la page.** En mode Corriger, touchez un élément : un champ s'ouvre, déjà situé (« B3 > Bouton Envoyer »). Écrivez ce que vous voulez, puis « Ajouter ». Le bouton **Copier pour Claude** copie toutes vos corrections dans le presse-papiers (la mémoire de votre appareil pour copier-coller). Collez-les dans la conversation. Les corrections copiées restent listées dans la page : une fois appliquées par Claude, videz la liste avec « Tout retirer ». Si votre navigateur refuse la copie, le texte s'affiche dans un champ déjà sélectionné. C'est une aide, pas une obligation.
 
 Pour valider un écran, dites-le de la même façon : « B3 validé ». Claude ne valide jamais à votre place.
 

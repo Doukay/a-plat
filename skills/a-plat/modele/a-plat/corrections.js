@@ -258,7 +258,8 @@
 
     function reussi() {
       if (depuis === panneau) {
-        direDansLePanneau("Corrections copiées. Collez-les maintenant dans la conversation avec Claude.");
+        direDansLePanneau("Corrections copiées. Collez-les maintenant dans la conversation avec Claude. " +
+          "Une fois appliquées par Claude, videz la liste avec « Tout retirer ».");
       }
     }
     function refuse() {

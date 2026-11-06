@@ -57,6 +57,7 @@ test("le README dit comment corriger, avec les deux façons et la validation", (
   assert.match(texte, /B3 : /);
   assert.match(texte, /Copier pour Claude/);
   assert.match(texte, /B3 validé/);
+  assert.match(texte, /une fois appliquées par Claude, videz la liste avec « Tout retirer »\./i);
 });
 
 test("le README dit que l'outil n'envoie rien et ne fait pas ce qu'il ne doit pas faire", () => {

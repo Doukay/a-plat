@@ -244,6 +244,8 @@ test("« Copier pour Claude » met le texte de texteCorrections dans le presse-p
     assert.match(etat, /copiées/);
     assert.match(etat, /[Cc]ollez/);
     assert.match(etat, /conversation/);
+    assert.ok(etat.includes("Une fois appliquées par Claude, videz la liste avec « Tout retirer »."), etat);
+    assert.equal(await page.locator(".corrections-liste li").count(), 2, "les corrections copiées restent listées");
     assert.equal(await page.locator(".corrections-secours").count(), 0, "pas de champ de secours quand la copie a marché");
   });
 });
