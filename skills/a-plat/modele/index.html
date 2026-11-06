@@ -10,15 +10,24 @@
 </head>
 <body>
 <header class="barre">
-  <div class="titre">
-    <span class="marque">À plat</span>
-    <h1 id="projet"></h1>
+  <h1 class="pour-lecteur" id="projet"></h1>
+  <div class="barre-gauche">
+    <a class="remonter" id="remonter" hidden><span aria-hidden="true">←</span></a>
+    <nav class="fil" aria-label="Où je suis"><ol id="fil"></ol></nav>
   </div>
-  <nav aria-label="Vues">
-    <a href="#etat" data-vue="etat">État des lieux</a>
-    <a href="#ensemble" data-vue="ensemble">Vue d'ensemble</a>
-    <a href="#ecran" data-vue="ecran">Écrans</a>
-  </nav>
+  <div class="recherche" role="search">
+    <input id="recherche" type="search" placeholder="Chercher un écran" autocomplete="off" spellcheck="false"
+      role="combobox" aria-label="Chercher un écran, par son code ou un mot de son titre" aria-autocomplete="list"
+      aria-expanded="false" aria-controls="resultats">
+    <kbd class="recherche-touche" aria-hidden="true">/</kbd>
+    <ul class="resultats" id="resultats" role="listbox" aria-label="Écrans trouvés" hidden></ul>
+  </div>
+  <div class="barre-droite">
+    <nav class="barre-vues" aria-label="Vues">
+      <a href="#etat" data-vue="etat">État des lieux</a>
+      <a href="#ensemble" data-vue="ensemble">Vue d'ensemble</a>
+    </nav>
+  </div>
 </header>
 <main id="vue">
   <noscript><p>Cette page a besoin de JavaScript pour s'afficher. Ouvrez-la dans un navigateur où JavaScript est autorisé.</p></noscript>

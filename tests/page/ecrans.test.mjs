@@ -53,46 +53,60 @@ const planDe = (ecrans, rangees = [{ id: "A", titre: "Rangée A", notes: [] }]) 
 });
 
 // ---------------------------------------------------------------- la vue d'ensemble
+// Sur ordinateur, c'est la planche (zoom et déplacement : voir niveaux.test.mjs) ; sur téléphone,
+// une colonne. Les deux montrent les mêmes rangées, dans le même ordre, avec les mêmes liens.
 
 for (const largeur of [390, 1320]) {
-  test(`à ${largeur} px, #ensemble montre une rangée par rangée du plan, dans l'ordre, avec les codes et les titres`, async () => {
+  test(`à ${largeur} px, #ensemble montre les rangées qui ont des écrans ou des notes, dans l'ordre, avec les codes et les titres`, async () => {
     await avecPage("ecrans-variantes", { adresse: "ensemble", largeur, hauteur: 900 }, async ({ page }) => {
       const rangees = page.locator("#vue .rangee");
-      assert.equal(await rangees.count(), 3);
-      const titres = (await page.locator("#vue .rangee-titre").allInnerTexts()).map(espaces);
-      assert.deepEqual(titres, ["A Trouver un outil", "B Prêter un outil", "C Mon compte"]);
+      // C n'a ni écran ni note : elle n'apparaît pas.
+      assert.deepEqual(await rangees.evaluateAll((els) => els.map((el) => el.dataset.rangee)), ["A", "B"]);
+      const liens = page.locator("#vue .rangee-titre a");
+      assert.deepEqual((await liens.allInnerTexts()).map(espaces), ["A Trouver un outil", "B Prêter un outil"]);
+      assert.deepEqual(await liens.evaluateAll((els) => els.map((el) => el.getAttribute("href"))), ["#rangee/A", "#rangee/B"]);
+      assert.deepEqual((await page.locator("#vue .rangee-compte").allInnerTexts()).map(espaces), ["2 écrans", "1 écran"]);
       const codesA = await rangees.nth(0).locator(".vignette-code").allInnerTexts();
       assert.deepEqual(codesA.map(espaces), ["A1", "A2"]);
       assert.deepEqual((await rangees.nth(0).locator(".vignette-titre").allInnerTexts()).map(espaces), ["Accueil", "Fiche d'un outil"]);
       assert.deepEqual((await rangees.nth(1).locator(".vignette-code").allInnerTexts()).map(espaces), ["B1"]);
-      assert.equal(await page.locator('nav a[aria-current="page"]').innerText(), "Vue d'ensemble");
+      assert.equal(await page.locator('.barre-vues a[aria-current="page"]').innerText(), "Vue d'ensemble");
     });
   });
 }
 
-test("les notes sont au bout de leur rangée, hors des écrans et hors des cadres", async () => {
+test("les notes de toute la rangée sont sous son titre, avant les écrans ; celles d'un écran sont sous cet écran", async () => {
   for (const largeur of [390, 1320]) {
     await avecPage("ecrans-variantes", { adresse: "ensemble", largeur, hauteur: 900 }, async ({ page }) => {
       const rangee = page.locator('#vue .rangee[data-rangee="A"]');
-      assert.equal(await rangee.locator(".ecrans-ligne .notes").count(), 0, "les notes ne sont pas dans la ligne des écrans");
-      assert.equal(await rangee.locator("iframe .note, .cadre-boite .note").count(), 0);
-      const notes = await rangee.locator(".notes").boundingBox();
-      for (const vignette of await rangee.locator(".vignette").all()) {
-        assert.ok(!recouvre(notes, await vignette.boundingBox()), `à ${largeur} px, les notes recouvrent un écran`);
-      }
-      // Dans l'ordre du document, les notes viennent après les écrans.
-      const apres = await rangee.evaluate((el) => {
-        const ligne = el.querySelector(".ecrans-ligne");
-        const notes = el.querySelector(".notes");
-        return Boolean(ligne.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING);
+      const generales = rangee.locator(".notes-generales .note");
+      assert.deepEqual((await generales.locator(".note-type").allTextContents()).map(espaces), ["À trancher", "À vérifier", "Source"]);
+      const notesDe = (code) => rangee.locator(`.vignette[data-code="${code}"] .note .note-type`).allTextContents();
+      assert.deepEqual((await notesDe("A1")).map(espaces), ["À coder"]);
+      assert.deepEqual((await notesDe("A2")).map(espaces), ["Décision", "À coder"], "une note qui cite deux écrans est sous chacun d'eux");
+      // Rien après les écrans : plus de notes au bout de la rangée.
+      const ordre = await rangee.evaluate((el) => {
+        const titre = el.querySelector(".rangee-titre");
+        const notes = el.querySelector(".notes-generales");
+        const premier = el.querySelector(".vignette");
+        const suit = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+        return { titrePuisNotes: suit(titre, notes), notesPuisEcrans: suit(notes, premier), dernier: el.lastElementChild.className };
       });
-      assert.ok(apres);
+      assert.ok(ordre.titrePuisNotes && ordre.notesPuisEcrans);
+      assert.doesNotMatch(ordre.dernier, /notes/);
       if (largeur === 1320) {
-        const ligne = await rangee.locator(".ecrans-ligne").boundingBox();
-        assert.ok(notes.x >= ligne.x + ligne.width - 1, "à 1320 px, les notes sont à droite des écrans");
+        // Sur la planche, les notes de l'écran sont dessous, à sa largeur, sans recouvrir aucun écran.
+        const ecran = await rangee.locator('.vignette[data-code="A2"] .cadre-boite').boundingBox();
+        const notes = await rangee.locator('.vignette[data-code="A2"] .notes-ecran').boundingBox();
+        assert.ok(notes.y >= ecran.y + ecran.height - 1, "les notes sont sous l'écran");
+        assert.ok(Math.abs(notes.width - ecran.width) < 1, `à la largeur de l'écran : ${notes.width} pour ${ecran.width}`);
+        for (const autre of await rangee.locator(".cadre-boite").all()) assert.ok(!recouvre(notes, await autre.boundingBox()));
       } else {
-        const ligne = await rangee.locator(".ecrans-ligne").boundingBox();
-        assert.ok(notes.y >= ligne.y + ligne.height - 1, "à 390 px, les notes sont sous les écrans");
+        // Sur téléphone, elles sont repliées sous « n notes ».
+        const repli = rangee.locator('.vignette[data-code="A2"] details.notes-repliees');
+        assert.equal(espaces(await repli.locator("summary").innerText()), "2 notes");
+        assert.equal(await repli.evaluate((el) => el.open), false);
+        assert.equal(espaces(await rangee.locator(".notes-generales > summary").innerText()), "3 notes");
       }
     });
   }
@@ -100,37 +114,55 @@ test("les notes sont au bout de leur rangée, hors des écrans et hors des cadre
 
 test("chaque note montre son type en toutes lettres, sa date telle qu'écrite et son ancienne valeur barrée", async () => {
   await avecPage("ecrans-variantes", { adresse: "ensemble" }, async ({ page }) => {
-    const notes = page.locator('#vue .rangee[data-rangee="A"] .note');
-    assert.equal(await notes.count(), 5);
-    const types = (await notes.locator(".note-type").allInnerTexts()).map(espaces);
-    assert.deepEqual(types, ["Décision", "À trancher", "À vérifier", "À coder", "Source"]);
-    const dates = (await notes.locator(".note-date").allInnerTexts()).map(espaces);
-    assert.deepEqual(dates, ["2026-11-04", "2026-11-03", "2026-11-02", "2026-11-01", "2026-10-30"]);
-    const premiere = notes.nth(0);
+    const rangee = page.locator('#vue .rangee[data-rangee="A"]');
+    // 3 notes de la rangée, 1 sous A1, 2 sous A2 (la note qui cite A1 et A2 est montrée deux fois).
+    assert.equal(await rangee.locator(".note").count(), 6);
+    const types = new Set((await rangee.locator(".note-type").allInnerTexts()).map(espaces));
+    assert.deepEqual([...types].sort(), ["Décision", "Source", "À coder", "À trancher", "À vérifier"].sort());
+    const premiere = rangee.locator('.vignette[data-code="A2"] .note').nth(0);
+    assert.equal(espaces(await premiere.locator(".note-date").innerText()), "2026-11-04");
     assert.equal(espaces(await premiere.locator("s").innerText()), "Caution de 20 €");
     assert.equal(await premiere.locator("s").evaluate((s) => getComputedStyle(s).textDecorationLine), "line-through");
     assert.match(espaces(await premiere.locator(".note-texte").innerText()), /^Caution de 20 € Caution retirée\.$/, "l'ancienne valeur, puis le nouveau texte");
-    assert.equal(await notes.nth(1).locator("s").count(), 0, "pas de barré sans ancienne valeur");
-    assert.match(await notes.nth(1).innerText(), /Durée maximale du prêt à choisir\./);
+    const generale = rangee.locator(".notes-generales .note").nth(0);
+    assert.equal(await generale.locator("s").count(), 0, "pas de barré sans ancienne valeur");
+    assert.match(await generale.innerText(), /Durée maximale du prêt à choisir\./);
+    assert.equal(espaces(await generale.locator(".note-date").innerText()), "2026-11-03");
   });
 });
 
-test("une rangée sans écran le dit en une phrase, et un plan sans écran aussi", async () => {
+test("une rangée sans écran ni note n'apparaît pas, une rangée de notes seules oui, et un plan sans écran garde son message", async () => {
   await avecPage("ecrans-variantes", { adresse: "ensemble" }, async ({ page }) => {
-    const rangeeC = page.locator('#vue .rangee[data-rangee="C"]');
-    assert.match(await rangeeC.innerText(), /Aucun écran dans cette rangée\./);
-    assert.equal(await rangeeC.locator(".vignette").count(), 0);
-    assert.doesNotMatch(await texte(page, '#vue .rangee[data-rangee="A"]'), /Aucun écran dans cette rangée/);
+    assert.equal(await page.locator('#vue .rangee[data-rangee="C"]').count(), 0);
+    assert.doesNotMatch(await texte(page, "#vue"), /Mon compte/);
   });
-  await avecPage("plans-pieges/ecrans-vides", { adresse: "ensemble" }, async ({ page }) => {
-    const contenu = await texte(page, "#vue");
-    assert.match(contenu, /Aucun écran n'est encore dessiné/);
-    assert.match(contenu, /Demandez à Claude/);
-    assert.equal(await page.locator("#vue .vignette").count(), 0);
+  const dossier = genererFixture({
+    plan: planDe([{ code: "A1", titre: "Accueil", fichier: "A1.html" }], [
+      { id: "A", titre: "Rangée A", notes: [] },
+      { id: "B", titre: "Des notes seules", notes: [{ type: "a-trancher", date: "2026-11-06", texte: "Faut-il cette rangée ?" }] }
+    ]),
+    ecrans: { "A1.html": ecranHtml("A1", "<h1>Accueil</h1>") }
   });
+  for (const largeur of [390, 1320]) {
+    await avecPage(dossier, { adresse: "ensemble", largeur }, async ({ page }) => {
+      const rangeeB = page.locator('#vue .rangee[data-rangee="B"]');
+      assert.equal(espaces(await rangeeB.locator(".rangee-compte").innerText()), "Aucun écran");
+      assert.equal(await rangeeB.locator(".vignette").count(), 0);
+      assert.match(await rangeeB.locator(".notes-generales").textContent(), /Faut-il cette rangée \?/);
+    });
+  }
+  for (const largeur of [390, 1320]) {
+    await avecPage("plans-pieges/ecrans-vides", { adresse: "ensemble", largeur }, async ({ page }) => {
+      const contenu = await texte(page, "#vue");
+      assert.match(contenu, /Aucun écran n'est encore dessiné/);
+      assert.match(contenu, /Demandez à Claude/);
+      assert.equal(await page.locator("#vue .vignette").count(), 0);
+      assert.equal(await page.locator(".planche").count(), 0, "pas de planche vide");
+    });
+  }
 });
 
-test("une vignette est un vrai lien, avec un cadre réduit, sans toucher, paresseux et titré", async () => {
+test("sur la planche, un écran est un vrai lien, à sa vraie taille, sans toucher, paresseux et titré", async () => {
   await avecPage("ecrans-variantes", { adresse: "ensemble", largeur: 1320 }, async ({ page }) => {
     const vignette = page.locator('#vue .vignette[data-code="A2"]');
     const lien = vignette.locator("a.vignette-lien");
@@ -142,23 +174,37 @@ test("une vignette est un vrai lien, avec un cadre réduit, sans toucher, paress
     assert.match(await cadre.getAttribute("title"), /Fiche d'un outil/);
     assert.equal(await cadre.getAttribute("src"), "ecrans/A2-fiche.html");
     assert.equal(await cadre.evaluate((el) => getComputedStyle(el).pointerEvents), "none");
-    const echelle = await cadre.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
-    assert.ok(echelle > 0.2 && echelle < 0.6, `échelle inattendue : ${echelle}`);
-    const boite = await vignette.locator(".cadre-boite").boundingBox();
-    assert.ok(boite.height <= 420 && boite.width < 260, `vignette trop grande : ${boite.width} x ${boite.height}`);
-    assert.ok((await lien.boundingBox()).height >= 44, "cible tactile trop basse");
+    // Vraie taille dans la planche : 390 de large, au moins 844 de haut ; c'est la planche qui est réduite.
+    const taille = await vignette.locator(".cadre-boite").evaluate((el) => ({ l: el.offsetWidth, h: el.offsetHeight }));
+    assert.equal(taille.l, 390);
+    assert.ok(taille.h >= 844, `hauteur : ${taille.h}`);
+    assert.equal(await cadre.evaluate((el) => getComputedStyle(el).transform), "none");
+    const vue = await vignette.locator(".cadre-boite").boundingBox();
+    assert.ok(Math.abs(vue.width - 390 * 0.3) < 1, `à 30 % : ${vue.width}`);
   });
 });
 
-test("toucher une vignette ouvre l'écran seul", async () => {
+test("à 390 px, une vignette mesure 170 px de large, et elle est un vrai lien d'au moins 44 px", async () => {
+  await avecPage("ecrans-variantes", { adresse: "ensemble", largeur: 390, hauteur: 844 }, async ({ page }) => {
+    const vignette = page.locator('#vue .vignette[data-code="A2"]');
+    assert.equal(await vignette.locator("a.vignette-lien").getAttribute("href"), "#ecran/A2");
+    const boite = await vignette.locator(".cadre-boite").boundingBox();
+    assert.ok(Math.abs(boite.width - 170) < 1, `largeur : ${boite.width}`);
+    const echelle = await vignette.locator("iframe").evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
+    assert.ok(Math.abs(echelle - 170 / 390) < 0.001, `échelle : ${echelle}`);
+    assert.ok((await vignette.locator("a.vignette-lien").boundingBox()).height >= 44, "cible tactile trop basse");
+  });
+});
+
+test("toucher un écran de la vue d'ensemble ouvre l'écran seul", async () => {
   for (const largeur of [390, 1320]) {
     await avecPage("ecrans-variantes", { adresse: "ensemble", largeur }, async ({ page }) => {
-      // Le toucher tombe au milieu de la vignette, donc sur l'image : il doit quand même ouvrir l'écran.
+      // Le toucher tombe au milieu de l'image : il doit quand même ouvrir l'écran.
       await toucherLeMilieu(page, '#vue .vignette[data-code="A2"] .cadre-boite');
       assert.equal(await page.evaluate(() => location.hash), "#ecran/A2");
       // L'adresse change tout de suite, la page se redessine à l'événement qui suit : on l'attend.
       await page.waitForFunction(() => document.body.dataset.vue === "ecran");
-      assert.equal(await page.locator('nav a[aria-current="page"]').innerText(), "Écrans");
+      assert.equal(await page.locator('.fil [aria-current="page"]').innerText(), "A2");
       assert.equal(await page.locator("#vue .ecran-code").innerText(), "A2");
     });
   }
@@ -271,6 +317,7 @@ test("un code inconnu dit que l'écran n'existe pas et renvoie vers la vue d'ens
     assert.equal(await lien.getAttribute("href"), "#ensemble");
     await lien.click();
     assert.equal(await page.evaluate(() => location.hash), "#ensemble");
+    await page.waitForFunction(() => document.body.dataset.vue === "ensemble");
     assert.equal(await page.locator("#vue .rangee").count(), 2);
   });
 });
@@ -456,16 +503,16 @@ test("le style d'un écran ne change pas celui de la page, et la page ne change 
     const cadre = await cadreDe(page, "A2");
     await attendreMode(cadre, "corriger");
     const dansLaPage = await page.evaluate(() => {
-      const lien = document.querySelector("nav a:not([aria-current])");
+      const lien = document.querySelector(".barre-vues a:not([aria-current])");
       return {
-        h1: getComputedStyle(document.querySelector("h1#projet")).fontSize,
+        titre: getComputedStyle(document.querySelector("#vue h2.titre-de-vue")).fontSize,
         lien: getComputedStyle(lien).color,
-        champ: document.querySelectorAll("input").length
+        champ: document.querySelectorAll("#vue input").length
       };
     });
-    assert.equal(dansLaPage.h1, "19px");
-    assert.equal(dansLaPage.lien, "rgb(90, 100, 114)", "le « a[href] { color: inherit } » de l'écran n'atteint pas la page");
-    assert.equal(dansLaPage.champ, 0);
+    assert.equal(dansLaPage.titre, "23px");
+    assert.equal(dansLaPage.lien, "rgb(161, 161, 166)", "le « a[href] { color: inherit } » de l'écran n'atteint pas la barre");
+    assert.equal(dansLaPage.champ, 0, "le champ de l'écran ne sort pas de son cadre");
     const dansLEcran = await cadre.evaluate(() => ({
       h1: getComputedStyle(document.querySelector("h1")).fontSize,
       champ: getComputedStyle(document.querySelector("input")).width
@@ -531,7 +578,16 @@ test("un écran absent, loin hors de la vue, n'est signalé qu'une fois approch�
     await page.waitForFunction(() => document.querySelectorAll("#vue .vignette").length === 40);
     await page.waitForTimeout(3600);
     assert.equal(await page.locator(".cadre-manque").count(), 0, "A40 est loin hors de la vue : pas encore de compte à rebours");
-    await page.locator(".ecrans-ligne").evaluate((el) => { el.scrollLeft = el.scrollWidth; });
+    // On déplace la planche vers la droite à la molette (Maj + molette, de côté), jusqu'à A40.
+    await page.mouse.move(660, 500);
+    for (let i = 0; i < 10 && (await page.locator('.vignette[data-code="A40"]').boundingBox()).x > 1000; i++) {
+      await page.keyboard.down("Shift");
+      await page.mouse.wheel(0, 800);
+      await page.keyboard.up("Shift");
+      await page.waitForTimeout(50);
+    }
+    const a40 = await page.locator('.vignette[data-code="A40"]').boundingBox();
+    assert.ok(a40.x > 0 && a40.x < 1320, `A40 est maintenant dans la fenêtre (x = ${a40.x})`);
     await page.locator('.vignette[data-code="A40"] .cadre-manque').waitFor({ timeout: 7000 });
     assert.match(await texte(page, ".cadre-manque"), /Écran introuvable : ecrans\/A40\.html/);
     assert.equal(await page.locator(".cadre-manque").count(), 1);
@@ -641,8 +697,8 @@ test("des balises dans les titres, codes et notes s'affichent comme du texte, sa
 
 for (const largeur of [390, 1320]) {
   for (const schema of ["light", "dark"]) {
-    test(`à ${largeur} px, en ${schema === "light" ? "clair" : "sombre"} : les deux vues n'ont ni débordement de la page, ni erreur, ni requête en ligne`, async () => {
-      for (const adresse of ["ensemble", "ecran/A2"]) {
+    test(`à ${largeur} px, en ${schema === "light" ? "clair" : "sombre"} : les vues des écrans n'ont ni débordement de la page, ni erreur, ni requête en ligne`, async () => {
+      for (const adresse of ["ensemble", "rangee/A", "ecran/A2"]) {
         await avecPage("ecrans-variantes", { adresse, largeur, hauteur: largeur === 390 ? 844 : 900, schema }, async (contexte) => {
           const { page } = contexte;
           await page.waitForTimeout(400);
@@ -660,7 +716,7 @@ for (const largeur of [390, 1320]) {
             const note = document.querySelector(".note");
             return note ? getComputedStyle(note).backgroundColor : null;
           });
-          if (adresse === "ensemble") assert.notEqual(fondNote, null);
+          assert.notEqual(fondNote, null, `${adresse} : A2 a des notes, elles sont affichées`);
         });
       }
     });
@@ -723,9 +779,22 @@ test("un plan de 124 écrans s'affiche en moins de 3 secondes, sans erreur, sans
     // Les écrans hors de la vue n'ont pas encore de compte à rebours : aucun faux « introuvable ».
     await page.waitForTimeout(3600);
     assert.equal(await page.locator(".cadre-manque").count(), 0);
-    // Faire défiler une rangée jusqu'au bout, puis la page jusqu'en bas : tout répond, rien n'est faussement signalé.
-    await page.locator("#vue .rangee").nth(0).locator(".ecrans-ligne").evaluate((el) => { el.scrollLeft = el.scrollWidth; });
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    // « Tout voir » met toutes les colonnes dans la largeur ; huit rangées et leurs titres ne
+    // tiennent pas en hauteur, on descend donc à la molette jusqu'en bas. Tout répond, rien n'est
+    // faussement signalé.
+    await page.getByRole("button", { name: "Tout voir" }).click();
+    for (const boite of await page.locator("#vue .vignette .cadre-boite").all()) {
+      const b = await boite.boundingBox();
+      assert.ok(b.x >= 0 && b.x + b.width <= 1320, "chaque écran tient dans la largeur");
+    }
+    await page.mouse.move(660, 500);
+    const derniere = page.locator("#vue .rangee").last();
+    for (let i = 0; i < 40 && (await derniere.boundingBox()).y + (await derniere.boundingBox()).height > 900; i++) {
+      await page.mouse.wheel(0, 300);
+      await page.waitForTimeout(120);
+    }
+    const bas = await derniere.boundingBox();
+    assert.ok(bas.y + bas.height <= 900, "la dernière rangée est arrivée dans la fenêtre");
     await page.waitForTimeout(3600);
     assert.equal(await page.locator(".cadre-manque").count(), 0);
     assert.deepEqual(erreurs, []);
@@ -741,7 +810,7 @@ test("à 390 px, 124 écrans ne font pas défiler la page de côté", async () =
     const mesures = await page.evaluate(() => ({
       d: document.documentElement.scrollWidth,
       f: document.documentElement.clientWidth,
-      ligne: (() => { const l = document.querySelector(".ecrans-ligne"); return { contenu: l.scrollWidth, boite: l.clientWidth, defilement: getComputedStyle(l).overflowX }; })()
+      ligne: (() => { const l = document.querySelector(".glisse"); return { contenu: l.scrollWidth, boite: l.clientWidth, defilement: getComputedStyle(l).overflowX }; })()
     }));
     assert.ok(mesures.d <= mesures.f, `la page déborde : ${mesures.d} > ${mesures.f}`);
     assert.ok(mesures.ligne.contenu > mesures.ligne.boite, "la rangée défile dans sa propre boîte");

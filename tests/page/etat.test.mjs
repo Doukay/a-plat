@@ -25,7 +25,7 @@ test("sans plan.js, la page dit que plan.js est introuvable et quoi faire", asyn
     const texte = await textePrincipal(page);
     assert.match(texte, /plan\.js est introuvable/);
     assert.match(texte, /Demandez à Claude/);
-    assert.equal(await page.locator("nav a").count(), 3, "la barre reste là, la page n'est pas blanche");
+    assert.equal(await page.locator(".barre-vues a").count(), 2, "la barre reste là, la page n'est pas blanche");
   });
 });
 
@@ -182,26 +182,27 @@ test("la page ne demande rien en dehors de file://", async () => {
 
 test("les liens de la barre font au moins 44 px de haut, à 390 px", async () => {
   await avecPage("complet", { largeur: 390, hauteur: 844 }, async ({ page }) => {
-    const hauteurs = await page.locator("nav a").evaluateAll((liens) => liens.map((lien) => lien.getBoundingClientRect().height));
-    assert.equal(hauteurs.length, 3);
+    const hauteurs = await page.locator(".barre-vues a").evaluateAll((liens) => liens.map((lien) => lien.getBoundingClientRect().height));
+    assert.equal(hauteurs.length, 2);
     for (const hauteur of hauteurs) assert.ok(hauteur >= 44, `lien trop bas : ${hauteur}`);
+    assert.ok((await page.locator("#recherche").boundingBox()).height >= 44, "le champ de recherche aussi");
   });
 });
 
 test("la page respecte « réduire les animations »", async () => {
   const duree = (mouvement) => avecPage("complet", { mouvement }, ({ page }) =>
-    page.locator("nav a").first().evaluate((lien) => getComputedStyle(lien).transitionDuration));
+    page.locator(".barre-vues a").first().evaluate((lien) => getComputedStyle(lien).transitionDuration));
   assert.equal(await duree("reduce"), "0s");
   assert.notEqual(await duree("no-preference"), "0s", "sans réglage, la barre garde sa transition");
 });
 
 // ---------------------------------------------------------------- la barre et les adresses
 
-test("la barre montre les trois vues, avec la vue courante marquée", async () => {
+test("la barre montre les deux vues, État des lieux et Vue d'ensemble, avec la vue courante marquée", async () => {
   await avecPage("complet", {}, async ({ page }) => {
-    const noms = (await page.locator("nav a").allTextContents()).map((n) => n.trim());
-    assert.deepEqual(noms, ["État des lieux", "Vue d'ensemble", "Écrans"]);
-    assert.equal(await page.locator('nav a[aria-current="page"]').innerText(), "État des lieux");
+    const noms = (await page.locator(".barre-vues a").allTextContents()).map((n) => n.trim());
+    assert.deepEqual(noms, ["État des lieux", "Vue d'ensemble"]);
+    assert.equal(await page.locator('.barre-vues a[aria-current="page"]').innerText(), "État des lieux");
   });
 });
 
@@ -215,27 +216,33 @@ test("une adresse inconnue ou vide revient à l'état des lieux", async () => {
   });
 });
 
-test("les vues d'ensemble et d'écran seul sont marquées dans la barre et ne montrent pas l'état des lieux", async () => {
+test("les vues d'ensemble et d'écran seul ne montrent pas l'état des lieux ; seule la vue d'ensemble est marquée à droite", async () => {
   await avecPage("complet", { adresse: "ensemble" }, async ({ page }) => {
-    assert.equal(await page.locator('nav a[aria-current="page"]').innerText(), "Vue d'ensemble");
+    assert.equal(await page.locator('.barre-vues a[aria-current="page"]').innerText(), "Vue d'ensemble");
     assert.equal(await page.locator("#vue .rangee").count(), 2);
     assert.equal(await lignes(page).count(), 0);
   });
   await avecPage("complet", { adresse: "ecran/A2" }, async ({ page }) => {
-    assert.equal(await page.locator('nav a[aria-current="page"]').innerText(), "Écrans");
+    // Un écran n'est ni l'état des lieux ni la vue d'ensemble : c'est le fil qui dit où l'on est.
+    assert.equal(await page.locator('.barre-vues a[aria-current]').count(), 0);
+    assert.equal(await page.locator('.fil [aria-current="page"]').innerText(), "A2");
     assert.equal(await page.locator("#vue .ecran-code").innerText(), "A2");
   });
 });
 
 test("toucher un lien de la barre change de vue sans recharger la page", async () => {
   await avecPage("complet", {}, async ({ page }) => {
-    await page.locator("nav a", { hasText: "Vue d'ensemble" }).click();
+    await page.evaluate(() => { window.__memePage = true; });
+    await page.locator(".barre-vues a", { hasText: "Vue d'ensemble" }).click();
     assert.equal(await page.evaluate(() => location.hash), "#ensemble");
+    // L'adresse change tout de suite, la vue se redessine à l'événement qui suit : on l'attend.
+    await page.waitForFunction(() => document.body.dataset.vue === "ensemble");
     assert.equal(await page.locator("#vue .rangee").count(), 2);
-    await page.locator("nav a", { hasText: "Écrans" }).click();
-    assert.equal(await page.evaluate(() => location.hash), "#ecran/A1");
-    await page.locator("nav a", { hasText: "État des lieux" }).click();
+    await page.locator(".barre-vues a", { hasText: "État des lieux" }).click();
+    assert.equal(await page.evaluate(() => location.hash), "#etat");
+    await page.waitForFunction(() => document.body.dataset.vue === "etat");
     assert.equal(await lignes(page).count(), 2);
+    assert.equal(await page.evaluate(() => window.__memePage), true, "la page n'a pas été rechargée");
   });
 });
 

@@ -1,5 +1,6 @@
 // Plan d'un projet inventé (prêt d'outils entre voisins) qui montre les variantes des écrans :
-// un actuel redessiné, un actuel en capture, pas d'actuel, une rangée sans écran, les cinq types de note.
+// un actuel redessiné, un actuel en capture, pas d'actuel, une rangée sans écran, les cinq types de note,
+// des notes de toute la rangée et des notes qui citent un ou deux écrans (champ ecrans).
 window.A_PLAT = {
   version: 1,
   projet: "Prêtoutil",
@@ -16,10 +17,10 @@ window.A_PLAT = {
     id: "A",
     titre: "Trouver un outil",
     notes: [
-      { type: "decision", date: "2026-11-04", texte: "Caution retirée.", ancien: "Caution de 20 €" },
+      { type: "decision", date: "2026-11-04", texte: "Caution retirée.", ancien: "Caution de 20 €", ecrans: ["A2"] },
       { type: "a-trancher", date: "2026-11-03", texte: "Durée maximale du prêt à choisir." },
       { type: "a-verifier", date: "2026-11-02", texte: "La distance s'affiche-t-elle en mètres ?" },
-      { type: "a-coder", date: "2026-11-01", texte: "Filtre par quartier." },
+      { type: "a-coder", date: "2026-11-01", texte: "Filtre par quartier.", ecrans: ["A1", "A2"] },
       { type: "source", date: "2026-10-30", texte: "Vu dans src/fiche.js." }
     ]
   }, {

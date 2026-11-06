@@ -13,8 +13,14 @@ async function cadreDe(page, code, selecteur = "#vue") {
 const attendreMode = (cadre, mode) =>
   cadre.waitForFunction((voulu) => document.documentElement.dataset.aPlatMode === voulu, mode);
 
-// Fait défiler la page pour que tous les cadres paresseux se chargent.
+// Montre tous les cadres paresseux pour qu'ils se chargent : « Tout voir » sur la planche,
+// le défilement dans la colonne du téléphone.
 async function toutCharger(page) {
+  const toutVoir = page.getByRole("button", { name: "Tout voir" });
+  if (await toutVoir.count()) {
+    await toutVoir.click();
+    return;
+  }
   await page.evaluate(async () => {
     for (const cadre of document.querySelectorAll("#vue iframe")) {
       cadre.scrollIntoView({ block: "center", inline: "center" });
@@ -29,9 +35,10 @@ for (const largeur of [390, 1320]) {
     await avecPage("demo", { adresse: "ensemble", largeur, hauteur: 900 }, async ({ page, console: messages, erreurs, requetes }) => {
       assert.equal(await page.locator("#vue .rangee").count(), 3);
       assert.equal(await page.locator("#vue .vignette").count(), 8);
-      assert.equal(await page.locator("#vue .note").count(), 7);
+      // 7 notes, dont une qui cite A2 et A3 : elle est montrée sous chacun des deux.
+      assert.equal(await page.locator("#vue .note").count(), 8);
       await toutCharger(page);
-      await page.waitForFunction(() => document.querySelectorAll("#vue .cadre-manque").length === 0);
+      await page.waitForTimeout(3500); // le délai au bout duquel un écran muet est dit introuvable
       assert.equal(await page.locator("#vue .cadre-manque").count(), 0, "aucun écran introuvable");
       const defile = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       assert.ok(defile <= 0, `la page défile de côté de ${defile} px`);

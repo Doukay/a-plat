@@ -91,8 +91,9 @@
     }
     lienDeLaBarre.textContent = "Corrections : " + liste.length;
     lienDeLaBarre.setAttribute("href", "#ecran/" + encodeURIComponent(code));
-    var titre = document.querySelector(".barre .titre");
-    if (titre && lienDeLaBarre.parentNode !== titre) titre.appendChild(lienDeLaBarre);
+    // Il se range à droite de la barre, devant les liens des vues.
+    var zone = document.querySelector(".barre .barre-droite");
+    if (zone && lienDeLaBarre.parentNode !== zone) zone.insertBefore(lienDeLaBarre, zone.firstChild);
   }
 
   function allerAuPanneau() {
@@ -303,6 +304,15 @@
     document.documentElement.style.setProperty("--saisie-hauteur", saisie.racine.offsetHeight + "px");
   }
 
+  // Le haut de la place libre : sous la barre quand elle reste collée en haut de la fenêtre.
+  function hautLibre() {
+    var barre = document.querySelector(".barre");
+    if (!barre) return MARGE_AU_BORD;
+    var place = window.getComputedStyle(barre).position;
+    if (place !== "sticky" && place !== "fixed") return MARGE_AU_BORD;
+    return Math.max(0, barre.getBoundingClientRect().bottom) + MARGE_AU_BORD;
+  }
+
   // Fait défiler la page pour que l'élément choisi reste visible au-dessus de la saisie.
   function garderEnVue() {
     if (!saisie) return;
@@ -313,11 +323,12 @@
     var haut = boite.top + (typeof position.haut === "number" ? position.haut : 0);
     var bas = boite.top + (typeof position.bas === "number" ? position.bas : Math.min(boite.height, 120));
     var limite = window.innerHeight - saisie.racine.offsetHeight - MARGE_AU_BORD;
+    var plafond = hautLibre();
     var decalage = 0;
     if (bas > limite) decalage = bas - limite;
-    else if (haut < MARGE_AU_BORD) decalage = haut - MARGE_AU_BORD;
+    else if (haut < plafond) decalage = haut - plafond;
     // Un élément plus haut que la place libre : on garde son haut visible.
-    if (decalage > 0 && haut - decalage < MARGE_AU_BORD) decalage = haut - MARGE_AU_BORD;
+    if (decalage > 0 && haut - decalage < plafond) decalage = haut - plafond;
     if (decalage !== 0) window.scrollBy(0, decalage);
   }
 

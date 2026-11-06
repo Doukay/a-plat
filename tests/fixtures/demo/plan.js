@@ -88,22 +88,22 @@ window.A_PLAT = {
     id: "A",
     titre: "Trouver un outil",
     notes: [
-      { type: "decision", date: "2026-11-04", texte: "Caution retirée.", ancien: "Caution de 20 €" },
+      { type: "decision", date: "2026-11-04", texte: "Caution retirée.", ancien: "Caution de 20 €", ecrans: ["A2"] },
       { type: "a-trancher", date: "2026-11-03", texte: "Durée maximale du prêt à choisir." },
-      { type: "source", date: "2026-10-30", texte: "Fiche lue dans src/ecrans/fiche.js." }
+      { type: "source", date: "2026-10-30", texte: "Fiche lue dans src/ecrans/fiche.js.", ecrans: ["A2", "A3"] }
     ]
   }, {
     id: "B",
     titre: "Demander un prêt",
     notes: [
-      { type: "a-verifier", date: "2026-11-02", texte: "Le voisin reçoit-il bien un message à l'envoi ?" },
-      { type: "a-coder", date: "2026-11-04", texte: "Choix des dates dans un calendrier." }
+      { type: "a-verifier", date: "2026-11-02", texte: "Le voisin reçoit-il bien un message à l'envoi ?", ecrans: ["B2"] },
+      { type: "a-coder", date: "2026-11-04", texte: "Choix des dates dans un calendrier.", ecrans: ["B1"] }
     ]
   }, {
     id: "C",
     titre: "Suivre mes prêts",
     notes: [
-      { type: "a-coder", date: "2026-11-04", texte: "Annuler une demande en attente." },
+      { type: "a-coder", date: "2026-11-04", texte: "Annuler une demande en attente.", ecrans: ["C2"] },
       { type: "a-trancher", date: "2026-11-03", texte: "Combien de temps garder l'historique ?" }
     ]
   }],

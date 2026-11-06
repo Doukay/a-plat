@@ -1,6 +1,6 @@
 /* Style de la page d'À plat : papier froid, un seul bleu pour tout ce qui touche aux corrections.
    Polices du système, aucune ressource en ligne. Les couleurs passent par des variables,
-   clair et sombre selon le réglage de l'appareil. */
+   clair et sombre selon le réglage de l'appareil. La barre du haut est noire dans les deux. */
 :root {
   --fond: #eef0f3;
   --surface: #fff;
@@ -13,6 +13,14 @@
   --attente: #8a5a00;
   --manque: #b3261e;
   --police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* La barre : noir pur, la même en clair et en sombre. */
+  --barre: #000;
+  --barre-champ: #1d1d1f;
+  --barre-survol: #272729;
+  --barre-filet: #48484a;
+  --barre-texte: #f5f5f7;
+  --barre-texte-2: #a1a1a6;
+  --barre-anneau: #64b0ff;
   color-scheme: light dark;
 }
 
@@ -33,83 +41,215 @@
 
 * { box-sizing: border-box; }
 
+/* Le défilement vers un élément (le panneau des corrections) le pose sous la barre. */
+html { scroll-padding-top: calc(var(--barre-hauteur, 52px) + 12px); }
+
 body {
   margin: 0;
   background: var(--fond);
   color: var(--texte);
   font: 15px/1.45 var(--police);
-  padding: 16px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px));
 }
 
-/* ---- la barre : le nom du projet, puis les trois vues ---- */
-.barre, #vue {
-  max-width: 760px;
-  margin-left: auto;
-  margin-right: auto;
+/* Lu par les lecteurs d'écran, invisible à l'œil. */
+.pour-lecteur {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.barre { margin-bottom: 20px; }
-
-.titre {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 12px;
-  margin-bottom: 12px;
-}
-
-.marque {
-  color: var(--doux);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-h1 {
-  margin: 0;
-  min-width: 0;
-  font-size: 19px;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-}
-h1:empty { display: none; }
-
-nav {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  background: var(--surface);
-  border: 1px solid var(--trait);
-  border-radius: 10px;
-}
-
-nav a {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 8px;
-  border-radius: 7px;
-  color: var(--doux);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: center;
-  text-decoration: none;
-}
-nav a:hover { color: var(--texte); }
-nav a[aria-current="page"] {
-  background: var(--texte);
-  color: var(--surface);
-}
-
-a:focus-visible {
+a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex="0"]:focus-visible {
   outline: 2px solid var(--crayon);
   outline-offset: 2px;
 }
 
+/* ---- la barre : le fil à gauche, la recherche au centre, les vues à droite ---- */
+.barre {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
+  background: var(--barre);
+  color: var(--barre-texte);
+  font-size: 14px;
+}
+.barre a:focus-visible, .barre input:focus-visible {
+  outline: 2px solid var(--barre-anneau);
+  outline-offset: 2px;
+}
+
+.barre-gauche {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.remonter {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: var(--barre-texte);
+  font-size: 18px;
+  text-decoration: none;
+}
+.remonter[hidden] { display: none; }
+.remonter:hover { background: var(--barre-survol); }
+
+.fil { min-width: 0; }
+.fil ol {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  white-space: nowrap;
+}
+.fil-pas {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.fil-pas + .fil-pas::before {
+  content: "›";
+  margin: 0 8px;
+  color: var(--barre-texte-2);
+}
+.fil a, .fil-ici {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fil a { color: var(--barre-texte-2); text-decoration: none; }
+.fil a:hover { color: var(--barre-texte); }
+.fil-ici { color: var(--barre-texte); font-weight: 600; }
+
+.recherche {
+  position: relative;
+  flex: 0 1 340px;
+  min-width: 180px;
+}
+.recherche input {
+  display: block;
+  width: 100%;
+  height: 34px;
+  padding: 0 36px 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--barre-champ);
+  color: var(--barre-texte);
+  font: inherit;
+}
+.recherche input::placeholder { color: var(--barre-texte-2); opacity: 1; }
+.recherche-touche {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  min-width: 20px;
+  padding: 0 5px;
+  transform: translateY(-50%);
+  border: 1px solid var(--barre-filet);
+  border-radius: 5px;
+  color: var(--barre-texte-2);
+  font: 11.5px/17px ui-monospace, "Cascadia Code", Consolas, monospace;
+  text-align: center;
+  pointer-events: none;
+}
+.recherche input:focus ~ .recherche-touche,
+.recherche input:not(:placeholder-shown) ~ .recherche-touche { display: none; }
+
+.resultats {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  max-height: 60vh;
+  margin: 0;
+  padding: 6px;
+  overflow: auto;
+  list-style: none;
+  background: var(--surface);
+  color: var(--texte);
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--trait), 0 16px 40px -16px rgba(0, 0, 0, 0.35);
+}
+.resultats[hidden] { display: none; }
+.resultat {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 40px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.resultat:hover, .resultat.actif { background: var(--fond); }
+.resultat-code { flex: none; min-width: 36px; }
+.resultat-titre { min-width: 0; overflow-wrap: anywhere; }
+.resultat-vide { padding: 9px 10px; color: var(--doux); }
+
+.barre-droite {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+.barre-vues { display: flex; gap: 2px; }
+.barre-vues a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--barre-texte-2);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.barre-vues a:hover { color: var(--barre-texte); background: var(--barre-survol); }
+.barre-vues a[aria-current="page"] {
+  color: var(--barre-texte);
+  background: var(--barre-survol);
+  font-weight: 600;
+}
+
 /* ---- le contenu ---- */
+#vue {
+  max-width: 792px;
+  margin: 0 auto;
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px));
+}
+body[data-vue="ensemble"] #vue, body[data-vue="ecran"] #vue { max-width: 1272px; }
+
+/* La planche et la rangée en grand prennent toute la fenêtre sous la barre. */
+body[data-mise="plein"] { overflow: hidden; }
+body[data-mise="plein"] #vue {
+  position: fixed;
+  top: var(--barre-hauteur, 52px);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
 .titre-de-vue {
   margin: 0 0 6px;
   font-size: 21px;
@@ -223,17 +363,6 @@ a:focus-visible {
 }
 .erreurs li { margin-bottom: 6px; overflow-wrap: anywhere; }
 
-/* ---- vues larges : la vue d'ensemble et l'écran seul ont besoin de plus de place ---- */
-body[data-vue="ensemble"] .barre, body[data-vue="ensemble"] #vue,
-body[data-vue="ecran"] .barre, body[data-vue="ecran"] #vue {
-  max-width: 1240px;
-}
-
-button:focus-visible {
-  outline: 2px solid var(--crayon);
-  outline-offset: 2px;
-}
-
 /* ---- le cadre d'un écran : l'écran garde ses propres couleurs, la page ne les touche pas ---- */
 .cadre-boite {
   position: relative;
@@ -271,9 +400,7 @@ button:focus-visible {
 .cadre-manque-titre { font-weight: 700; color: var(--manque); }
 .cadre-refuse { font-weight: 600; color: var(--manque); }
 
-/* ---- la vue d'ensemble : une rangée par parcours, les notes au bout ---- */
-.rangee { margin-top: 22px; }
-
+/* ---- les rangées : le titre (un lien vers la rangée en grand) et le nombre d'écrans ---- */
 .rangee-titre {
   display: flex;
   align-items: baseline;
@@ -282,8 +409,14 @@ button:focus-visible {
   font-size: 15px;
   line-height: 1.3;
 }
+.rangee-lien {
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.rangee-lien:hover .rangee-nom { text-decoration: underline; }
 .rangee-id {
-  flex: none;
+  display: inline-block;
   min-width: 26px;
   padding: 1px 7px;
   border-radius: 6px;
@@ -294,49 +427,26 @@ button:focus-visible {
   text-align: center;
 }
 .rangee-nom { min-width: 0; overflow-wrap: anywhere; }
-
-.rangee-corps {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 12px;
-  background: var(--surface);
-  border: 1px solid var(--trait);
-  border-radius: 12px;
-}
+.rangee-compte { flex: none; color: var(--doux); font-size: 13px; font-weight: 500; white-space: nowrap; }
 .rangee-vide { margin: 0; color: var(--doux); }
 
-/* La rangée défile de côté dans sa propre boîte : la page, elle, ne défile jamais de côté. */
-.ecrans-ligne {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  min-width: 0;
-  padding: 2px 2px 8px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-}
-
-.vignette {
-  position: relative;
-  flex: none;
-  min-width: 120px;
-}
+/* ---- un écran en vignette : son nom au-dessus, un lien qui couvre le nom et l'image ---- */
+.vignette { flex: none; min-width: 0; }
+.vignette-haut { position: relative; }
 .vignette .cadre { pointer-events: none; }
 .vignette-lien {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  min-height: 44px;
-  padding: 8px 2px 4px;
+  padding: 0 2px 6px;
   color: inherit;
   text-decoration: none;
 }
-/* Le lien couvre toute la vignette : toucher l'image ouvre l'écran. */
 .vignette-lien::after {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
   border-radius: 8px;
 }
 .vignette-lien:focus-visible { outline: none; }
@@ -345,6 +455,12 @@ button:focus-visible {
   outline-offset: 3px;
 }
 .vignette:hover .cadre-boite { box-shadow: 0 0 0 2px var(--crayon); }
+.vignette-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
 .vignette-code { font-size: 13px; font-weight: 700; }
 .vignette-titre {
   color: var(--doux);
@@ -353,6 +469,7 @@ button:focus-visible {
   overflow-wrap: anywhere;
 }
 
+/* ---- les notes : le type en toutes lettres, la date, l'ancienne valeur barrée ---- */
 .notes {
   display: flex;
   flex-direction: column;
@@ -364,29 +481,325 @@ button:focus-visible {
 }
 .note {
   padding: 8px 10px;
-  background: var(--fond);
+  background: var(--surface);
   border: 1px solid var(--trait);
   border-radius: 8px;
   font-size: 13.5px;
 }
 .note-tete {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: 0 8px;
 }
 .note-type { font-size: 12.5px; font-weight: 700; color: var(--doux); }
 .note[data-type="decision"] .note-type { color: var(--ok); }
 .note[data-type="a-trancher"] .note-type, .note[data-type="a-verifier"] .note-type { color: var(--attente); }
 .note[data-type="a-coder"] .note-type { color: var(--crayon); }
-.note-date { color: var(--doux); font-size: 12px; font-variant-numeric: tabular-nums; }
+.note-date { color: var(--doux); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .note-texte { margin: 4px 0 0; overflow-wrap: anywhere; }
 .note-ancien { color: var(--doux); }
+.notes-ecran { margin-top: 8px; }
 
-@media (min-width: 900px) {
-  .rangee-corps { flex-direction: row; align-items: flex-start; }
-  .ecrans-ligne { flex: 1 1 0; }
-  .notes { flex: 0 0 260px; }
+.notes-repliees summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--doux);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.notes-repliees .notes { margin-bottom: 8px; }
+
+/* ---- la planche : toutes les rangées, chaque écran à sa vraie taille, zoom et déplacement ----
+   --inv vaut 1 / zoom (au moins 1) : multiplier une taille par --inv la garde constante à
+   l'écran, quel que soit le zoom. Sous 25 % (classe notes-pliees), chaque liste de notes se
+   replie en « 2 notes », lisible lui aussi : le texte entier pousserait les rangées trop loin. */
+.planche-fenetre {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.planche-fenetre.tire { cursor: grabbing; }
+.planche {
+  --inv: 1;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: max-content;
+  transform-origin: 0 0;
+}
+.planche .rangee { margin: 0 0 calc(100px + 48px * var(--inv)); }
+.planche .rangee-titre {
+  gap: calc(12px * var(--inv));
+  margin: 0 0 calc(12px * var(--inv));
+  font-size: calc(20px * var(--inv));
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.planche .rangee-lien { font-weight: 600; }
+.planche .rangee-id {
+  min-width: 1.4em;
+  padding: 0 0.35em;
+  border-radius: 0.3em;
+  font-size: 0.85em;
+}
+.planche .rangee-compte { font-size: 0.65em; }
+.planche .notes { font-size: calc(13px * var(--inv)); gap: 0.6em; }
+.planche .note {
+  padding: 0.6em 0.75em;
+  border-width: calc(1px * var(--inv));
+  border-radius: calc(8px * var(--inv));
+  font-size: 1em;
+}
+.planche .note-type { font-size: 0.92em; }
+.planche .note-date { font-size: 0.88em; }
+.planche .notes-generales {
+  flex-direction: row;
+  margin: 0 0 calc(18px * var(--inv));
+}
+.planche .notes-generales .note { flex: none; width: calc(300px * var(--inv)); }
+.planche .notes-ecran { margin-top: calc(10px * var(--inv)); }
+.planche.notes-pliees .notes > .note { display: none; }
+.planche.notes-pliees .notes::before {
+  content: attr(data-resume);
+  color: var(--doux);
+  font-size: calc(12.5px * var(--inv));
+  font-weight: 600;
+  white-space: nowrap;
+}
+.planche .rangee-ecrans {
+  display: flex;
+  align-items: flex-start;
+  gap: 80px;
+}
+.planche .vignette-lien {
+  display: block;
+  height: calc(12.5px * 1.35 * 2 * var(--inv) + 6px * var(--inv));
+  padding: 0 0 calc(6px * var(--inv));
+  overflow: hidden;
+  font-size: calc(12.5px * var(--inv));
+  line-height: 1.35;
+}
+.planche .vignette-lien::after { border-radius: calc(8px * var(--inv)); }
+.planche .vignette-ligne {
+  flex-wrap: nowrap;
+  gap: 0 0.5em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.planche .vignette-code { font-size: 1em; }
+.planche .vignette-titre {
+  display: block;
+  overflow: hidden;
+  font-size: 1em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.planche .badge-valide, .planche .badge-inchange {
+  padding: 0 0.55em;
+  border-width: calc(1px * var(--inv));
+  font-size: 0.85em;
+}
+.planche .cadre-boite {
+  border-radius: 12px;
+  box-shadow: 0 0 0 calc(1px * var(--inv)) var(--trait);
+}
+.planche .vignette:hover .cadre-boite { box-shadow: 0 0 0 calc(2px * var(--inv)) var(--crayon); }
+.planche .cadre-manque { padding: 0.8em; font-size: calc(12.5px * var(--inv)); }
+
+.planche-entete {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  z-index: 5;
+  max-width: min(560px, calc(100% - 48px));
+  pointer-events: none;
+}
+.planche-entete.efface { opacity: 0; }
+.planche-titre {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+.planche-aide { margin: 6px 0 0; color: var(--doux); font-size: 14px; }
+
+.planche-zoom {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--trait);
+}
+.planche-zoom button {
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--texte);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.planche-zoom button:hover { background: var(--fond); }
+.planche-niveau {
+  min-width: 52px;
+  color: var(--doux);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* ---- la vue d'ensemble sur téléphone : une colonne, chaque rangée glisse de côté ---- */
+.rangee-colonne { margin-top: 22px; }
+.rangee-colonne .rangee-titre {
+  justify-content: space-between;
+  align-items: center;
+  margin: 0;
+  font-size: 16px;
+}
+.rangee-colonne .rangee-lien {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.glisse {
+  display: flex;
+  gap: 12px;
+  margin: 0 -16px;
+  padding: 4px 16px 10px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
+}
+.glisse .vignette { scroll-snap-align: start; }
+.glisse .vignette-lien { min-height: 44px; justify-content: flex-end; }
+/* Un badge ne décale pas l'écran de sa carte par rapport aux voisins. */
+.glisse .vignette-ligne { flex-wrap: nowrap; align-items: center; height: 22px; overflow: hidden; }
+
+/* ---- une rangée en grand : les écrans côte à côte, les pages de l'état des lieux à droite ---- */
+.vue-rangee-titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.vue-rangee-titre .rangee-id { font-size: 0.6em; }
+.vue-rangee .notes-generales {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+.vue-rangee .notes-generales .note { flex: 1 1 260px; max-width: 360px; }
+.rangee-cartes {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.rangee-carte { flex: none; max-width: 100%; }
+.rangee-carte-nom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.rangee-carte-code { font-size: 16px; }
+.rangee-carte-titre { min-width: 0; overflow-wrap: anywhere; color: var(--doux); }
+.rangee-carte-cadre { position: relative; }
+.rangee-carte .cadre { pointer-events: none; }
+.rangee-carte-couvre {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 8px;
+}
+.rangee-carte-cadre:hover .cadre-boite { box-shadow: 0 0 0 2px var(--crayon); }
+.rangee-carte-ouvrir {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--crayon);
+  font-weight: 600;
+  text-decoration: none;
+}
+.rangee-carte-ouvrir:hover { text-decoration: underline; }
+.rangee-carte .notes-ecran { margin-top: 0; }
+.rangee-panneau {
+  margin-top: 28px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: 14px;
+}
+.rangee-panneau-titre { margin: 0 0 10px; font-size: 16px; line-height: 1.3; }
+.rangee-panneau .ligne { background: var(--fond); }
+
+@media (min-width: 701px) {
+  .vue-rangee {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .vue-rangee-tete {
+    flex: none;
+    max-height: 40%;
+    overflow: auto;
+    padding: 24px 24px 4px;
+  }
+  .vue-rangee-tete .vue-rangee-titre {
+    font-size: 34px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+  }
+  .vue-rangee-corps {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    gap: 16px;
+    padding: 4px 16px 16px 24px;
+  }
+  .rangee-bande {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: auto;
+    padding: 4px 4px 16px;
+  }
+  .rangee-cartes {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 40px;
+    width: max-content;
+  }
+  .rangee-carte { max-width: none; }
+  .rangee-panneau {
+    flex: 0 0 360px;
+    margin-top: 0;
+    overflow: auto;
+  }
 }
 
 /* ---- l'écran seul ---- */
@@ -475,6 +888,13 @@ button:focus-visible {
   box-shadow: 0 0 0 1px var(--trait);
 }
 
+/* Les notes qui citent l'écran, sous l'écran : elles prennent sa largeur sans l'élargir. */
+.ecran-notes {
+  width: 0;
+  min-width: 100%;
+  margin-top: 18px;
+}
+
 .voisins {
   display: flex;
   flex-wrap: wrap;
@@ -532,12 +952,6 @@ button:focus-visible {
   line-height: 1.5;
   white-space: nowrap;
 }
-.vignette-ligne {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 8px;
-}
 
 /* ---- l'existant introuvable : une phrase à la place de l'image ---- */
 .actuel-manque {
@@ -560,11 +974,12 @@ button:focus-visible {
   gap: 20px;
   margin-top: 14px;
 }
-.ecran-corps > .comparaison {
+.ecran-corps > .ecran-principal {
   flex: 0 1 auto;
+  min-width: 0;
   max-width: 100%;
-  margin-top: 0;
 }
+.ecran-principal > .comparaison { margin-top: 0; }
 
 .corrections {
   flex: 1 1 280px;
@@ -694,11 +1109,9 @@ button:focus-visible {
 
 /* Le lien de la barre : le nombre de corrections, dès qu'il y en a une. */
 .barre-corrections {
-  align-self: center;
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  margin-left: auto;
+  min-height: 36px;
   padding: 4px 14px;
   border-radius: 999px;
   background: var(--crayon-pale);
@@ -706,6 +1119,7 @@ button:focus-visible {
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
+  white-space: nowrap;
 }
 .barre-corrections:hover { text-decoration: underline; }
 
@@ -786,19 +1200,49 @@ body.correction-ouverte {
 @media (min-width: 900px) {
   .corrections {
     position: sticky;
-    top: 12px;
-    max-height: calc(100vh - 24px);
+    top: calc(var(--barre-hauteur, 52px) + 12px);
+    max-height: calc(100vh - var(--barre-hauteur, 52px) - 24px);
     overflow: auto;
   }
 }
 
 @media (min-width: 640px) {
-  body { padding-top: 28px; }
+  #vue { padding-top: 28px; }
   .titre-de-vue { font-size: 23px; }
 }
 
+/* ---- téléphone (700 px et moins) : la barre passe sur deux lignes et défile avec la page,
+   les commandes font 44 px ; le fil ne garde que le niveau courant. ---- */
+@media (max-width: 700px) {
+  .barre {
+    position: static;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 6px;
+    padding-bottom: 8px;
+  }
+  .barre-gauche { flex: 1 1 120px; }
+  .barre-droite { flex: 0 1 auto; gap: 4px; }
+  .recherche { order: 3; flex: 1 1 100%; min-width: 0; }
+  .recherche input { height: 44px; }
+  .recherche-touche { display: none; }
+  .remonter { width: 44px; height: 44px; }
+  .fil-pas:not(:last-child) { display: none; }
+  .fil-pas + .fil-pas::before { display: none; }
+  .barre-vues a { min-height: 44px; padding: 0 10px; }
+  .barre-corrections { min-height: 44px; }
+}
+
+/* Écran tactile plus large : des commandes de 44 px aussi. */
+@media (pointer: coarse) {
+  .barre-vues a, .barre-corrections { min-height: 44px; }
+  .remonter { width: 44px; height: 44px; }
+  .recherche input { height: 44px; }
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  nav a { transition: background-color 0.12s, color 0.12s; }
+  .barre-vues a, .remonter { transition: background-color 0.12s, color 0.12s; }
   .mode button { transition: background-color 0.12s, color 0.12s; }
   .cadre-boite { transition: box-shadow 0.12s; }
+  .planche-entete { transition: opacity 0.2s; }
 }

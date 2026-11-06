@@ -6,7 +6,10 @@
 //   2. le stockage (lireStock, garderStock) ;
 //   3. la lecture du plan (absent, cassé, refusé ou bon) ;
 //   4. une fonction par vue, et le tableau VUES qui les relie à leur adresse ;
-//   5. afficher(adresse), qui choisit la vue et marque la barre.
+//      les vues des écrans vont du plus large au plus serré : la planche (#ensemble),
+//      une rangée (#rangee/A), un écran seul (#ecran/A2) ;
+//   5. la barre du haut : le fil, la recherche, les liens des vues ;
+//   6. afficher(adresse), qui choisit la vue et met la barre à jour.
 (function () {
   "use strict";
 
@@ -24,6 +27,26 @@
     return typeof valeur === "string" && valeur.length > 0;
   }
 
+  function estObjet(valeur) {
+    return typeof valeur === "object" && valeur !== null && !Array.isArray(valeur);
+  }
+
+  function aLaCle(objet, cle) {
+    return Object.prototype.hasOwnProperty.call(objet, cle);
+  }
+
+  // « 1 écran », « 3 écrans ».
+  function pluriel(nombre, un, plusieurs) {
+    return nombre + " " + (nombre > 1 ? plusieurs : un);
+  }
+
+  // Le texte en minuscules et sans accents, pour chercher « ecran » dans « Écran ».
+  function sansAccents(texte) {
+    var resultat = String(texte);
+    if (typeof resultat.normalize === "function") resultat = resultat.normalize("NFD").replace(/[̀-ͯ]/g, "");
+    return resultat.toLowerCase();
+  }
+
   // ------------------------------------------------------------ 2. stockage
 
   // Le navigateur peut refuser le stockage (fenêtre privée, réglage, ouverture de fichier).
@@ -39,7 +62,7 @@
     } catch (erreur) {
       // refusé ou illisible : on se rabat sur la mémoire
     }
-    return Object.prototype.hasOwnProperty.call(memoire, cle) ? memoire[cle] : null;
+    return aLaCle(memoire, cle) ? memoire[cle] : null;
   }
 
   // Garde une valeur. Renvoie true si le navigateur l'a rangée, false s'il l'a refusée
@@ -91,6 +114,11 @@
     paragraphes.forEach(function (texte) {
       carte.appendChild(creer("p", "", texte));
     });
+    return carte;
+  }
+
+  function lienRetour(carte) {
+    carte.appendChild(creer("a", "lien-retour", "Retour à la vue d'ensemble")).setAttribute("href", "#ensemble");
     return carte;
   }
 
@@ -184,7 +212,7 @@
     var parGroupe = {};
     lignes.forEach(function (ligne) {
       var nom = estTexte(ligne.groupe) ? ligne.groupe : "Autres pages";
-      if (!Object.prototype.hasOwnProperty.call(parGroupe, nom)) {
+      if (!aLaCle(parGroupe, nom)) {
         parGroupe[nom] = [];
         noms.push(nom);
       }
@@ -202,15 +230,13 @@
     });
   }
 
-  // ------------------------------------------------------------ 4b. les écrans
+  // ------------------------------------------------------------ 4b. les cadres des écrans
   //
   // Chaque écran s'affiche dans un cadre (iframe). La page ne peut pas lire dans un cadre :
   // c'est le petit script relais.js, chargé par l'écran, qui lui écrit (postMessage).
   // Ne sont écoutés que les messages marqués { aPlat: 1 } qui viennent d'un cadre créé ici.
 
   var DELAI_ECRAN_INTROUVABLE = 3000; // millisecondes sans message pret
-  var HAUTEUR_DE_VIGNETTE = 400;      // hauteur visée d'une vignette, pour garder une rangée lisible
-  var LARGEUR_DE_VIGNETTE = 480;      // largeur la plus grande d'une vignette
   var LARGEUR_PAR_DEFAUT = 390;
   var HAUTEUR_PAR_DEFAUT = 844;
   var HAUTEUR_MAXIMALE_D_UN_CADRE = 20000;
@@ -232,13 +258,9 @@
 
   // L'état de la visite : le mode choisi vaut pour tous les écrans, d'une vue à l'autre.
   var mode = "corriger";
-  var cadres = [];         // un par cadre affiché : { cadre, boite, code, chemin, vignette, lecture, pret, minuteur, voile }
+  var cadres = [];         // un par cadre affiché : { cadre, boite, code, chemin, vignette, lecture, echelle, suit, pret, minuteur, voile }
   var observateur = null;  // il lance le compte à rebours « introuvable » quand un cadre est près de l'écran
   var zoneDuLien = null;   // la ligne où la vue d'un écran seul dit qu'un lien ne mène nulle part
-
-  function estObjet(valeur) {
-    return typeof valeur === "object" && valeur !== null && !Array.isArray(valeur);
-  }
 
   // Un fichier du plan ne sert que dans son dossier (ecrans/ ou actuel/). On refuse tout ce qui
   // peut en sortir : « .. », une adresse complète (https:, file:…), une barre au début, une
@@ -273,6 +295,10 @@
     return "#ecran/" + encodeURIComponent(code);
   }
 
+  function lienDeLaRangee(id) {
+    return "#rangee/" + encodeURIComponent(id);
+  }
+
   function nettoyerLesCadres() {
     cadres.forEach(function (entree) {
       if (entree.minuteur) window.clearTimeout(entree.minuteur);
@@ -282,8 +308,6 @@
     observateur = null;
     zoneDuLien = null;
   }
-
-  // ---- le cadre d'un écran
 
   function entreeDeLaSource(source) {
     if (!source) return null;
@@ -323,6 +347,7 @@
 
   // Le délai ne commence que quand le cadre est près de l'écran : un cadre paresseux, hors
   // de la vue, n'est pas encore chargé et ne doit pas être pris pour un fichier absent.
+  // Sur la planche, « près de l'écran » tient compte du zoom et du déplacement.
   function surveiller(entree) {
     if (typeof window.IntersectionObserver !== "function") {
       lancerLeDelai(entree);
@@ -343,21 +368,22 @@
   }
 
   // Construit la boîte d'un cadre. config : code, titre, chemin (déjà vérifié), largeur, hauteur,
-  // vignette (réduit, paresseux, intouchable), lecture (affiché pour comparer seulement).
+  // lecture (affiché pour comparer seulement), et pour une vignette (réduite, paresseuse,
+  // intouchable) : vignette, echelle (1 = vraie taille), suit (la hauteur suit le message pret).
   function fabriquerCadre(config) {
     var boite = creer("div", "cadre-boite");
     var cadre = document.createElement("iframe");
     cadre.className = "cadre";
     cadre.setAttribute("data-code", config.code);
     cadre.setAttribute("title", config.code + " · " + config.titre);
+    var echelle = typeof config.echelle === "number" && config.echelle > 0 ? config.echelle : 1;
 
     if (config.vignette) {
-      var echelle = Math.min(1, HAUTEUR_DE_VIGNETTE / config.hauteur, LARGEUR_DE_VIGNETTE / config.largeur);
       boite.style.width = Math.round(config.largeur * echelle) + "px";
       boite.style.height = Math.round(config.hauteur * echelle) + "px";
       cadre.style.width = config.largeur + "px";
       cadre.style.height = config.hauteur + "px";
-      cadre.style.transform = "scale(" + echelle + ")";
+      if (echelle !== 1) cadre.style.transform = "scale(" + echelle + ")";
       cadre.setAttribute("tabindex", "-1");
       cadre.setAttribute("loading", "lazy");
     } else {
@@ -369,6 +395,7 @@
     var entree = {
       cadre: cadre, boite: boite, code: config.code, chemin: config.chemin,
       vignette: Boolean(config.vignette), lecture: Boolean(config.lecture),
+      echelle: echelle, suit: Boolean(config.vignette && config.suit),
       pret: false, minuteur: null, voile: null
     };
     cadres.push(entree);
@@ -389,6 +416,21 @@
     return boite;
   }
 
+  // L'écran du plan en vignette, à l'échelle voulue. suit : sa hauteur suit le message pret,
+  // pour le montrer en entier ; sinon il garde la hauteur écrite dans le plan.
+  function cadreReduit(ecran, echelle, suit) {
+    var largeur = dimension(ecran.largeur, LARGEUR_PAR_DEFAUT);
+    var hauteur = dimension(ecran.hauteur, HAUTEUR_PAR_DEFAUT);
+    var fichier = fichierSur(ecran.fichier);
+    if (!fichier) {
+      return boiteRefusee(ecran.fichier, "ecrans", { largeur: Math.round(largeur * echelle), hauteur: Math.round(hauteur * echelle) });
+    }
+    return fabriquerCadre({
+      code: ecran.code, titre: nomCourt(ecran.titre), chemin: "ecrans/" + fichier,
+      largeur: largeur, hauteur: hauteur, vignette: true, echelle: echelle, suit: suit
+    });
+  }
+
   // ---- ce que dit un écran
 
   function surPret(entree, donnee) {
@@ -403,8 +445,13 @@
       entree.boite.classList.remove("introuvable");
     }
     envoyerLeMode(entree);
-    if (!entree.vignette && typeof donnee.hauteur === "number" && isFinite(donnee.hauteur) && donnee.hauteur > 0) {
-      entree.cadre.style.height = Math.min(Math.ceil(donnee.hauteur), HAUTEUR_MAXIMALE_D_UN_CADRE) + "px";
+    if (typeof donnee.hauteur !== "number" || !isFinite(donnee.hauteur) || donnee.hauteur <= 0) return;
+    var hauteur = Math.min(Math.ceil(donnee.hauteur), HAUTEUR_MAXIMALE_D_UN_CADRE);
+    if (!entree.vignette) {
+      entree.cadre.style.height = hauteur + "px";
+    } else if (entree.suit) {
+      entree.cadre.style.height = hauteur + "px";
+      entree.boite.style.height = Math.round(hauteur * entree.echelle) + "px";
     }
   }
 
@@ -467,112 +514,626 @@
     });
   }
 
-  // ---- les notes d'une rangée
+  // ------------------------------------------------------------ 4c. rangées, écrans et notes
 
-  function dessinerNotes(rangee) {
-    var notes = (Array.isArray(rangee.notes) ? rangee.notes : []).filter(estObjet);
+  // Une note sans ecrans vaut pour toute sa rangée : elle s'affiche sous le titre de la rangée.
+  // Une note avec ecrans s'affiche sous chacun des écrans qu'elle cite, où qu'ils soient.
+
+  function rangeeParId(plan, id) {
+    for (var i = 0; i < plan.rangees.length; i++) {
+      if (estObjet(plan.rangees[i]) && plan.rangees[i].id === id) return plan.rangees[i];
+    }
+    return null;
+  }
+
+  function ecransDeLaRangee(plan, id) {
+    return plan.ecrans.filter(function (ecran) {
+      return ecran.rangee === id;
+    });
+  }
+
+  // « A Trouver un outil », ou « A » sans titre.
+  function nomDeRangee(rangee) {
+    return rangee.id + (estTexte(rangee.titre) ? " " + rangee.titre : "");
+  }
+
+  function compteDesEcrans(nombre) {
+    return nombre === 0 ? "Aucun écran" : pluriel(nombre, "écran", "écrans");
+  }
+
+  function notesDeLaRangee(rangee) {
+    return (Array.isArray(rangee.notes) ? rangee.notes : []).filter(estObjet);
+  }
+
+  function codesDeLaNote(note) {
+    return (Array.isArray(note.ecrans) ? note.ecrans : []).filter(estTexte);
+  }
+
+  function notesGenerales(rangee) {
+    return notesDeLaRangee(rangee).filter(function (note) {
+      return codesDeLaNote(note).length === 0;
+    });
+  }
+
+  // Les notes du plan rangées par écran cité : { "A2": [note, …] }.
+  function notesParEcran(plan) {
+    var index = {};
+    plan.rangees.forEach(function (rangee) {
+      if (!estObjet(rangee)) return;
+      notesDeLaRangee(rangee).forEach(function (note) {
+        codesDeLaNote(note).forEach(function (code) {
+          if (!aLaCle(index, code)) index[code] = [];
+          if (index[code].indexOf(note) === -1) index[code].push(note);
+        });
+      });
+    });
+    return index;
+  }
+
+  function notesDeLEcran(index, code) {
+    return aLaCle(index, code) ? index[code] : [];
+  }
+
+  // Les rangées qui ont quelque chose à montrer : un écran, ou une note de toute la rangée.
+  function rangeesVisibles(plan) {
+    return plan.rangees.filter(function (rangee) {
+      return estObjet(rangee) && (ecransDeLaRangee(plan, rangee.id).length > 0 || notesGenerales(rangee).length > 0);
+    });
+  }
+
+  function dessinerNote(note) {
+    var element = creer("li", "note");
+    element.setAttribute("data-type", String(note.type));
+    var tete = creer("div", "note-tete");
+    tete.appendChild(creer("span", "note-type", TYPES_DE_NOTE[note.type] || "Note"));
+    if (estTexte(note.date)) tete.appendChild(creer("span", "note-date", note.date));
+    element.appendChild(tete);
+    var corps = creer("p", "note-texte");
+    if (estTexte(note.ancien)) {
+      corps.appendChild(creer("s", "note-ancien", note.ancien));
+      corps.appendChild(document.createTextNode(" "));
+    }
+    if (estTexte(note.texte)) corps.appendChild(document.createTextNode(note.texte));
+    element.appendChild(corps);
+    return element;
+  }
+
+  // Une liste de notes (type en toutes lettres, date, ancienne valeur barrée), ou null s'il n'y en a pas.
+  function dessinerNotes(notes, etiquette, classe) {
     if (notes.length === 0) return null;
-    var liste = creer("ul", "notes");
-    liste.setAttribute("aria-label", "Notes de la rangée " + rangee.id);
+    var liste = creer("ul", "notes" + (classe ? " " + classe : ""));
+    liste.setAttribute("aria-label", etiquette);
+    // Ce que la planche montre à la place des notes quand elle est très réduite.
+    liste.setAttribute("data-resume", pluriel(notes.length, "note", "notes"));
     notes.forEach(function (note) {
-      var element = creer("li", "note");
-      element.setAttribute("data-type", String(note.type));
-      var tete = creer("div", "note-tete");
-      tete.appendChild(creer("span", "note-type", TYPES_DE_NOTE[note.type] || "Note"));
-      if (estTexte(note.date)) tete.appendChild(creer("span", "note-date", note.date));
-      element.appendChild(tete);
-      var corps = creer("p", "note-texte");
-      if (estTexte(note.ancien)) {
-        corps.appendChild(creer("s", "note-ancien", note.ancien));
-        corps.appendChild(document.createTextNode(" "));
-      }
-      if (estTexte(note.texte)) corps.appendChild(document.createTextNode(note.texte));
-      element.appendChild(corps);
-      liste.appendChild(element);
+      liste.appendChild(dessinerNote(note));
     });
     return liste;
   }
 
-  // ---- la vue d'ensemble
+  // La même liste, repliée sous « 2 notes » : pour le téléphone, où la place manque.
+  function notesRepliees(notes, etiquette, classe) {
+    var liste = dessinerNotes(notes, etiquette);
+    if (!liste) return null;
+    var repli = creer("details", "notes-repliees" + (classe ? " " + classe : ""));
+    repli.appendChild(creer("summary", "", pluriel(notes.length, "note", "notes")));
+    repli.appendChild(liste);
+    return repli;
+  }
 
-  function dessinerVignette(ecran) {
+  function ajouterLesBadges(conteneur, ecran) {
+    if (ecran.statut === "valide") conteneur.appendChild(creer("span", "badge-valide", "Validé"));
+    if (ecran.inchange === true) conteneur.appendChild(creer("span", "badge-inchange", "Inchangé"));
+  }
+
+  // Le titre d'une rangée, qui mène à sa vue en grand, suivi de son nombre d'écrans.
+  function titreDeRangee(rangee, nombre) {
+    var titre = creer("h3", "rangee-titre");
+    var lien = creer("a", "rangee-lien");
+    lien.setAttribute("href", lienDeLaRangee(rangee.id));
+    lien.appendChild(creer("span", "rangee-id", rangee.id));
+    if (estTexte(rangee.titre)) {
+      lien.appendChild(document.createTextNode(" "));
+      lien.appendChild(creer("span", "rangee-nom", rangee.titre));
+    }
+    titre.appendChild(lien);
+    titre.appendChild(creer("span", "rangee-compte", compteDesEcrans(nombre)));
+    return titre;
+  }
+
+  // Un écran en vignette : son nom au-dessus (code, badges, titre), qui est un lien couvrant
+  // aussi l'image, puis ses notes. options : suit (hauteur entière), notes, replier (details).
+  function dessinerVignette(ecran, echelle, options) {
     var largeur = dimension(ecran.largeur, LARGEUR_PAR_DEFAUT);
-    var hauteur = dimension(ecran.hauteur, HAUTEUR_PAR_DEFAUT);
-    var echelle = Math.min(1, HAUTEUR_DE_VIGNETTE / hauteur, LARGEUR_DE_VIGNETTE / largeur);
-    var taille = { largeur: Math.round(largeur * echelle), hauteur: Math.round(hauteur * echelle) };
-
     var element = creer("div", "vignette");
     element.setAttribute("data-code", ecran.code);
-    element.style.width = taille.largeur + "px";
+    element.style.width = Math.round(largeur * echelle) + "px";
 
-    var fichier = fichierSur(ecran.fichier);
-    if (fichier) {
-      element.appendChild(fabriquerCadre({
-        code: ecran.code, titre: nomCourt(ecran.titre), chemin: "ecrans/" + fichier,
-        largeur: largeur, hauteur: hauteur, vignette: true
-      }));
-    } else {
-      element.appendChild(boiteRefusee(ecran.fichier, "ecrans", taille));
-    }
-
-    // Un vrai lien, qui couvre toute la vignette (voir .vignette-lien::after dans le style).
+    // Le lien couvre le nom et l'image (voir .vignette-lien::after dans le style).
+    var haut = creer("div", "vignette-haut");
     var lien = creer("a", "vignette-lien");
     lien.setAttribute("href", lienDeLEcran(ecran.code));
-    var ligneDuCode = creer("span", "vignette-ligne");
-    ligneDuCode.appendChild(creer("span", "vignette-code", ecran.code));
-    if (ecran.statut === "valide") ligneDuCode.appendChild(creer("span", "badge-valide", "Validé"));
-    if (ecran.inchange === true) ligneDuCode.appendChild(creer("span", "badge-inchange", "Inchangé"));
-    lien.appendChild(ligneDuCode);
+    lien.setAttribute("title", ecran.code + " · " + nomCourt(ecran.titre));
+    var ligne = creer("span", "vignette-ligne");
+    ligne.appendChild(creer("span", "vignette-code", ecran.code));
+    ajouterLesBadges(ligne, ecran);
+    lien.appendChild(ligne);
     lien.appendChild(creer("span", "vignette-titre", nomCourt(ecran.titre)));
-    element.appendChild(lien);
+    haut.appendChild(lien);
+    haut.appendChild(cadreReduit(ecran, echelle, Boolean(options.suit)));
+    element.appendChild(haut);
+
+    var notes = options.notes || [];
+    var etiquette = "Notes de l'écran " + ecran.code;
+    var bloc = options.replier ? notesRepliees(notes, etiquette) : dessinerNotes(notes, etiquette, "notes-ecran");
+    if (bloc) element.appendChild(bloc);
     return element;
   }
 
+  // ---- la vue d'ensemble : la planche (ordinateur et tablette), la colonne (téléphone)
+
+  var TELEPHONE = "(max-width: 700px)";
+  var LARGEUR_SUR_TELEPHONE = 170;   // largeur d'une vignette à faire glisser
+  var ZOOM_DE_DEPART = 0.3;
+  var ZOOM_MINIMAL = 0.04;
+  var ZOOM_MAXIMAL = 2;
+  var PAS_DU_ZOOM = 1.25;
+  var ZOOM_DES_NOTES = 0.25;         // en dessous, les notes se replient en « 2 notes »
+  var ZOOM_TOUT_VOIR_MINIMAL = 0.15; // « Tout voir » ne descend pas plus bas, sauf pour la largeur
+  var SEUIL_DU_TIRER = 5;            // pixels à parcourir avant qu'un appui devienne un déplacement
+  var MARGE_DE_LA_PLANCHE = 24;
+
+  var largeurEtroite = typeof window.matchMedia === "function" ? window.matchMedia(TELEPHONE) : null;
+
+  function estTelephone() {
+    return Boolean(largeurEtroite && largeurEtroite.matches);
+  }
+
   function dessinerEnsemble(conteneur, plan) {
-    conteneur.appendChild(titreDeVue("Vue d'ensemble"));
     if (plan.ecrans.length === 0) {
+      conteneur.appendChild(titreDeVue("Vue d'ensemble"));
       conteneur.appendChild(message("Aucun écran n'est encore dessiné", [
         "La vue d'ensemble se remplira quand les premiers écrans existeront.",
         "Demandez à Claude de les dessiner : " + DEMANDE_DE_DESSIN + "."
       ]));
-    } else {
-      conteneur.appendChild(creer("p", "consigne",
-        "Chaque rangée montre ses écrans, puis ses notes. Touchez un écran pour l'ouvrir en grand."));
+      dessinerLesRangeesEnColonne(conteneur, plan);
+      return;
     }
+    if (estTelephone()) dessinerColonne(conteneur, plan);
+    else dessinerPlanche(conteneur, plan);
+  }
 
-    plan.rangees.forEach(function (rangee) {
-      var section = creer("section", "rangee");
+  // Téléphone : une colonne qui défile ; chaque rangée glisse de côté, écran par écran.
+  function dessinerColonne(conteneur, plan) {
+    conteneur.appendChild(titreDeVue("Vue d'ensemble"));
+    var visibles = rangeesVisibles(plan);
+    conteneur.appendChild(creer("p", "consigne",
+      pluriel(plan.ecrans.length, "écran", "écrans") + " en " + pluriel(visibles.length, "rangée", "rangées") +
+      ". Faites glisser chaque rangée ; touchez son titre pour la voir en grand, un écran pour l'ouvrir."));
+    dessinerLesRangeesEnColonne(conteneur, plan);
+  }
+
+  function dessinerLesRangeesEnColonne(conteneur, plan) {
+    var index = notesParEcran(plan);
+    rangeesVisibles(plan).forEach(function (rangee) {
+      var ecrans = ecransDeLaRangee(plan, rangee.id);
+      var section = creer("section", "rangee rangee-colonne");
       section.setAttribute("data-rangee", rangee.id);
-
-      var titre = creer("h3", "rangee-titre");
-      titre.appendChild(creer("span", "rangee-id", rangee.id));
-      if (estTexte(rangee.titre)) {
-        titre.appendChild(document.createTextNode(" "));
-        titre.appendChild(creer("span", "rangee-nom", rangee.titre));
-      }
-      section.appendChild(titre);
-
-      var corps = creer("div", "rangee-corps");
-      var ecrans = plan.ecrans.filter(function (ecran) {
-        return ecran.rangee === rangee.id;
-      });
-      if (ecrans.length === 0) {
-        corps.appendChild(creer("p", "rangee-vide", "Aucun écran dans cette rangée."));
-      } else {
-        var ligne = creer("div", "ecrans-ligne");
-        ligne.setAttribute("tabindex", "0");
-        ligne.setAttribute("role", "group");
-        ligne.setAttribute("aria-label", "Écrans de la rangée " + rangee.id);
+      section.appendChild(titreDeRangee(rangee, ecrans.length));
+      var generales = notesRepliees(notesGenerales(rangee), "Notes de toute la rangée " + rangee.id, "notes-generales");
+      if (generales) section.appendChild(generales);
+      if (ecrans.length > 0) {
+        var glisse = creer("div", "glisse");
+        glisse.setAttribute("tabindex", "0");
+        glisse.setAttribute("role", "group");
+        glisse.setAttribute("aria-label", "Écrans de la rangée " + rangee.id);
         ecrans.forEach(function (ecran) {
-          ligne.appendChild(dessinerVignette(ecran));
+          var largeur = dimension(ecran.largeur, LARGEUR_PAR_DEFAUT);
+          glisse.appendChild(dessinerVignette(ecran, LARGEUR_SUR_TELEPHONE / largeur, {
+            notes: notesDeLEcran(index, ecran.code), replier: true
+          }));
         });
-        corps.appendChild(ligne);
+        section.appendChild(glisse);
       }
-      var notes = dessinerNotes(rangee);
-      if (notes) corps.appendChild(notes);
-      section.appendChild(corps);
       conteneur.appendChild(section);
     });
+  }
+
+  // Ordinateur et tablette : la planche. Toutes les rangées l'une sous l'autre, chaque écran
+  // à sa vraie taille ; la molette déplace, Ctrl + molette (ou le pincement) zoome.
+  function dessinerPlanche(conteneur, plan) {
+    document.body.setAttribute("data-mise", "plein");
+    var index = notesParEcran(plan);
+    var visibles = rangeesVisibles(plan);
+
+    var fenetre = creer("div", "planche-fenetre");
+    var feuille = creer("div", "planche");
+    visibles.forEach(function (rangee) {
+      var ecrans = ecransDeLaRangee(plan, rangee.id);
+      var section = creer("section", "rangee");
+      section.setAttribute("data-rangee", rangee.id);
+      section.appendChild(titreDeRangee(rangee, ecrans.length));
+      var generales = dessinerNotes(notesGenerales(rangee), "Notes de toute la rangée " + rangee.id, "notes-generales");
+      if (generales) section.appendChild(generales);
+      if (ecrans.length > 0) {
+        var ligne = creer("div", "rangee-ecrans");
+        ecrans.forEach(function (ecran) {
+          ligne.appendChild(dessinerVignette(ecran, 1, { suit: true, notes: notesDeLEcran(index, ecran.code) }));
+        });
+        section.appendChild(ligne);
+      }
+      feuille.appendChild(section);
+    });
+    fenetre.appendChild(feuille);
+
+    // Le titre du projet flotte en haut à gauche, tant que la planche n'a pas bougé.
+    var entete = creer("div", "planche-entete");
+    entete.appendChild(creer("h2", "planche-titre", estTexte(plan.projet) ? plan.projet : "Vue d'ensemble"));
+    entete.appendChild(creer("p", "planche-aide",
+      pluriel(plan.ecrans.length, "écran", "écrans") + " en " + pluriel(visibles.length, "rangée", "rangées") +
+      ". La molette déplace la planche, Ctrl + molette ou le pincement zooment. Touchez un écran pour l'ouvrir, un titre de rangée pour la voir en grand."));
+
+    var commandes = creer("div", "planche-zoom");
+    commandes.setAttribute("role", "group");
+    commandes.setAttribute("aria-label", "Zoom de la planche");
+    function bouton(texte, nom) {
+      var element = creer("button", "", texte);
+      element.setAttribute("type", "button");
+      element.setAttribute("aria-label", nom);
+      commandes.appendChild(element);
+      return element;
+    }
+    var moins = bouton("−", "Réduire le zoom");
+    var niveau = creer("span", "planche-niveau");
+    niveau.setAttribute("title", "Niveau du zoom");
+    commandes.appendChild(niveau);
+    var plus = bouton("+", "Agrandir le zoom");
+    var toutVoir = bouton("Tout voir", "Tout voir");
+    var reel = bouton("100 %", "100 %, taille réelle");
+
+    conteneur.appendChild(fenetre);
+    conteneur.appendChild(entete);
+    conteneur.appendChild(commandes);
+
+    var planche = brancherLaPlanche(fenetre, feuille, entete, niveau);
+    moins.addEventListener("click", function () { planche.zoomer(planche.zoom() / PAS_DU_ZOOM); });
+    plus.addEventListener("click", function () { planche.zoomer(planche.zoom() * PAS_DU_ZOOM); });
+    toutVoir.addEventListener("click", planche.toutVoir);
+    reel.addEventListener("click", function () { planche.zoomer(1); });
+  }
+
+  // Le déplacement et le zoom de la planche. La feuille est posée par une seule transformation
+  // (translate puis scale) ; --inv vaut 1 / zoom (au moins 1) et garde les titres lisibles.
+  function brancherLaPlanche(fenetre, feuille, entete, niveau) {
+    var z = ZOOM_DE_DEPART;
+    var x = MARGE_DE_LA_PLANCHE;
+    var y = entete.offsetTop + entete.offsetHeight + 28;
+    var depart = { x: x, y: y };
+
+    // Ce qui suit le zoom dans la feuille : --inv, et les notes repliées sous 25 %.
+    function appliquerLeZoom(zoom) {
+      feuille.style.setProperty("--inv", String(Math.max(1, 1 / zoom)));
+      if (zoom < ZOOM_DES_NOTES) feuille.classList.add("notes-pliees");
+      else feuille.classList.remove("notes-pliees");
+    }
+
+    function poser() {
+      feuille.style.transform = "translate(" + x + "px," + y + "px) scale(" + z + ")";
+      appliquerLeZoom(z);
+      niveau.textContent = Math.round(z * 100) + " %";
+      var aBouge = Math.abs(x - depart.x) > 2 || Math.abs(y - depart.y) > 2;
+      if (aBouge) entete.classList.add("efface");
+      else entete.classList.remove("efface");
+    }
+
+    // Change le zoom en gardant immobile le point (cx, cy) de la fenêtre, le centre par défaut.
+    function zoomer(nouveau, cx, cy) {
+      nouveau = Math.max(ZOOM_MINIMAL, Math.min(ZOOM_MAXIMAL, nouveau));
+      if (typeof cx !== "number") {
+        cx = fenetre.clientWidth / 2;
+        cy = fenetre.clientHeight / 2;
+      }
+      x = cx - (cx - x) * nouveau / z;
+      y = cy - (cy - y) * nouveau / z;
+      z = nouveau;
+      poser();
+    }
+
+    // Mesure la feuille, dans ses propres pixels, telle qu'elle serait à ce zoom.
+    function mesurer(zoom) {
+      appliquerLeZoom(zoom);
+      return { largeur: feuille.offsetWidth, hauteur: feuille.offsetHeight };
+    }
+
+    // Tout voir. Les titres et les noms gardent leur taille à l'écran, donc la taille de la
+    // planche dépend du zoom : on cherche, par essais successifs (en coupant l'intervalle en
+    // deux), le plus grand zoom auquel elle tient. Si tout ne tient qu'en dessous de 15 %, les
+    // écrans ne seraient plus que des taches : on s'arrête à 15 %, ou plus bas s'il le faut pour
+    // que toutes les colonnes tiennent en largeur ; la molette descend alors vers le bas.
+    function toutVoir() {
+      var placeEnLargeur = fenetre.clientWidth - 2 * MARGE_DE_LA_PLANCHE;
+      var placeEnHauteur = fenetre.clientHeight - depart.y - MARGE_DE_LA_PLANCHE;
+      function tient(zoom, enHauteur) {
+        var taille = mesurer(zoom);
+        return taille.largeur * zoom <= placeEnLargeur && (!enHauteur || taille.hauteur * zoom <= placeEnHauteur);
+      }
+      function plusGrandZoom(enHauteur) {
+        if (tient(1, enHauteur)) return 1;
+        if (!tient(ZOOM_MINIMAL, enHauteur)) return ZOOM_MINIMAL;
+        var bas = ZOOM_MINIMAL;
+        var haut = 1;
+        for (var i = 0; i < 14; i++) {
+          var milieu = (bas + haut) / 2;
+          if (tient(milieu, enHauteur)) bas = milieu;
+          else haut = milieu;
+        }
+        return bas;
+      }
+      var toutTient = plusGrandZoom(true);
+      z = toutTient >= ZOOM_TOUT_VOIR_MINIMAL ? toutTient : Math.min(ZOOM_TOUT_VOIR_MINIMAL, plusGrandZoom(false));
+      x = depart.x;
+      y = depart.y;
+      poser();
+    }
+
+    // La molette déplace ; Maj + molette déplace de côté ; Ctrl + molette, ou le pincement
+    // du pavé tactile (que le navigateur envoie comme Ctrl + molette), zoome autour du pointeur.
+    fenetre.addEventListener("wheel", function (evenement) {
+      evenement.preventDefault();
+      var facteur = evenement.deltaMode === 1 ? 16 : (evenement.deltaMode === 2 ? fenetre.clientHeight : 1);
+      var dx = evenement.deltaX * facteur;
+      var dy = evenement.deltaY * facteur;
+      if (evenement.ctrlKey || evenement.metaKey) {
+        var boite = fenetre.getBoundingClientRect();
+        zoomer(z * Math.exp(-dy * 0.0025), evenement.clientX - boite.left, evenement.clientY - boite.top);
+        return;
+      }
+      if (evenement.shiftKey && dx === 0) {
+        dx = dy;
+        dy = 0;
+      }
+      x -= dx;
+      y -= dy;
+      poser();
+    }, { passive: false });
+
+    // Tirer avec la souris ou un doigt déplace ; deux doigts zooment. Un appui qui a déplacé
+    // la planche n'ouvre pas l'écran sur lequel il a commencé.
+    var pointeurs = {};
+    var geste = null;
+    var aTire = false;
+
+    // La distance entre deux doigts, jamais nulle.
+    function ecart(a, b) {
+      var dx = a.x - b.x;
+      var dy = a.y - b.y;
+      return Math.max(1, Math.sqrt(dx * dx + dy * dy));
+    }
+
+    function pointeursActifs() {
+      var liste = [];
+      for (var id in pointeurs) {
+        if (aLaCle(pointeurs, id)) liste.push(pointeurs[id]);
+      }
+      return liste;
+    }
+
+    function commencerLeGeste() {
+      var actifs = pointeursActifs();
+      if (actifs.length === 1) {
+        geste = { deux: false, px: actifs[0].x, py: actifs[0].y, x: x, y: y, bouge: aTire };
+      } else if (actifs.length >= 2) {
+        var boite = fenetre.getBoundingClientRect();
+        geste = {
+          deux: true, z: z, x: x, y: y,
+          distance: ecart(actifs[0], actifs[1]),
+          mx: (actifs[0].x + actifs[1].x) / 2 - boite.left, my: (actifs[0].y + actifs[1].y) / 2 - boite.top
+        };
+        aTire = true;
+      } else {
+        geste = null;
+      }
+    }
+
+    fenetre.addEventListener("pointerdown", function (evenement) {
+      if (evenement.pointerType === "mouse" && evenement.button !== 0) return;
+      if (pointeursActifs().length === 0) aTire = false;
+      pointeurs[evenement.pointerId] = { x: evenement.clientX, y: evenement.clientY };
+      commencerLeGeste();
+    });
+
+    fenetre.addEventListener("pointermove", function (evenement) {
+      if (!aLaCle(pointeurs, evenement.pointerId) || !geste) return;
+      pointeurs[evenement.pointerId] = { x: evenement.clientX, y: evenement.clientY };
+      if (geste.deux) {
+        var actifs = pointeursActifs();
+        if (actifs.length < 2) return;
+        var boite = fenetre.getBoundingClientRect();
+        var distance = ecart(actifs[0], actifs[1]);
+        var mx = (actifs[0].x + actifs[1].x) / 2 - boite.left;
+        var my = (actifs[0].y + actifs[1].y) / 2 - boite.top;
+        var nouveau = Math.max(ZOOM_MINIMAL, Math.min(ZOOM_MAXIMAL, geste.z * distance / geste.distance));
+        // Le point de la planche qui était sous les deux doigts reste sous les deux doigts.
+        x = mx - (geste.mx - geste.x) * nouveau / geste.z;
+        y = my - (geste.my - geste.y) * nouveau / geste.z;
+        z = nouveau;
+        poser();
+        return;
+      }
+      var dx = evenement.clientX - geste.px;
+      var dy = evenement.clientY - geste.py;
+      if (!geste.bouge && Math.abs(dx) + Math.abs(dy) > SEUIL_DU_TIRER) {
+        geste.bouge = true;
+        aTire = true;
+        fenetre.classList.add("tire");
+        try {
+          fenetre.setPointerCapture(evenement.pointerId); // la planche suit même hors de la fenêtre
+        } catch (erreur) {
+          // sans capture, le déplacement s'arrête au bord : sans gravité
+        }
+      }
+      if (geste.bouge) {
+        x = geste.x + dx;
+        y = geste.y + dy;
+        poser();
+      }
+    });
+
+    function finDuPointeur(evenement) {
+      if (!aLaCle(pointeurs, evenement.pointerId)) return;
+      delete pointeurs[evenement.pointerId];
+      commencerLeGeste();
+      if (!geste) fenetre.classList.remove("tire");
+    }
+    fenetre.addEventListener("pointerup", finDuPointeur);
+    fenetre.addEventListener("pointercancel", finDuPointeur);
+
+    fenetre.addEventListener("click", function (evenement) {
+      if (!aTire) return;
+      aTire = false;
+      evenement.preventDefault();
+      evenement.stopPropagation();
+    }, true);
+    // Un lien tiré ne doit pas partir en glisser-déposer.
+    fenetre.addEventListener("dragstart", function (evenement) {
+      evenement.preventDefault();
+    });
+
+    // Au clavier, un lien qui prend le focus hors de la vue y est ramené. Le navigateur, lui,
+    // ferait défiler la fenêtre, ce qui décalerait la planche : on remet ce défilement à zéro.
+    function sansDefilement() {
+      if (fenetre.scrollTop !== 0) fenetre.scrollTop = 0;
+      if (fenetre.scrollLeft !== 0) fenetre.scrollLeft = 0;
+    }
+    fenetre.addEventListener("scroll", sansDefilement);
+    fenetre.addEventListener("focusin", function (evenement) {
+      sansDefilement();
+      // Un lien touché du doigt ou de la souris prend aussi le focus : il est déjà sous les yeux,
+      // et le déplacer maintenant ferait manquer le toucher.
+      if (pointeursActifs().length > 0) return;
+      var cible = evenement.target.getBoundingClientRect();
+      var boite = fenetre.getBoundingClientRect();
+      var marge = 40;
+      if (cible.left < boite.left + marge || cible.right > boite.right - marge) x += boite.left + marge - cible.left;
+      if (cible.top < boite.top + marge || cible.bottom > boite.bottom - marge) y += boite.top + depart.y - cible.top;
+      poser();
+    });
+
+    poser();
+    return {
+      zoom: function () { return z; },
+      zoomer: zoomer,
+      toutVoir: toutVoir
+    };
+  }
+
+  // ---- une rangée en grand
+
+  function dessinerRangee(conteneur, plan, id) {
+    var rangee = rangeeParId(plan, id);
+    if (!rangee) {
+      conteneur.appendChild(lienRetour(message("Cette rangée n'existe pas", [
+        id === "" ? "L'adresse ne dit pas quelle rangée ouvrir." : "Le plan ne contient aucune rangée « " + id + " »."
+      ])));
+      return;
+    }
+    var telephone = estTelephone();
+    if (!telephone) document.body.setAttribute("data-mise", "plein");
+    var index = notesParEcran(plan);
+    var ecrans = ecransDeLaRangee(plan, rangee.id);
+
+    var vue = creer("div", "vue-rangee");
+    vue.setAttribute("data-rangee", rangee.id);
+    var tete = creer("div", "vue-rangee-tete");
+    var titre = creer("h2", "titre-de-vue vue-rangee-titre");
+    titre.appendChild(creer("span", "rangee-id", rangee.id));
+    if (estTexte(rangee.titre)) {
+      titre.appendChild(document.createTextNode(" "));
+      titre.appendChild(creer("span", "rangee-nom", rangee.titre));
+    }
+    tete.appendChild(titre);
+    tete.appendChild(creer("p", "consigne", compteDesEcrans(ecrans.length) +
+      (ecrans.length > 0 ? ". Touchez un écran pour l'ouvrir seul, avec l'existant et les corrections." : ".")));
+    var generales = dessinerNotes(notesGenerales(rangee), "Notes de toute la rangée " + rangee.id, "notes-generales");
+    if (generales) tete.appendChild(generales);
+    vue.appendChild(tete);
+
+    var corps = creer("div", "vue-rangee-corps");
+    var bande = creer("div", "rangee-bande");
+    bande.setAttribute("tabindex", "0");
+    bande.setAttribute("role", "group");
+    bande.setAttribute("aria-label", "Écrans de la rangée " + rangee.id);
+    var liste = creer("div", "rangee-cartes");
+    var largeurUtile = Math.max(200, document.documentElement.clientWidth - 32);
+    ecrans.forEach(function (ecran) {
+      var largeur = dimension(ecran.largeur, LARGEUR_PAR_DEFAUT);
+      // Une taille de lecture : 90 % pour un téléphone, 62 % pour un ordinateur ; sur un
+      // téléphone, la largeur de l'écran.
+      var echelle = telephone ? Math.min(1, largeurUtile / largeur) : (largeur > 600 ? 0.62 : 0.9);
+      liste.appendChild(carteDeRangee(ecran, echelle, notesDeLEcran(index, ecran.code)));
+    });
+    if (ecrans.length === 0) liste.appendChild(creer("p", "rangee-vide", "Aucun écran dans cette rangée."));
+    bande.appendChild(liste);
+    corps.appendChild(bande);
+    corps.appendChild(panneauDesPages(plan, ecrans));
+    vue.appendChild(corps);
+    conteneur.appendChild(vue);
+  }
+
+  // Un écran d'une rangée : son nom, l'écran (qu'on touche pour l'ouvrir), « Ouvrir A2 › », ses notes.
+  function carteDeRangee(ecran, echelle, notes) {
+    var largeur = dimension(ecran.largeur, LARGEUR_PAR_DEFAUT);
+    var carte = creer("div", "rangee-carte");
+    carte.setAttribute("data-code", ecran.code);
+    carte.style.width = Math.round(largeur * echelle) + "px";
+    var nom = creer("p", "rangee-carte-nom");
+    nom.appendChild(creer("b", "rangee-carte-code", ecran.code));
+    nom.appendChild(document.createTextNode(" "));
+    nom.appendChild(creer("span", "rangee-carte-titre", nomCourt(ecran.titre)));
+    ajouterLesBadges(nom, ecran);
+    carte.appendChild(nom);
+
+    var zone = creer("div", "rangee-carte-cadre");
+    zone.appendChild(cadreReduit(ecran, echelle, true));
+    // Toucher l'image ouvre l'écran ; au clavier, c'est le lien « Ouvrir » qui sert.
+    var couvre = creer("a", "rangee-carte-couvre");
+    couvre.setAttribute("href", lienDeLEcran(ecran.code));
+    couvre.setAttribute("tabindex", "-1");
+    couvre.setAttribute("aria-hidden", "true");
+    zone.appendChild(couvre);
+    carte.appendChild(zone);
+
+    var ouvrir = creer("a", "rangee-carte-ouvrir", "Ouvrir " + ecran.code + " ›");
+    ouvrir.setAttribute("href", lienDeLEcran(ecran.code));
+    carte.appendChild(ouvrir);
+    var liste = dessinerNotes(notes, "Notes de l'écran " + ecran.code, "notes-ecran");
+    if (liste) carte.appendChild(liste);
+    return carte;
+  }
+
+  // Le panneau de droite : les pages de l'état des lieux qui citent un écran de la rangée.
+  function panneauDesPages(plan, ecrans) {
+    var panneau = creer("aside", "rangee-panneau");
+    panneau.setAttribute("aria-label", "Pages de l'état des lieux");
+    panneau.appendChild(creer("h3", "rangee-panneau-titre", "Pages de l'état des lieux"));
+    var codes = ecrans.map(function (ecran) {
+      return ecran.code;
+    });
+    var lignes = plan.etatDesLieux.filter(function (ligne) {
+      return (Array.isArray(ligne.ecrans) ? ligne.ecrans : []).some(function (code) {
+        return codes.indexOf(code) !== -1;
+      });
+    });
+    if (lignes.length === 0) {
+      panneau.appendChild(creer("p", "consigne", "Aucune page de l'état des lieux ne cite ces écrans."));
+      return panneau;
+    }
+    var liste = creer("ul", "lignes");
+    lignes.forEach(function (ligne) {
+      liste.appendChild(dessinerLigne(ligne));
+    });
+    panneau.appendChild(liste);
+    return panneau;
   }
 
   // ---- l'écran seul
@@ -630,30 +1191,29 @@
     return lien;
   }
 
+  // La place de l'écran de l'adresse dans le plan : « #ecran » sans code donne le premier
+  // écran, un code inconnu donne -1.
+  function positionDeLEcran(plan, code) {
+    if (code === "") return plan.ecrans.length > 0 ? 0 : -1;
+    for (var i = 0; i < plan.ecrans.length; i++) {
+      if (plan.ecrans[i].code === code) return i;
+    }
+    return -1;
+  }
+
   function dessinerEcran(conteneur, plan, code) {
     var ecrans = plan.ecrans;
     if (ecrans.length === 0) {
-      var vide = message("Aucun écran n'est encore dessiné", [
+      conteneur.appendChild(lienRetour(message("Aucun écran n'est encore dessiné", [
         "Il n'y a rien à montrer ici pour l'instant.",
         "Demandez à Claude de les dessiner : " + DEMANDE_DE_DESSIN + "."
-      ]);
-      vide.appendChild(creer("a", "lien-retour", "Retour à la vue d'ensemble")).setAttribute("href", "#ensemble");
-      conteneur.appendChild(vide);
+      ])));
       return;
     }
 
-    // « #ecran » sans code : le premier écran du plan.
-    var position = 0;
-    if (code !== "") {
-      position = -1;
-      for (var i = 0; i < ecrans.length; i++) {
-        if (ecrans[i].code === code) position = i;
-      }
-    }
+    var position = positionDeLEcran(plan, code);
     if (position === -1) {
-      var inconnu = message("Cet écran n'existe pas", ["Le plan ne contient aucun écran avec le code « " + code + " »."]);
-      inconnu.appendChild(creer("a", "lien-retour", "Retour à la vue d'ensemble")).setAttribute("href", "#ensemble");
-      conteneur.appendChild(inconnu);
+      conteneur.appendChild(lienRetour(message("Cet écran n'existe pas", ["Le plan ne contient aucun écran avec le code « " + code + " »."])));
       return;
     }
     var ecran = ecrans[position];
@@ -662,8 +1222,7 @@
 
     var entete = creer("div", "ecran-entete");
     entete.appendChild(creer("span", "ecran-code", ecran.code));
-    if (ecran.statut === "valide") entete.appendChild(creer("span", "badge-valide", "Validé"));
-    if (ecran.inchange === true) entete.appendChild(creer("span", "badge-inchange", "Inchangé"));
+    ajouterLesBadges(entete, ecran);
     entete.appendChild(creer("h2", "titre-de-vue", nomCourt(ecran.titre)));
     conteneur.appendChild(entete);
     conteneur.appendChild(creer("p", "consigne",
@@ -722,11 +1281,23 @@
       proposition.appendChild(boiteRefusee(ecran.fichier, "ecrans", null));
     }
     comparaison.appendChild(proposition);
+
+    // Sous les écrans, les notes qui citent cet écran.
+    var principal = creer("div", "ecran-principal");
+    principal.appendChild(comparaison);
+    var notes = dessinerNotes(notesDeLEcran(notesParEcran(plan), ecran.code), "Notes sur l'écran " + ecran.code, "notes-ecran");
+    if (notes) {
+      var blocDesNotes = creer("section", "ecran-notes");
+      blocDesNotes.appendChild(creer("h3", "volet-titre", "Notes sur cet écran"));
+      blocDesNotes.appendChild(notes);
+      principal.appendChild(blocDesNotes);
+    }
+
     // Le corps de la vue : les écrans, et à côté d'eux (ou dessous) le panneau des corrections,
     // que corrections.js y ajoute.
     var corps = creer("div", "ecran-corps");
     corps.setAttribute("data-code", ecran.code);
-    corps.appendChild(comparaison);
+    corps.appendChild(principal);
     conteneur.appendChild(corps);
 
     // Précédent et suivant, dans l'ordre des écrans du plan.
@@ -738,16 +1309,258 @@
     if (voisins.childNodes.length > 0) conteneur.appendChild(voisins);
   }
 
-  // Une vue : son adresse (le mot après #), son nom dans la barre et sa fonction de dessin.
+  // Une vue : son adresse (le mot après #) et sa fonction de dessin.
   // dessiner(conteneur, plan, reste) ; `reste` est ce qui suit le mot dans l'adresse
-  // (le code d'écran pour #ecran/A2, sinon une chaîne vide).
+  // (le code d'écran pour #ecran/A2, la rangée pour #rangee/A, sinon une chaîne vide).
   var VUES = {
-    etat: { nom: "État des lieux", dessiner: dessinerEtatDesLieux },
-    ensemble: { nom: "Vue d'ensemble", dessiner: dessinerEnsemble },
-    ecran: { nom: "Écrans", dessiner: dessinerEcran }
+    etat: { dessiner: dessinerEtatDesLieux },
+    ensemble: { dessiner: dessinerEnsemble },
+    rangee: { dessiner: dessinerRangee },
+    ecran: { dessiner: dessinerEcran }
   };
 
-  // ------------------------------------------------------------ 5. afficher
+  // ------------------------------------------------------------ 5. la barre du haut
+
+  // ---- le fil : où je suis, du plus large au plus serré, et la flèche pour remonter d'un niveau
+
+  function dessinerLeFil(lue, lecture) {
+    var liste = document.getElementById("fil");
+    var remonter = document.getElementById("remonter");
+    if (!liste) return;
+    var plan = lecture.statut === "bon" ? lecture.plan : null;
+    var projet = nomDuProjet(lecture);
+    var pas = [{ texte: projet ? "À plat · " + projet : "À plat", lien: "#ensemble" }];
+
+    if (plan && lue.vue === "rangee") {
+      var rangee = rangeeParId(plan, lue.reste);
+      pas.push(rangee ? { texte: nomDeRangee(rangee), lien: lienDeLaRangee(rangee.id) } : { texte: lue.reste || "Rangée", lien: null });
+    } else if (plan && lue.vue === "ecran") {
+      var position = positionDeLEcran(plan, lue.reste);
+      if (position === -1) {
+        pas.push({ texte: lue.reste || "Écran", lien: null });
+      } else {
+        var ecran = plan.ecrans[position];
+        var saRangee = rangeeParId(plan, ecran.rangee);
+        if (saRangee) pas.push({ texte: nomDeRangee(saRangee), lien: lienDeLaRangee(saRangee.id) });
+        pas.push({ texte: ecran.code, lien: lienDeLEcran(ecran.code) });
+      }
+    }
+
+    liste.textContent = "";
+    pas.forEach(function (etape, i) {
+      var element = creer("li", "fil-pas");
+      if (i === pas.length - 1) {
+        var ici = creer("span", "fil-ici", etape.texte);
+        ici.setAttribute("aria-current", "page");
+        element.appendChild(ici);
+      } else {
+        var lien = creer("a", "", etape.texte);
+        lien.setAttribute("href", etape.lien);
+        element.appendChild(lien);
+      }
+      liste.appendChild(element);
+    });
+
+    if (!remonter) return;
+    if (pas.length > 1) {
+      var parent = pas[pas.length - 2];
+      remonter.hidden = false;
+      remonter.setAttribute("href", parent.lien);
+      remonter.setAttribute("aria-label", "Remonter : " + parent.texte);
+      remonter.setAttribute("title", "Remonter : " + parent.texte);
+    } else {
+      remonter.hidden = true;
+      remonter.removeAttribute("href");
+    }
+  }
+
+  // ---- la recherche d'un écran, par son code ou un mot de son titre
+
+  var MAXIMUM_DE_RESULTATS = 10;
+  var recherche = { champ: null, liste: null, trouves: [], actif: -1 };
+
+  function estUnChamp(element) {
+    if (!element) return false;
+    var balise = element.tagName;
+    return balise === "INPUT" || balise === "TEXTAREA" || balise === "SELECT" || element.isContentEditable === true;
+  }
+
+  // Les écrans dont le code et le titre contiennent chaque mot cherché, sans tenir compte des
+  // accents ni des majuscules. Le code exact vient d'abord, puis les codes qui commencent ainsi.
+  function trouverLesEcrans(plan, texte) {
+    var mots = sansAccents(texte).split(/\s+/).filter(estTexte);
+    if (mots.length === 0) return [];
+    var trouves = [];
+    plan.ecrans.forEach(function (ecran, i) {
+      if (!estTexte(ecran.code)) return;
+      var code = sansAccents(ecran.code);
+      var tout = code + " " + sansAccents(estTexte(ecran.titre) ? ecran.titre : "");
+      var garde = mots.every(function (mot) {
+        return tout.indexOf(mot) !== -1;
+      });
+      if (!garde) return;
+      var rang = code === mots[0] ? 0 : (code.indexOf(mots[0]) === 0 ? 1 : 2);
+      trouves.push({ ecran: ecran, rang: rang, ordre: i });
+    });
+    trouves.sort(function (a, b) {
+      return a.rang - b.rang || a.ordre - b.ordre;
+    });
+    return trouves.slice(0, MAXIMUM_DE_RESULTATS).map(function (trouve) {
+      return trouve.ecran;
+    });
+  }
+
+  function fermerLesResultats() {
+    if (!recherche.liste) return;
+    recherche.liste.hidden = true;
+    recherche.liste.textContent = "";
+    recherche.trouves = [];
+    recherche.actif = -1;
+    recherche.champ.setAttribute("aria-expanded", "false");
+    recherche.champ.removeAttribute("aria-activedescendant");
+  }
+
+  function marquerLActif() {
+    var options = recherche.liste.querySelectorAll("[data-code]");
+    for (var i = 0; i < options.length; i++) {
+      var actif = i === recherche.actif;
+      options[i].setAttribute("aria-selected", actif ? "true" : "false");
+      if (actif) {
+        options[i].className = "resultat actif";
+        recherche.champ.setAttribute("aria-activedescendant", options[i].id);
+        if (typeof options[i].scrollIntoView === "function") options[i].scrollIntoView({ block: "nearest" });
+      } else {
+        options[i].className = "resultat";
+      }
+    }
+  }
+
+  function chercher() {
+    var champ = recherche.champ;
+    var liste = recherche.liste;
+    var texte = champ.value.trim();
+    var plan = window.APlatMoteur.planCourant();
+    if (!texte || !plan) {
+      fermerLesResultats();
+      return;
+    }
+    recherche.trouves = trouverLesEcrans(plan, texte);
+    recherche.actif = recherche.trouves.length > 0 ? 0 : -1;
+    liste.textContent = "";
+    if (recherche.trouves.length === 0) {
+      var vide = creer("li", "resultat-vide", "Aucun écran ne correspond.");
+      vide.setAttribute("role", "option");
+      vide.setAttribute("aria-disabled", "true");
+      liste.appendChild(vide);
+    }
+    recherche.trouves.forEach(function (ecran, i) {
+      var option = creer("li", "resultat");
+      option.id = "resultat-" + i;
+      option.setAttribute("role", "option");
+      option.setAttribute("data-code", ecran.code);
+      option.appendChild(creer("b", "resultat-code", ecran.code));
+      option.appendChild(creer("span", "resultat-titre", nomCourt(ecran.titre)));
+      liste.appendChild(option);
+    });
+    liste.hidden = false;
+    champ.setAttribute("aria-expanded", "true");
+    marquerLActif();
+  }
+
+  function ouvrirLeResultat(code) {
+    fermerLesResultats();
+    recherche.champ.value = "";
+    recherche.champ.blur();
+    window.location.hash = lienDeLEcran(code);
+  }
+
+  function auClavierDeLaRecherche(evenement) {
+    var ouverte = !recherche.liste.hidden;
+    var nombre = recherche.trouves.length;
+    if (evenement.key === "ArrowDown" || evenement.key === "ArrowUp") {
+      evenement.preventDefault();
+      if (!ouverte) {
+        chercher();
+        return;
+      }
+      if (nombre === 0) return;
+      var pas = evenement.key === "ArrowDown" ? 1 : -1;
+      recherche.actif = (recherche.actif + pas + nombre) % nombre;
+      marquerLActif();
+    } else if (evenement.key === "Enter") {
+      evenement.preventDefault();
+      if (!ouverte) chercher();
+      var ecran = recherche.trouves[recherche.actif];
+      if (ecran) ouvrirLeResultat(ecran.code);
+    } else if (evenement.key === "Escape") {
+      // Échap ferme la liste ; un second Échap vide le champ. Il ne va pas plus loin
+      // (la saisie d'une correction, ouverte en même temps, reste ouverte).
+      evenement.preventDefault();
+      evenement.stopPropagation();
+      if (ouverte) fermerLesResultats();
+      else recherche.champ.value = "";
+    }
+  }
+
+  function brancherLaRecherche() {
+    var champ = document.getElementById("recherche");
+    var liste = document.getElementById("resultats");
+    if (!champ || !liste) return;
+    recherche.champ = champ;
+    recherche.liste = liste;
+    champ.addEventListener("input", chercher);
+    champ.addEventListener("keydown", auClavierDeLaRecherche);
+    champ.addEventListener("focus", function () {
+      if (champ.value.trim()) chercher();
+    });
+    champ.addEventListener("blur", function () {
+      window.setTimeout(function () {
+        if (document.activeElement !== champ) fermerLesResultats();
+      }, 150);
+    });
+    // Appuyer sur un résultat ne retire pas le focus du champ : la liste reste ouverte jusqu'au clic.
+    liste.addEventListener("mousedown", function (evenement) {
+      evenement.preventDefault();
+    });
+    liste.addEventListener("click", function (evenement) {
+      var element = evenement.target;
+      while (element && element !== liste && !(element.getAttribute && element.getAttribute("data-code") !== null)) {
+        element = element.parentNode;
+      }
+      if (element && element !== liste) ouvrirLeResultat(element.getAttribute("data-code"));
+    });
+    // « / » met le curseur dans la recherche, sauf quand on écrit déjà dans un champ.
+    document.addEventListener("keydown", function (evenement) {
+      if (evenement.key !== "/" || evenement.ctrlKey || evenement.metaKey || evenement.altKey) return;
+      if (estUnChamp(document.activeElement)) return;
+      evenement.preventDefault();
+      champ.focus();
+      champ.select();
+    });
+  }
+
+  // ---- les liens des vues, à droite
+
+  function marquerLaBarre(vue) {
+    var liens = document.querySelectorAll("nav a[data-vue]");
+    for (var i = 0; i < liens.length; i++) {
+      if (liens[i].getAttribute("data-vue") === vue) liens[i].setAttribute("aria-current", "page");
+      else liens[i].removeAttribute("aria-current");
+    }
+  }
+
+  // La hauteur de la barre, que la planche et la rangée utilisent pour se poser dessous.
+  function mesurerLaBarre() {
+    var barre = document.querySelector(".barre");
+    if (barre) document.documentElement.style.setProperty("--barre-hauteur", barre.offsetHeight + "px");
+  }
+
+  function nomDuProjet(lecture) {
+    var plan = lecture.plan || window.A_PLAT;
+    return plan && estTexte(plan.projet) ? plan.projet : "";
+  }
+
+  // ------------------------------------------------------------ 6. afficher
 
   // "#ecran/A2" devient { vue: "ecran", reste: "A2" }. Une adresse inconnue donne null.
   function lireAdresse(adresse) {
@@ -755,7 +1568,7 @@
     var coupe = texte.indexOf("/");
     var vue = coupe === -1 ? texte : texte.slice(0, coupe);
     var reste = coupe === -1 ? "" : texte.slice(coupe + 1);
-    if (!Object.prototype.hasOwnProperty.call(VUES, vue)) return null;
+    if (!aLaCle(VUES, vue)) return null;
     var decode = reste;
     try {
       decode = decodeURIComponent(reste);
@@ -765,24 +1578,7 @@
     return { vue: vue, reste: decode };
   }
 
-  function marquerLaBarre(vue, plan) {
-    var liens = document.querySelectorAll("nav a[data-vue]");
-    for (var i = 0; i < liens.length; i++) {
-      var lien = liens[i];
-      if (lien.getAttribute("data-vue") === vue) lien.setAttribute("aria-current", "page");
-      else lien.removeAttribute("aria-current");
-      // « Écrans » mène au premier écran du plan, quand il y en a un.
-      if (lien.getAttribute("data-vue") === "ecran") {
-        var premier = plan && plan.ecrans && plan.ecrans[0];
-        lien.setAttribute("href", premier && estTexte(premier.code) ? "#ecran/" + encodeURIComponent(premier.code) : "#ecran");
-      }
-    }
-  }
-
-  function nomDuProjet(lecture) {
-    var plan = lecture.plan || window.A_PLAT;
-    return plan && estTexte(plan.projet) ? plan.projet : "";
-  }
+  var largeurDuDessin = 0; // la largeur de la fenêtre au dernier dessin
 
   function afficher(adresse) {
     var lue = lireAdresse(adresse);
@@ -799,19 +1595,26 @@
     var conteneur = document.getElementById("vue");
     var lecture = lirePlan();
     var projet = nomDuProjet(lecture);
-    document.getElementById("projet").textContent = projet;
+    var titre = document.getElementById("projet");
+    if (titre) titre.textContent = projet ? "À plat · " + projet : "À plat";
     document.title = projet ? projet + " · À plat" : "À plat";
-    marquerLaBarre(lue.vue, lecture.plan);
+    marquerLaBarre(lue.vue);
+    dessinerLeFil(lue, lecture);
+    fermerLesResultats();
 
     conteneur.textContent = "";
     nettoyerLesCadres();
     document.body.setAttribute("data-vue", lue.vue);
+    document.body.setAttribute("data-mise", "page"); // la planche et la rangée passent en « plein »
+    mesurerLaBarre();
+    largeurDuDessin = window.innerWidth;
     try {
       if (lecture.statut !== "bon") conteneur.appendChild(dessinerProblemeDePlan(lecture));
       else VUES[lue.vue].dessiner(conteneur, lecture.plan, lue.reste);
     } catch (erreur) {
       // Jamais de page blanche : on dit ce qui s'est passé.
       conteneur.textContent = "";
+      document.body.setAttribute("data-mise", "page");
       var carte = message("La page n'a pas réussi à afficher ce plan", [
         "Demandez à Claude de relire plan.js. Détail pour lui : " + (erreur && erreur.message ? erreur.message : "erreur inconnue") + "."
       ]);
@@ -824,6 +1627,32 @@
       // un navigateur sans CustomEvent : la vue reste affichée, sans corrections
     }
   }
+
+  // La planche et la rangée se dessinent différemment sur un téléphone : passer d'un côté à
+  // l'autre de 700 px les redessine. Sur un téléphone, une rangée suit aussi la largeur.
+  function vueQuiSuitLaLargeur() {
+    var lue = lireAdresse(window.location.hash);
+    return lue && (lue.vue === "ensemble" || lue.vue === "rangee") ? lue : null;
+  }
+
+  function surChangementDeFormat() {
+    if (vueQuiSuitLaLargeur()) afficher(window.location.hash);
+  }
+  if (largeurEtroite) {
+    if (typeof largeurEtroite.addEventListener === "function") largeurEtroite.addEventListener("change", surChangementDeFormat);
+    else if (typeof largeurEtroite.addListener === "function") largeurEtroite.addListener(surChangementDeFormat);
+  }
+
+  var minuteurDuRedimensionnement = null;
+  window.addEventListener("resize", function () {
+    if (minuteurDuRedimensionnement) window.clearTimeout(minuteurDuRedimensionnement);
+    minuteurDuRedimensionnement = window.setTimeout(function () {
+      minuteurDuRedimensionnement = null;
+      mesurerLaBarre();
+      var lue = vueQuiSuitLaLargeur();
+      if (lue && lue.vue === "rangee" && estTelephone() && window.innerWidth !== largeurDuDessin) afficher(window.location.hash);
+    }, 200);
+  });
 
   // surElementTouche est appelée par la page à travers cet objet, pour qu'on puisse la remplacer.
   // planCourant : le plan quand il est lisible, sinon null. creer : le petit outil du moteur.
@@ -840,6 +1669,7 @@
     creer: creer
   };
 
+  brancherLaRecherche();
   window.addEventListener("hashchange", function () {
     afficher(window.location.hash);
   });
