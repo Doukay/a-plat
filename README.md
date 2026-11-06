@@ -20,10 +20,10 @@ Il vous donne quatre choses :
 Le résultat est une seule page, `maquettes/index.html`, qui s'ouvre d'un double-clic. Elle a trois vues.
 
 1. **État des lieux.** La liste des pages et leur état : Existe, À compléter, Manque ou Prévue, avec une raison courte.
-2. **Vue d'ensemble.** Tous les écrans en rangées, côte à côte, chacun avec son code (A1, A2, B1…). Les notes sont au bout de chaque rangée.
-3. **Écrans.** Un écran en grand, avec l'actuel à côté s'il existe. Toucher une vignette de la vue d'ensemble ouvre cette vue.
+2. **Vue d'ensemble.** Une grande planche : toutes les rangées l'une sous l'autre, chaque écran à sa vraie taille, avec son code (A1, A2, B1…). La molette déplace la planche, Ctrl + molette zoome. Une note s'affiche sous l'écran qu'elle concerne, ou sous le titre de la rangée si elle vaut pour toute la rangée. Toucher le titre d'une rangée l'ouvre en grand : ses écrans à une taille de lecture, et les pages de l'état des lieux qui les citent.
+3. **Écrans.** Un écran en grand, avec l'actuel à côté s'il existe, et ses notes dessous. Toucher un écran de la vue d'ensemble ou d'une rangée ouvre cette vue.
 
-Deux boutons règlent ce que fait un toucher sur un écran : **Corriger** désigne l'élément touché pour une correction, **Essayer le parcours** suit les boutons et les liens comme dans l'application. La page marche à la largeur d'un téléphone, en clair et en sombre.
+La barre noire du haut dit où l'on est, avec une flèche pour remonter d'un niveau. Sa recherche trouve un écran par son code ou un mot de son titre (touche `/`). Deux boutons règlent ce que fait un toucher sur un écran : **Corriger** désigne l'élément touché pour une correction, **Essayer le parcours** suit les boutons et les liens comme dans l'application. Sur un téléphone, la vue d'ensemble devient une colonne où chaque rangée glisse de côté. La page marche en clair et en sombre.
 
 ## Installation
 
