@@ -1,6 +1,6 @@
 ---
 name: a-plat
-description: À utiliser quand la personne tape /a-plat ou veut voir où en est son projet, ce qui existe, ce qui marche, ce qui manque ou reste à faire, ses pages en maquettes page par page ou écran par écran, régler d'abord le parcours puis l'apparence, ou préparer ce qu'il reste à coder. Vaut à n'importe quel moment d'un projet, même s'il n'y a encore qu'une idée ou si des maquettes existent déjà.
+description: À utiliser quand la personne tape /a-plat, ou demande de mettre son projet « à plat » en maquettes : l'état des lieux page par page, les écrans, ce qui manque, l'écran actuel et la proposition côte à côte. Vaut à n'importe quel moment d'un projet, même s'il n'y a encore qu'une idée ou si des maquettes existent déjà.
 ---
 
 # À plat
@@ -57,7 +57,7 @@ Les huit étapes se font dans l'ordre. **Arrêt** veut dire : finir le message p
 
 **S'il n'y a qu'une idée :** poser des questions courtes, une à la fois, et attendre chaque réponse : dans chaque message, une seule question, un seul point d'interrogation. Quatre ou cinq suffisent : à quoi ça sert, pour qui, ce que la personne y fait d'abord, sur quel appareil, ce qui est déjà décidé. S'arrêter dès que la liste des pages peut être faite. Rien n'est dessiné avant que la personne ait vu la liste.
 
-**S'il y a déjà des maquettes :** relire aussi le projet comme ci-dessus, et comparer avec `etatDesLieux`. Seul `etatDesLieux` se met à jour : ne jamais réécrire `rangees`, `ecrans` ni `reglages` en reprise. Ils ne changent que sur une demande de la personne (étape 6). Les codes d'écran, les notes et les écrans validés ne bougent pas.
+**S'il y a déjà des maquettes :** relire aussi le projet comme ci-dessus, et comparer avec `etatDesLieux`. Seul `etatDesLieux` se met à jour : ne jamais réécrire `rangees`, `ecrans` ni `reglages` en reprise. Ils ne changent que sur une demande de la personne (étape 6). Les codes d'écran, les notes et les écrans validés ne bougent pas. Après l'état des lieux de reprise et son arrêt : si `reglages` existe, le rappeler en une ligne et continuer à l'étape 5, ou à l'étape 4 s'il n'y a encore aucun écran (sans `reglages`, étape 3) ; ajouter des notes ou de nouveaux écrans est permis, réécrire ne l'est pas.
 
 ### 2. État des lieux
 
@@ -77,7 +77,7 @@ En cas de reprise, commencer ce message par ce qui a changé depuis les maquette
 
 ### 3. Réglages
 
-Proposer les cinq réglages d'après ce que le projet contient, chacun avec sa raison en quelques mots, et les écrire dans `reglages` une fois acceptés. La personne peut les changer à tout moment, en le disant. Dans le même message, nommer les 1 ou 2 premiers écrans prévus (étape 4), et demander si la personne a des captures des pages qui existent (voir `references/ecrans.md`).
+Proposer les cinq réglages d'après ce que le projet contient, chacun avec sa raison en quelques mots, et les écrire dans `reglages` une fois acceptés. La personne peut les changer à tout moment, en le disant. Dans le même message, nommer les 1 ou 2 premiers écrans prévus (étape 4), et, s'il y a des pages qui existent, demander si la personne en a des captures (voir `references/ecrans.md`).
 
 | Réglage | Choix | Comment proposer |
 |---|---|---|
@@ -122,7 +122,7 @@ Les décisions restent à côté des écrans, jamais dessus : notes courtes, ave
 
 1. **Relecture** (si `relecture: true`) : relire chaque écran avant de le montrer. Rien d'ajouté sans demande, aucune donnée réelle, inconnu entre [crochets], liens justes. Si `relecture: false`, dire que ce n'est pas relu.
 2. **Contrôle :** lancer `node "<skill>/verifier.mjs" <dossier>` et corriger jusqu'à ce qu'il réussisse. Si Node est absent, faire les contrôles soi-même et le dire (liste dans `references/format.md`).
-3. **Rendu :** si un moyen existe (navigateur piloté, Playwright), ouvrir la page et l'écran, et regarder. Les captures prises pour vérifier vont dans un dossier temporaire, jamais dans le projet. Sans moyen de regarder, écrire « je n'ai pas vu le rendu ».
+3. **Rendu :** avec un moyen déjà disponible (navigateur piloté, Playwright), ouvrir la page et l'écran, et regarder ; ne rien installer ni télécharger pour cela. Les captures prises pour vérifier vont dans un dossier temporaire, jamais dans le projet. Sans moyen de regarder, écrire « je n'ai pas vu le rendu ».
 4. **Compte rendu**, dans le message : ce qui a été vérifié et comment, ce qui ne l'a pas été, ce qui vient du projet (structure, noms des champs, libellés) et ce qui est inventé, sans jamais dire que rien n'a été repris si c'est faux, les [crochets] restants, le fichier à ouvrir d'un double-clic (`<dossier>/index.html`) et l'adresse de l'écran (`#ecran/A2`).
 
 ## Quand Claude est tenté de faire autrement

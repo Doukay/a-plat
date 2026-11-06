@@ -46,9 +46,36 @@ test("la description dit quand s'en servir, avec les mots d'une personne qui ne 
   const { description } = enTete(texteDuSkill);
   assert.ok(description.length > 80, "la description est trop courte pour dire quand s'en servir");
   assert.ok(description.length <= 1000, `la description est trop longue : ${description.length} caractères`);
-  for (const mots of [/\/a-plat/, /où en est/i, /maquette/i, /manque/i, /page par page|écran par écran/i, /n'importe quel moment/i, /idée/i]) {
+  for (const mots of [/\/a-plat/, /« à plat »/i, /maquette/i, /état des lieux/i, /manque/i, /page par page/i,
+    /écran actuel et la proposition/i, /n'importe quel moment/i, /idée/i]) {
     assert.match(description, mots);
   }
+  // Elle se lie à l'objet de l'outil : une simple question « où j'en suis » ne doit pas la déclencher.
+  assert.doesNotMatch(description, /où en est/i);
+  assert.doesNotMatch(description, /ce qui marche/i);
+});
+
+test("en reprise, après l'arrêt de l'état des lieux, les réglages sont rappelés et le parcours reprend", () => {
+  const ligne = texteDuSkill.split(/\r?\n/).find((l) => l.startsWith("**S'il y a déjà des maquettes :**")) ?? "";
+  assert.match(ligne, /après l'état des lieux de reprise et son arrêt/i);
+  assert.match(ligne, /si `reglages` existe, le rappeler en une ligne/i);
+  assert.match(ligne, /étape 5/);
+  assert.match(ligne, /étape 4 s'il n'y a encore aucun écran/);
+  assert.match(ligne, /ajouter des notes ou de nouveaux écrans est permis, réécrire ne l'est pas/i);
+  const reprise = lire("references", "etat-des-lieux.md").split(/\r?\n## /).find((s) => s.startsWith("Reprendre des maquettes")) ?? "";
+  assert.match(reprise, /note de type `source`[^.]*si la page a déjà une rangée/);
+});
+
+test("le rendu se regarde avec un moyen déjà disponible, sans rien installer", () => {
+  const ligne = texteDuSkill.split(/\r?\n/).find((l) => l.includes("**Rendu :**")) ?? "";
+  assert.match(ligne, /un moyen déjà disponible/);
+  assert.match(ligne, /ne rien installer ni télécharger pour cela/);
+});
+
+test("les captures ne se demandent que s'il y a des pages qui existent", () => {
+  const ligne = texteDuSkill.split(/\r?\n/).find((l) => l.startsWith("Proposer les cinq réglages")) ?? "";
+  assert.match(ligne, /s'il y a des pages qui existent/);
+  assert.match(ligne, /captures/);
 });
 
 test("SKILL.md tient en 150 lignes au plus", () => {
