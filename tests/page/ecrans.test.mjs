@@ -575,31 +575,26 @@ test("le relais nomme les éléments : data-nom, sinon le rôle et un texte cour
 
 // ---------------------------------------------------------------- fichiers, textes piégeux
 
-test("un fichier qui sort du dossier des écrans est refusé avec une phrase, sans rien charger", async () => {
+// validerPlan (logique.js) refuse ces fichiers : la page montre la liste des erreurs du plan,
+// qui cite chacun d'eux, et ne crée aucun cadre ni aucune image.
+test("un fichier qui sort du dossier des écrans fait refuser le plan, sans rien charger", async () => {
   const mauvais = ["../secret.html", "https://example.org/x.html", "/etc/page.html", "%2e%2e/x.html", "sous\\..\\x.html", "//example.org/x.html"];
   const ecrans = mauvais.map((fichier, i) => ({ code: `R${i + 1}`, titre: `Refusé ${i + 1}`, fichier }));
   ecrans.push({ code: "OK", titre: "Bon", fichier: "bon.html", actuel: { fichier: "actuel/../../x.png", origine: "capture" } });
   const dossier = genererFixture({ plan: planDe(ecrans), ecrans: { "bon.html": ecranHtml("OK", "<h1>Bon</h1>") } });
-  await avecPage(dossier, { adresse: "ensemble" }, async ({ page, requetes, erreurs }) => {
-    await page.waitForTimeout(500);
-    const sources = await page.locator("#vue iframe").evaluateAll((cadres) => cadres.map((c) => c.getAttribute("src")));
-    assert.deepEqual(sources, ["ecrans/bon.html"], "un seul cadre : celui du bon fichier");
-    assert.equal(await page.locator("#vue .vignette .cadre-refuse").count(), mauvais.length);
-    assert.match(await page.locator("#vue .vignette .cadre-refuse").first().innerText(), /Fichier refusé/);
-    assert.equal(await page.locator("#vue img").count(), 0);
-    assert.deepEqual(requetes, []);
-    assert.deepEqual(erreurs, []);
-  });
-  await avecPage(dossier, { adresse: "ecran/OK" }, async ({ page }) => {
-    assert.equal(await page.locator("#vue img").count(), 0, "la capture hors dossier n'est pas chargée");
-    assert.match(await texte(page, ".volet-actuel"), /Fichier refusé/);
-    assert.equal(await page.locator(".volet-actuel iframe").count(), 0);
-    await page.waitForFunction(() => document.querySelector(".volet-proposition iframe"));
-  });
-  await avecPage(dossier, { adresse: "ecran/R1" }, async ({ page }) => {
-    assert.equal(await page.locator("#vue iframe").count(), 0);
-    assert.match(await texte(page, "#vue"), /Fichier refusé/);
-  });
+  for (const adresse of ["ensemble", "ecran/OK", "ecran/R1"]) {
+    await avecPage(dossier, { adresse }, async ({ page, requetes, erreurs }) => {
+      await page.waitForTimeout(500);
+      const vue = await texte(page, "#vue");
+      assert.match(vue, /Le plan contient des erreurs/);
+      for (const fichier of mauvais) assert.ok(vue.includes(`« ${fichier} » refusé`), `${fichier} n'est pas cité`);
+      assert.ok(vue.includes("« actuel/../../x.png » refusé"), "la capture hors dossier n'est pas citée");
+      assert.equal(await page.locator("#vue iframe").count(), 0);
+      assert.equal(await page.locator("#vue img").count(), 0);
+      assert.deepEqual(requetes, []);
+      assert.deepEqual(erreurs, []);
+    });
+  }
 });
 
 test("des balises dans les titres, codes et notes s'affichent comme du texte, sans rien exécuter", async () => {

@@ -25,6 +25,33 @@
     }
   }
 
+  // Un fichier du plan ne sert que dans son dossier (ecrans/ ou actuel/). On refuse tout ce qui
+  // peut en sortir : « .. », une adresse complète (https:, file:…), une barre au début, une
+  // barre oblique inverse, et les mêmes écrits avec des %. Renvoie le fichier, ou null.
+  // La page (moteur.js) et le contrôle s'en servent tous deux.
+  function fichierSur(valeur) {
+    if (!estTexte(valeur)) return null;
+    var versions = [valeur];
+    try {
+      versions.push(decodeURIComponent(valeur));
+    } catch (erreur) {
+      return null;
+    }
+    for (var i = 0; i < versions.length; i++) {
+      var version = versions[i];
+      if (version.indexOf("..") !== -1) return null;
+      if (/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(version)) return null;
+      if (/^[\/\\]/.test(version) || version.indexOf("\\") !== -1) return null;
+      if (/[\u0000-\u001f]/.test(version)) return null;
+    }
+    return valeur;
+  }
+
+  function regleDuFichier(dossier) {
+    return "il doit rester dans le dossier " + dossier + "/, sans « .. », sans adresse complète (https:, file:…), " +
+      "sans barre / au début ni barre oblique inverse \\.";
+  }
+
   // Renvoie la liste des erreurs du plan, en français. Liste vide si tout va bien.
   // Ne plante jamais, même sur un plan mal formé.
   function validerPlan(plan) {
@@ -50,8 +77,14 @@
         erreurs.push("rangees[" + i + "] doit être un objet.");
         return;
       }
-      if (estTexte(rangee.id)) idsDeRangee.push(rangee.id);
-      else erreurs.push("rangees[" + i + "] n'a pas de champ id.");
+      if (!estTexte(rangee.id)) {
+        erreurs.push("rangees[" + i + "] n'a pas de champ id.");
+      } else if (idsDeRangee.indexOf(rangee.id) !== -1) {
+        erreurs.push("La rangée " + rangee.id + " est utilisée deux fois (id " + montrer(rangee.id) +
+          ") : chaque rangée a son propre id.");
+      } else {
+        idsDeRangee.push(rangee.id);
+      }
       var nom = estTexte(rangee.id) ? "la rangée " + rangee.id : "rangees[" + i + "]";
       if (rangee.notes === undefined) return;
       if (!Array.isArray(rangee.notes)) {
@@ -68,6 +101,7 @@
     });
 
     var codes = [];
+    var fichiers = {};  // fichier -> nom du premier écran qui l'utilise
     (ecrans || []).forEach(function (ecran, i) {
       if (!estObjet(ecran)) {
         erreurs.push("ecrans[" + i + "] doit être un objet.");
@@ -83,6 +117,16 @@
       }
       if (!estTexte(ecran.fichier)) {
         erreurs.push(nom + " n'a pas de champ fichier.");
+      } else if (!fichierSur(ecran.fichier)) {
+        erreurs.push(nom + " a un fichier " + montrer(ecran.fichier) + " refusé : " + regleDuFichier("ecrans"));
+      } else if (Object.prototype.hasOwnProperty.call(fichiers, ecran.fichier)) {
+        erreurs.push("Le fichier " + montrer(ecran.fichier) + " est utilisé deux fois (" + fichiers[ecran.fichier] +
+          " et " + (estTexte(ecran.code) ? ecran.code : "ecrans[" + i + "]") + ") : chaque écran a son propre fichier.");
+      } else {
+        fichiers[ecran.fichier] = estTexte(ecran.code) ? ecran.code : "ecrans[" + i + "]";
+      }
+      if (estObjet(ecran.actuel) && estTexte(ecran.actuel.fichier) && !fichierSur(ecran.actuel.fichier)) {
+        erreurs.push(nom + " a un actuel.fichier " + montrer(ecran.actuel.fichier) + " refusé : " + regleDuFichier("actuel"));
       }
       if (idsDeRangee.indexOf(ecran.rangee) === -1) {
         erreurs.push(nom + " a une rangee " + montrer(ecran.rangee) + " qui n'existe pas dans rangees.");
@@ -137,6 +181,7 @@
 
   var logique = {
     validerPlan: validerPlan,
+    fichierSur: fichierSur,
     texteCorrections: texteCorrections,
     ecranParFichier: ecranParFichier
   };
