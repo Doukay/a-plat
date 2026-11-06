@@ -1,5 +1,7 @@
 # À plat : description de l'outil
 
+> Note de conception écrite avant la construction. Là où elle diffère du [README](../README.md), c'est le README qui fait foi.
+
 Version de travail du 04/11/2026. Ce document dit ce que l'outil fera, avant de le construire.
 
 ## En une phrase
@@ -172,7 +174,9 @@ Si ce dossier arrive sur le serveur par une copie régulière, une correction ne
 
 Il demande Node. Si Node est absent, Claude fait ces contrôles lui-même et le dit.
 
-## Ce que l'outil ne fait jamais
+## Les règles données à Claude
+
+Ce sont des règles données à Claude, pas des verrous techniques (voir le README).
 
 - Il ne modifie pas le code du projet.
 - Il n'envoie rien : pas de mesure d'usage, pas de compte, pas d'appel réseau depuis la page.

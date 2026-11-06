@@ -141,6 +141,19 @@ test("le README dit la licence MIT et finit par « Construit avec Claude Code. �
   assert.equal(texte.trimEnd().split("\n").pop(), "Construit avec Claude Code.");
 });
 
+test("la note de conception dit qu'elle précède la construction et que le README fait foi", () => {
+  const conception = readFileSync(join(RACINE, "docs", "conception.md"), "utf8");
+  assert.match(conception.split("\n").slice(0, 4).join("\n"), /écrite avant la construction.*c'est le README qui fait foi/);
+  assert.match(conception, /^## Les règles données à Claude$/m);
+  assert.doesNotMatch(conception, /^## Ce que l'outil ne fait jamais/m);
+  assert.ok(!existsSync(join(RACINE, "docs", "superpowers")), "le plan de construction n'est plus dans le dépôt");
+});
+
+test("les comptes rendus d'essai ne nomment aucun outil de la session d'essai", () => {
+  const texte = readFileSync(join(RACINE, "docs", "essais", "2026-11-06-pretoutil.md"), "utf8");
+  assert.doesNotMatch(texte, /\.impeccable|ma propre session|mon installation/i);
+});
+
 test("le README ne cite aucun chemin de machine", () => {
   assert.doesNotMatch(lire(), /C:\\Users|\/C:\\Users|[A-Z]:\\|\/home\/|\/Users\//i);
 });

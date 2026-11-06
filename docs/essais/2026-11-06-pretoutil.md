@@ -185,7 +185,7 @@ Départ : une copie du dossier de l'étape 1 après le tour 6 (B1 validé, corre
   - La correction de A1 (la classe `.titre-grand`) est toujours dans l'écran et dans `commun.css`.
   - Dans `plan.js`, les rangées, les écrans, les statuts et les réglages sont identiques. La seule différence est une note `source` qui garde l'ancien état des Voisins, comme le demande `etat-des-lieux.md`.
 - `verifier.mjs` donne le code 0.
-- **À savoir :** en écrivant `atelier.html` dans la copie, un outil de ma propre session a déposé un dossier `.impeccable/` dans le projet copié. Claude l'a rangé dans « Pas lu ». C'est une trace de mon installation, pas de l'outil.
+- **À savoir :** en écrivant `atelier.html` dans la copie, un autre outil installé sur la machine d'essai, sans lien avec À plat, a déposé un dossier caché dans le projet copié. Claude l'a rangé dans « Pas lu ». C'est une trace de l'environnement d'essai, pas d'À plat.
 
 ## Étape 5 : un dossier `maquettes/` qui n'est pas à l'outil
 
