@@ -1,0 +1,38 @@
+:root {
+  --vert: #2f5d3a;
+  --vert-clair: #e6efe4;
+  --terre: #7a5230;
+  --texte: #1f2a21;
+  --fond: #fbfaf5;
+  --alerte: #9b2c1f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: var(--texte); background: var(--fond); }
+a { color: var(--vert); }
+.entete { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: .75rem 1.25rem; background: var(--vert); color: #fff; }
+.entete a { color: #fff; }
+.marque { font-weight: 700; font-size: 1.15rem; text-decoration: none; }
+#menu { display: flex; flex-wrap: wrap; gap: .75rem; flex: 1; }
+#menu a { text-decoration: none; padding: .15rem .4rem; border-radius: 4px; }
+#menu a[aria-current="page"] { background: rgba(255, 255, 255, .22); }
+.identite { display: flex; align-items: center; gap: .5rem; font-size: .9rem; }
+.identite button { background: #fff; color: var(--vert); }
+main { max-width: 56rem; margin: 0 auto; padding: 1.25rem; min-height: 60vh; }
+h1 { color: var(--vert); margin-top: 0; }
+h2 { color: var(--terre); font-size: 1.15rem; }
+.carte { background: #fff; border: 1px solid #d9d6c8; border-radius: 8px; padding: .75rem 1rem; margin: 0 0 1rem; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid #e3e0d3; vertical-align: top; }
+th { background: var(--vert-clair); }
+label { display: block; margin: .5rem 0 .15rem; font-weight: 600; }
+input, select, textarea { font: inherit; padding: .35rem .5rem; width: 100%; max-width: 24rem; border: 1px solid #aaa; border-radius: 4px; }
+textarea { max-width: 36rem; min-height: 6rem; }
+button { font: inherit; padding: .35rem .8rem; border: 1px solid var(--vert); background: var(--vert); color: #fff; border-radius: 4px; cursor: pointer; }
+button.discret { background: #fff; color: var(--vert); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.filtres { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.filtres div { min-width: 12rem; }
+.message { padding: .5rem .75rem; border-radius: 4px; background: var(--vert-clair); margin: .75rem 0; }
+.message.erreur { background: #f6dcd8; color: var(--alerte); }
+.pied { text-align: center; padding: 1rem; color: #666; font-size: .9rem; }
+.actions { display: flex; gap: .4rem; flex-wrap: wrap; }
