@@ -191,6 +191,91 @@ test("la méthode reste générale : aucun trait du projet d'essai", () => {
   }
 });
 
+// Retouches après la première mesure sur un projet jamais vu (06/11/2026). Chaque règle reste générale.
+const ligneDe = (texte, debut) => texte.split(/\r?\n/).find((l) => l.includes(debut)) ?? "";
+const section = (texte, titre) => (texte.split(/\r?\n## /).find((s) => s.startsWith(titre)) ?? "");
+
+test("le routeur, les gardes d'accès et le chargement des données se lisent comme des écrans", () => {
+  const texte = lire("references", "lire-un-projet.md");
+  const etats = section(texte, "4.");
+  for (const motif of [/routeur/, /gardes d'accès/, /chargement des données/, /comme des écrans/, /adresse inconnue/,
+    /illisible/, /absente/, /sans explication/, /page qu'elle voulait/, /sans rien montrer/]) {
+    assert.match(etats, motif, `le §4 de lire-un-projet.md doit parler de ${motif}`);
+  }
+  assert.doesNotMatch(texte, /identifiant inconnu/, "l'adresse inconnue se dit une seule fois, en général");
+  assert.ok(texte.trimEnd().split(/\r?\n/).length <= 100, "lire-un-projet.md ne doit pas s'allonger de redites");
+});
+
+test("une page n'est « Existe » que si chaque rôle annoncé y a toutes ses tâches", () => {
+  const roles = section(lire("references", "lire-un-projet.md"), "6.");
+  assert.match(roles, /tâches/);
+  assert.match(roles, /« Existe »/);
+  assert.match(roles, /`a-completer`/);
+  const etat = lire("references", "etat-des-lieux.md");
+  assert.match(ligneDe(etat, "| `existe` |"), /tâche/);
+  assert.match(ligneDe(etat, "| Tâche d'un rôle"), /`a-completer`/);
+});
+
+test("un manque laissé de côté par la personne reste dans la liste, marqué avec la date", () => {
+  const etat = lire("references", "etat-des-lieux.md");
+  const regle = ligneDe(etat, "laisser un manque de côté");
+  assert.match(regle, /reste/);
+  assert.match(regle, /jamais retirée/);
+  assert.match(regle, /Laissé de côté par la personne le AAAA-MM-JJ/);
+  assert.match(regle, /compte/);
+  assert.match(ligneDe(lire("references", "format.md"), "raison:"), /laissé de côté/i);
+  assert.match(ligneDe(texteDuSkill, "**Manques.**"), /laisse de côté reste dans la liste/);
+});
+
+test("l'existant redessiné ne reprend que le code et les styles du projet, et un rendu non vu ne s'affirme pas", () => {
+  const ecrans = lire("references", "ecrans.md");
+  const regle = ligneDe(ecrans, "**Pas de capture :**");
+  assert.match(regle, /lire ses styles/i);
+  assert.match(regle, /rien n'y est ajouté : ni largeur, ni règle, ni élément/);
+  assert.doesNotMatch(ecrans, /bloc qui défile/, "le redessin n'ajoute pas de bloc qui défile");
+  assert.match(ligneDe(lire("references", "format.md"), "**Redessiné :**"), /rien d'autre/);
+  const vu = ligneDe(texteDuSkill, "**Ce qui est vu.**");
+  assert.match(vu, /comment elle s'affiche/);
+  assert.match(vu, /dire comment/);
+});
+
+test("aucune donnée du projet dans les maquettes, et le compte rendu dit ce qui vient du projet", () => {
+  const ecrans = lire("references", "ecrans.md");
+  assert.match(ecrans, /fichiers de données ou de départ/);
+  assert.match(ecrans, /même s'ils semblent inventés/);
+  assert.match(ligneDe(texteDuSkill, "**Données réelles.**"), /même s'ils semblent inventés/);
+  const compteRendu = ligneDe(texteDuSkill, "**Compte rendu**");
+  assert.match(compteRendu, /ce qui vient du projet/);
+  assert.match(compteRendu, /ce qui est inventé/);
+  assert.match(compteRendu, /jamais/);
+});
+
+test("une commande par appel, jamais enchaînée, dit une seule fois dans SKILL.md", () => {
+  const regle = ligneDe(texteDuSkill, "**Commandes.**");
+  assert.match(regle, /une commande par appel/i);
+  for (const signe of ["`;`", "`&&`", "`|`"]) assert.ok(regle.includes(signe), `la règle doit citer ${signe}`);
+  assert.equal(texteDuSkill.split("**Commandes.**").length, 2);
+});
+
+test("sans Node, les dossiers ecrans/ et actuel/ sont créés, et rien d'autre", () => {
+  const regle = texteDuSkill.split(/\r?\n/).find((ligne) => /Sans Node/.test(ligne) && /lire/i.test(ligne)) ?? "";
+  assert.match(regle, /`ecrans\/` et `actuel\/`/);
+  assert.match(regle, /rien d'autre/);
+  assert.match(regle, /`\.gitkeep`/);
+});
+
+test("les nombres du message se comptent sur le tableau montré, en reprise aussi", () => {
+  const regle = ligneDe(lire("references", "etat-des-lieux.md"), "Le compte se fait");
+  assert.match(regle, /tableau montré/);
+  assert.match(regle, /reprise/);
+});
+
+test("la méthode ne garde aucun trait du second projet d'essai", () => {
+  for (const fichier of fichiersDeLaMethode()) {
+    assert.doesNotMatch(readFileSync(fichier, "utf8"), /jardin|parcelle|arrosage|cabane/i, `${nomRelatif(fichier)} parle du projet d'essai`);
+  }
+});
+
 test("aucun chemin de machine ni mail dans le skill", () => {
   const motifs = [/[A-Z]:[\\/](?:Users|Dev|Windows|Program)/i, /\/home\/[a-z]/i, /\/Users\/[a-z]/i, /[\w.+-]+@[\w-]+\.[a-z]{2,}/i];
   for (const fichier of fichiers(SKILL)) {

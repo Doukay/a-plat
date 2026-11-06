@@ -6,7 +6,7 @@ La liste des pages, chacune avec un état et une courte raison. La personne la v
 
 | `etat` | Il s'applique quand | Ce que dit la page |
 |---|---|---|
-| `existe` | La page est dans le projet et rien de ce qu'elle annonce ne lui manque. | Existe |
+| `existe` | La page est dans le projet, rien de ce qu'elle annonce ne lui manque, et chaque tâche des rôles qui s'en servent y a son écran ou son action. | Existe |
 | `a-completer` | La page est là, et il lui manque quelque chose qu'on peut montrer. | À compléter |
 | `manque` | Annoncée, attendue par le projet ou nécessaire à un parcours du projet, et absente. | Manque |
 | `prevue` | Une décision écrite (ou dite par la personne) la prévoit, et elle n'est pas construite. | Prévue |
@@ -18,6 +18,7 @@ La liste des pages, chacune avec un état et une courte raison. La personne la v
 | État oublié d'un écran (vide, erreur, refus, hors ligne) | La page concernée passe en `a-completer`, l'état oublié est dans la raison. |
 | Bouton qui ne mène nulle part | La page qui porte le bouton passe en `a-completer` ; si le bouton vise une page absente, une ligne `manque` en plus. |
 | Parcours incomplet | Une ligne `manque` pour l'étape absente, ou `a-completer` si l'étape existe sans sa suite. |
+| Tâche d'un rôle, donnée par les documents, sans écran ni action | La page de ce rôle passe en `a-completer`, la tâche dans la raison ; une ligne `manque` si le rôle n'a aucune page. |
 | Annoncé mais pas construit | Une ligne `manque`, même si ce n'est pas une page : la `source` est le document qui l'annonce. |
 | Décidé pour plus tard | Une ligne `prevue`. |
 | Choix écarté exprès | Aucune ligne. |
@@ -66,7 +67,7 @@ La liste est aussi dans <dossier>/index.html, à ouvrir d'un double-clic.
 Cette liste vous convient, ou voulez-vous corriger quelque chose ?
 ```
 
-- Le compte se fait sur les lignes écrites dans `plan.js` : recompter avant d'envoyer, les nombres doivent tomber juste.
+- Le compte se fait sur les lignes du tableau montré, les mêmes que dans `plan.js` : recompter avant d'envoyer, en reprise aussi, et chaque nombre du message doit tomber juste sur ce tableau.
 - Toutes les lignes sont dans le tableau, sans « etc. ».
 - Une question par manque, ou par groupe de manques qui se décident ensemble.
 
@@ -87,6 +88,7 @@ S'il n'y a rien de changé, le dire. Ne pas renuméroter, et garder notes et sta
 ## Corrections de la liste
 
 - La personne dit qu'un manque n'en est pas un : retirer la ligne, et noter la décision si des rangées existent déjà.
+- La personne dit de laisser un manque de côté : la ligne reste, jamais retirée, avec son état et dans le compte, et sa raison finit par « Laissé de côté par la personne le AAAA-MM-JJ. » (la date du jour). Elle ne se dessine pas tant que la personne ne le demande pas. Si des rangées existent, une note `decision` aussi. Dans le doute entre les deux cas, demander.
 - La personne dit qu'une page marche : `aConfirmer: false`, avec « confirmé par la personne » dans la `source`.
 - La personne ajoute une page : une ligne de plus, avec `source: "dit par la personne"`.
 

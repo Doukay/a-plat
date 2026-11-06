@@ -49,16 +49,16 @@ Ouvrir réellement les deux côtés : le fichier qui appelle et le fichier appel
 
 Puis refaire chaque parcours du début à la fin, comme quelqu'un qui s'en sert : y a-t-il un retour en arrière, une fin, une suite pour l'autre personne concernée ?
 
-## 4. Vérifier les états de chaque liste et de chaque formulaire
+## 4. Vérifier les états de chaque écran, du routeur et du chargement
 
-Pour chaque liste, chaque formulaire et chaque chargement de données :
+Pour chaque liste et chaque formulaire, et aussi pour le routeur, les gardes d'accès et le chargement des données, qui se lisent comme des écrans : que voit la personne ?
 
 - **vide :** rien à afficher, premier usage ;
-- **erreur :** champ refusé, envoi raté, donnée absente, adresse avec un identifiant inconnu ;
-- **refus :** pas connecté, pas le droit, déjà pris ;
+- **erreur :** champ refusé, envoi raté, adresse inconnue (toute adresse, pas seulement celle d'un élément), donnée gardée absente ou illisible (stockage du navigateur, fichier, réponse attendue) ;
+- **refus :** pas connecté, pas le droit, déjà pris. Un renvoi vers une autre page sans explication est un état oublié. Après la connexion, la personne revient-elle à la page qu'elle voulait ?
 - **hors ligne :** réseau coupé, si l'application dépend du réseau.
 
-Un état se note comme oublié si le code n'y répond pas. Écrire ce qui est constaté : « la liste ne prévoit rien quand il n'y a aucun résultat ».
+Un état se note comme oublié si le code n'y répond pas, ou y répond sans rien montrer. Écrire ce qui est constaté : « la liste ne prévoit rien quand il n'y a aucun résultat ».
 
 ## 5. Comparer ce qui est annoncé à ce qui est fait
 
@@ -69,6 +69,8 @@ Comparer aussi les pages entre elles : deux pages qui disent le contraire sont u
 ## 6. Vérifier les rôles et les droits annoncés
 
 Si le projet annonce des rôles (visiteur, membre, administrateur, modérateur, propriétaire…) : chercher pour chacun où il est défini, où il est contrôlé, et les pages qui lui sont propres. Une page réservée sans contrôle est un manque. Un rôle annoncé sans aucun écran aussi.
+
+Avant de marquer une page « Existe », lister les tâches que les documents donnent à chaque rôle qui s'en sert (ajouter, modifier, retirer, valider…), et pour chacune l'écran ou l'action qui la fait. Une tâche sans écran ni action met la page en `a-completer`, la tâche dans la raison : l'espace d'un rôle qui existe mais où il manque une tâche n'est pas « Existe ».
 
 ## 7. Avant d'écrire « manque » : les deux contrôles
 

@@ -38,7 +38,7 @@ window.A_PLAT = {
     page: "Nom de la page",
     groupe: "Nom du groupe",       // les pages sont rangées par groupe, dans l'ordre d'apparition
     etat: "a-completer",           // existe | a-completer | manque | prevue
-    raison: "Une phrase courte : ce qui a été constaté.",
+    raison: "Une phrase courte : ce qui a été constaté.", // laissé de côté par la personne : la ligne reste, la raison le dit avec la date
     source: "src/page.js",         // d'où vient l'affirmation : fichier, et ligne si elle aide
     aConfirmer: true,              // true tant que ce n'a pas été vu marcher
     ecrans: ["A2"]                 // codes des écrans dessinés pour cette page ; [] sinon
@@ -100,9 +100,9 @@ Un écran est un fichier HTML ordinaire, qui s'ouvre aussi seul :
 ## L'existant : `actuel`
 
 - **Capture :** un fichier image dans `actuel/`, fourni par la personne. `origine: "capture"`.
-- **Redessiné :** une page HTML dans `actuel/`, écrite d'après le code, avec `origine: "redessine"`. La page affiche alors « Redessiné d'après le code ».
+- **Redessiné :** une page HTML dans `actuel/`, écrite d'après le code et les styles du projet, et rien d'autre, avec `origine: "redessine"`. La page affiche alors « Redessiné d'après le code ».
 
-Un `actuel` en HTML doit porter `relais.js`, comme un écran (`<script src="../a-plat/relais.js"></script>`), et ne rien charger depuis Internet. Il n'a pas besoin de `data-ecran` et garde son propre style, pour ressembler à ce qui existe : il peut écrire ses couleurs dans un `<style>`.
+Un `actuel` en HTML doit porter `relais.js`, comme un écran (`<script src="../a-plat/relais.js"></script>`), et ne rien charger depuis Internet. Il n'a pas besoin de `data-ecran` et garde le style du projet, pour ressembler à ce qui existe : il reprend dans un `<style>` les règles des styles du projet qui le concernent, sans en ajouter.
 
 ## De gris à la charte
 

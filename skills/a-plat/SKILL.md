@@ -24,11 +24,12 @@ Sous Windows, garder ce chemin entre guillemets, avec des `/` dans Bash. Les cit
 - **Le résultat tient dans le dossier de maquettes.** Le plan, les écrans et la page s'écrivent là, et nulle part ailleurs : ni dans le code, ni dans les réglages du projet, ni dans un dossier temporaire. Rien ne se publie en ligne, et aucun autre outil de page ou de maquette ne le remplace.
 - **Lancer le projet.** Ne jamais installer, construire, démarrer ou lancer le projet sans l'accord de la personne. Avant de le demander, lui dire que cela peut écrire dans le projet et lire sa configuration. Sans cet accord, tout reste `aConfirmer: true`.
 - **Secrets.** Ne jamais ouvrir `.env`, clés ni dossiers de secrets. Seul leur nom peut être cité, jamais leur contenu.
-- **Données réelles.** Aucun nom de client, adresse, chiffre réel ou secret du projet ne passe dans les maquettes. Les exemples sont inventés, avec un seul jeu d'exemples pour tout le projet.
+- **Données réelles.** Aucun nom de client, adresse, chiffre réel ou secret du projet ne passe dans les maquettes. Les exemples sont inventés, avec un seul jeu d'exemples pour tout le projet. Les noms, objets, notes et textes des fichiers de données ou de départ du projet sont remplacés, même s'ils semblent inventés.
 - **Inconnu.** Ce qui n'est pas connu (prix, durée, texte officiel, fait) s'écrit entre [crochets]. Ne jamais l'inventer.
 - **Sources.** Chaque affirmation sur le projet dit d'où elle vient (`source`). `aConfirmer` vaut `true` pour tout ce qui a été lu sans être vu marcher, et `false` seulement pour ce qui a été vu marcher ou ce que la personne dit elle-même (son idée, une confirmation).
-- **Manques.** Ce qui manque devient une question. Une page qui manque ne se dessine que si la personne le demande.
-- **Ce qui est vu.** Ne jamais dire qu'une page marche sans l'avoir vue marcher. Écrire « lu dans le code, à essayer pour confirmer ».
+- **Manques.** Ce qui manque devient une question. Une page qui manque ne se dessine que si la personne le demande. Un manque qu'elle laisse de côté reste dans la liste, marqué comme tel avec la date.
+- **Ce qui est vu.** Ne jamais dire qu'une page marche, ni comment elle s'affiche (débordement, mise en page), sans l'avoir vu ; si c'est vu, dire comment (outil, largeur). Sinon, écrire « lu dans le code, à essayer pour confirmer ».
+- **Commandes.** Une commande par appel, jamais enchaînée avec `;`, `&&` ou `|` : une commande composée peut être refusée et fait perdre un tour.
 
 **Parler à la personne :** en français, en phrases simples, sans jargon, en la vouvoyant sauf si elle tutoie. Toute question qui l'attend est écrite en toutes lettres à la fin du message, avec ses choix.
 
@@ -64,7 +65,7 @@ Lire `references/etat-des-lieux.md`, puis :
 
 1. Dire ce qui va être créé et où (dossier, fichiers), et prévenir que l'application peut demander une autorisation pour lancer la copie.
 2. Dossier neuf, vide ou copie interrompue : y copier la page par une seule commande, `node "<skill>/copier.mjs" "<dossier>"` (par exemple `maquettes`), telle quelle, sans jamais retaper le moteur à la main. Le script crée le dossier, ne remplace jamais un fichier qui existe, refuse un dossier qui n'est pas à l'outil (code 2) et dit ce qu'il a copié. Si la commande est refusée, l'écrire ainsi : « La copie des fichiers de l'outil a été refusée. Sans eux, la page ne peut pas s'afficher. Voulez-vous l'autoriser ? »
-   - Sans Node : lire chaque fichier du modèle (`index.html`, `commun.css`, `ecran-type.html`, et chaque fichier de `a-plat/`), puis l'écrire dans le dossier avec les outils de fichiers, sans jamais écraser un fichier qui existe, jamais `plan.exemple.js`, et le dire à la personne.
+   - Sans Node : lire chaque fichier du modèle (`index.html`, `commun.css`, `ecran-type.html`, et chaque fichier de `a-plat/`), puis l'écrire dans le dossier avec les outils de fichiers, sans jamais écraser un fichier qui existe, jamais `plan.exemple.js`, et le dire à la personne. Créer aussi les dossiers `ecrans/` et `actuel/`, vides, et rien d'autre (pas de `.gitkeep`).
    - Ne jamais donner à la personne une autre commande de copie, et ne jamais copier les fichiers du modèle avec un joker (`*`), `-Recurse`, `-Force`, `&&` ou `;`.
 3. Écrire `plan.js` après la copie : `etatDesLieux`, avec `rangees: []` et `ecrans: []` tant que rien n'est dessiné, et sans `reglages` tant qu'ils ne sont pas acceptés. Le format est dans `references/format.md`.
 4. Lancer le contrôle.
@@ -122,7 +123,7 @@ Les décisions restent à côté des écrans, jamais dessus : notes courtes, ave
 1. **Relecture** (si `relecture: true`) : relire chaque écran avant de le montrer. Rien d'ajouté sans demande, aucune donnée réelle, inconnu entre [crochets], liens justes. Si `relecture: false`, dire que ce n'est pas relu.
 2. **Contrôle :** lancer `node "<skill>/verifier.mjs" <dossier>` et corriger jusqu'à ce qu'il réussisse. Si Node est absent, faire les contrôles soi-même et le dire (liste dans `references/format.md`).
 3. **Rendu :** si un moyen existe (navigateur piloté, Playwright), ouvrir la page et l'écran, et regarder. Les captures prises pour vérifier vont dans un dossier temporaire, jamais dans le projet. Sans moyen de regarder, écrire « je n'ai pas vu le rendu ».
-4. **Compte rendu**, dans le message : ce qui a été vérifié et comment, ce qui ne l'a pas été, les [crochets] restants, le fichier à ouvrir d'un double-clic (`<dossier>/index.html`) et l'adresse de l'écran (`#ecran/A2`).
+4. **Compte rendu**, dans le message : ce qui a été vérifié et comment, ce qui ne l'a pas été, ce qui vient du projet (structure, noms des champs, libellés) et ce qui est inventé, sans jamais dire que rien n'a été repris si c'est faux, les [crochets] restants, le fichier à ouvrir d'un double-clic (`<dossier>/index.html`) et l'adresse de l'écran (`#ecran/A2`).
 
 ## Quand Claude est tenté de faire autrement
 
@@ -133,6 +134,6 @@ Les décisions restent à côté des écrans, jamais dessus : notes courtes, ave
 | « Je vais faire une page de synthèse, ou la publier. » | Le résultat, c'est `plan.js` et les écrans dans le dossier de maquettes, affichés par la page copiée du modèle. |
 | « Le code le fait, donc ça marche. » | C'est « lu », pas « vu marcher » : `aConfirmer: true`. |
 | « Je mets un chiffre plausible. » | [crochets]. |
-| « Je reprends les données d'exemple du projet, c'est plus réaliste. » | Exemples inventés, un seul jeu. |
+| « Je reprends les données d'exemple du projet, c'est plus réaliste. » | Exemples inventés, un seul jeu, même si celles du projet semblent inventées. |
 | « Je peux corriger ce bug dans le code au passage. » | Le signaler. L'outil n'écrit que dans le dossier de maquettes. |
 | « Je lis le `.env` pour comprendre la configuration. » | Son nom suffit. Il va dans ce qui n'a pas été lu. |
