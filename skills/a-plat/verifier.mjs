@@ -26,7 +26,7 @@ function pluriel(nombre, singulier, plurielDuMot) {
 
 // logique.js est lu comme du texte et exécuté dans node:vm avec un objet module : le
 // "type" du package.json le plus proche (module ou commonjs) ne change donc rien.
-// Renvoie { validerPlan }, ou lève une erreur dont le message est déjà en français.
+// Renvoie { validerPlan, fichierSur }, ou lève une erreur dont le message est déjà en français.
 function chargerLaLogique() {
   let texte;
   try {
@@ -40,8 +40,8 @@ function chargerLaLogique() {
   } catch (erreur) {
     throw new Error(`Le fichier modele/a-plat/logique.js ne peut pas être exécuté : ${erreur && erreur.message ? erreur.message : erreur}`);
   }
-  if (typeof module.exports.validerPlan !== "function") {
-    throw new Error("Le fichier modele/a-plat/logique.js n'offre pas validerPlan : il est abîmé ou ce n'est pas le bon fichier.");
+  if (typeof module.exports.validerPlan !== "function" || typeof module.exports.fichierSur !== "function") {
+    throw new Error("Le fichier modele/a-plat/logique.js n'offre pas validerPlan et fichierSur : il est abîmé ou ce n'est pas le bon fichier.");
   }
   return module.exports;
 }
@@ -100,13 +100,14 @@ function lireAttributs(texte) {
 }
 
 // Lit le HTML d'un écran : renvoie ses balises ouvrantes (avec leurs attributs), son
-// texte visible et ses erreurs de fermeture. Les commentaires, <script> et <style> sont
-// sautés. Une pile suit les balises ouvertes ; pas de bibliothèque.
+// texte visible, le contenu de ses <style> et ses erreurs de fermeture. Les commentaires,
+// <script> et <style> sont sautés pour le texte. Une pile suit les balises ouvertes ; pas de bibliothèque.
 function analyserHtml(html) {
   const balises = [];
   const erreurs = [];
   const pile = [];
   const morceauxDeTexte = [];
+  const styles = [];
   const bas = html.toLowerCase();
   const motifBalise = /<(\/?)([a-zA-Z][a-zA-Z0-9:-]*)((?:"[^"]*"|'[^']*'|[^'">])*)>/y;
   const ligneDe = (position) => html.slice(0, position).split("\n").length;
@@ -174,6 +175,7 @@ function analyserHtml(html) {
         erreur(debut, `la balise <${nom}> n'est jamais fermée.`);
         break;
       }
+      if (nom === "style") styles.push(html.slice(i, fermeture));
       const finDeFermeture = html.indexOf(">", fermeture);
       i = finDeFermeture === -1 ? html.length : finDeFermeture + 1;
       continue;
@@ -187,7 +189,7 @@ function analyserHtml(html) {
       erreur(ouverte.position, `la balise <${ouverte.nom}> n'est pas fermée.`);
     }
   }
-  return { balises, texte: morceauxDeTexte.join(""), erreurs };
+  return { balises, texte: morceauxDeTexte.join(""), styles, erreurs };
 }
 
 // ---------------------------------------------------------------- contrôle
@@ -196,6 +198,58 @@ const VIENT_D_INTERNET = /^\s*(https?:)?\/\//i;
 const LIEN_AVEC_PROTOCOLE = /^\s*[a-z][a-z0-9+.-]*:/i;
 const APPEL_DE_RELAIS = /(^|\/)relais\.js([?#].*)?$/i;
 const TEXTE_ENTRE_CROCHETS = /\[[^\[\]\n]*\S[^\[\]\n]*\]/g;
+
+// Les attributs qui font charger quelque chose, sur n'importe quelle balise (img, iframe, video,
+// audio, source, embed, object, form, input, track, svg…). href est à part : sur <a> et <area>,
+// c'est un lien qu'on touche, pas un chargement ; sur <link>, une police peut être permise.
+const ATTRIBUTS_QUI_CHARGENT = ["src", "poster", "data", "action", "formaction", "background", "manifest"];
+const ATTRIBUTS_LISTES = ["srcset", "imagesrcset"];
+const LIENS_A_TOUCHER = new Set(["a", "area"]);
+
+// Les adresses qu'une feuille de style fait charger : url(…), et les textes entre guillemets
+// qui commencent par une adresse (@import "…", image-set("…")). Les commentaires sont retirés.
+function adressesDuStyle(css) {
+  const sansCommentaire = css.replace(/\/\*[\s\S]*?\*\//g, " ");
+  const adresses = [];
+  for (const m of sansCommentaire.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*))\s*\)/gi)) {
+    adresses.push((m[1] ?? m[2] ?? m[3] ?? "").trim());
+  }
+  for (const m of sansCommentaire.matchAll(/(["'])\s*((?:https?:)?\/\/[^\s"'\/][^"']*)\1/gi)) {
+    adresses.push(m[2].trim());
+  }
+  return adresses;
+}
+
+// Liste ce que le HTML ferait venir d'Internet : [{ adresse, ou, police }]. police vaut vrai
+// là où une police en ligne peut être permise (un <link>, une feuille de style).
+function chargementsDInternet(analyse) {
+  const trouves = [];
+  const noter = (adresse, ou, police = false) => {
+    if (VIENT_D_INTERNET.test(adresse)) trouves.push({ adresse: adresse.trim(), ou, police });
+  };
+  for (const balise of analyse.balises) {
+    const a = balise.attributs;
+    for (const nom of ATTRIBUTS_QUI_CHARGENT) {
+      if (typeof a[nom] === "string") noter(a[nom], `${nom} de <${balise.nom}>`);
+    }
+    for (const nom of ATTRIBUTS_LISTES) {
+      if (typeof a[nom] !== "string") continue;
+      for (const candidat of a[nom].split(",")) noter(candidat.trim().split(/\s+/)[0] ?? "", `${nom} de <${balise.nom}>`);
+    }
+    if (!LIENS_A_TOUCHER.has(balise.nom)) {
+      for (const nom of ["href", "xlink:href"]) {
+        if (typeof a[nom] === "string") noter(a[nom], `${nom} de <${balise.nom}>`, balise.nom === "link");
+      }
+    }
+    if (typeof a.style === "string") {
+      for (const adresse of adressesDuStyle(a.style)) noter(adresse, `style de <${balise.nom}>`, true);
+    }
+  }
+  for (const css of analyse.styles) {
+    for (const adresse of adressesDuStyle(css)) noter(adresse, "<style>", true);
+  }
+  return trouves;
+}
 
 // Contrôle un fichier HTML : un écran (ecrans/) ou l'existant redessiné d'un écran (actuel/).
 //   chemin : le nom du fichier tel qu'on l'écrit dans les messages (« ecrans/A1.html »)
@@ -223,15 +277,14 @@ function controlerEcran({ chemin, code, html, dossierDesLiens, policeEnLigne, es
     erreurs.push(`${chemin} : le script relais.js n'est pas appelé (ajouter <script src="../a-plat/relais.js"></script> avant </body>).`);
   }
 
-  for (const balise of analyse.balises) {
-    if (balise.nom === "script" && VIENT_D_INTERNET.test(balise.attributs.src ?? "")) {
-      erreurs.push(`${chemin} : le script « ${balise.attributs.src} » vient d'Internet. Un écran ne charge rien depuis Internet.`);
-    }
-    if (balise.nom === "link" && VIENT_D_INTERNET.test(balise.attributs.href ?? "")) {
-      const adresse = balise.attributs.href;
-      if (!(policeEnLigne && POLICES_EN_LIGNE.test(adresse.trim()))) {
-        erreurs.push(`${chemin} : la ressource « ${adresse} » vient d'Internet. Seule une police peut en venir, et seulement si reglages.policeEnLigne vaut true.`);
-      }
+  for (const { adresse, ou, police } of chargementsDInternet(analyse)) {
+    if (police && policeEnLigne && POLICES_EN_LIGNE.test(adresse)) continue;
+    if (ou === "src de <script>") {
+      erreurs.push(`${chemin} : le script « ${adresse} » vient d'Internet. Un écran ne charge rien depuis Internet.`);
+    } else if (police) {
+      erreurs.push(`${chemin} : la ressource « ${adresse} » (${ou}) vient d'Internet. Seule une police peut en venir, et seulement si reglages.policeEnLigne vaut true.`);
+    } else {
+      erreurs.push(`${chemin} : la ressource « ${adresse} » (${ou}) vient d'Internet. Un écran ne charge rien depuis Internet.`);
     }
   }
 
@@ -289,8 +342,9 @@ function controler(argument) {
     return { code: 2, lignes: ["Il manque le dossier des maquettes. Usage : node verifier.mjs <dossier>"] };
   }
   let validerPlan;
+  let fichierSur;
   try {
-    ({ validerPlan } = chargerLaLogique());
+    ({ validerPlan, fichierSur } = chargerLaLogique());
   } catch (erreur) {
     return { code: 2, lignes: [erreur.message, "Le contrôle n'a pas pu démarrer : réinstaller le plugin À plat."] };
   }
@@ -316,8 +370,9 @@ function controler(argument) {
   const erreurs = [...validerPlan(plan)];
   const infos = [];
   const dossierDesEcrans = join(dossier, "ecrans");
+  // Un fichier qui sortirait de son dossier n'est jamais lu : validerPlan l'a déjà signalé.
   const ecrans = (Array.isArray(plan.ecrans) ? plan.ecrans : [])
-    .filter((e) => e && typeof e === "object" && typeof e.fichier === "string");
+    .filter((e) => e && typeof e === "object" && fichierSur(e.fichier));
   const policeEnLigne = plan.reglages && plan.reglages.policeEnLigne === true;
 
   const fichiersDuPlan = new Set(ecrans.map((e) => e.fichier));
@@ -352,17 +407,19 @@ function controler(argument) {
       infos.push(...resultat.infos);
     }
     const actuel = ecran.actuel;
-    if (actuel && typeof actuel === "object" && typeof actuel.fichier === "string") {
-      if (!estUnFichier(join(dossier, actuel.fichier))) {
-        erreurs.push(`L'écran ${ecran.code} cite la capture ${actuel.fichier}, qui est absente.`);
-      } else if (/\.html?$/i.test(actuel.fichier)) {
+    if (actuel && typeof actuel === "object" && fichierSur(actuel.fichier)) {
+      // Comme la page : un existant se cherche dans actuel/, que le plan écrive ce préfixe ou non.
+      const relatif = actuel.fichier.indexOf("actuel/") === 0 ? actuel.fichier : `actuel/${actuel.fichier}`;
+      if (!estUnFichier(join(dossier, relatif))) {
+        erreurs.push(`L'écran ${ecran.code} cite la capture ${relatif}, qui est absente.`);
+      } else if (/\.html?$/i.test(relatif)) {
         // Un existant redessiné est une page comme un écran : même contrôle, sans le code ni les crochets.
-        if (!resteDansLeDossier(dossier, actuel.fichier)) {
-          erreurs.push(`L'écran ${ecran.code} cite l'existant ${actuel.fichier}, qui est hors du dossier des maquettes : il n'est pas lu.`);
+        if (!resteDansLeDossier(dossier, relatif)) {
+          erreurs.push(`L'écran ${ecran.code} cite l'existant ${relatif}, qui est hors du dossier des maquettes : il n'est pas lu.`);
         } else {
-          const cheminDeLActuel = join(dossier, actuel.fichier);
+          const cheminDeLActuel = join(dossier, relatif);
           const resultat = controlerEcran({
-            chemin: actuel.fichier.replace(/\\/g, "/"),
+            chemin: relatif,
             code: ecran.code,
             html: readFileSync(cheminDeLActuel, "utf8"),
             dossierDesLiens: dirname(cheminDeLActuel),

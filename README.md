@@ -90,7 +90,7 @@ Claude les propose d'après votre projet, avec une raison. Vous les changez à t
 
 ## Les règles de l'outil
 
-Ce sont des règles données à Claude, pas des verrous techniques. Claude les suit le plus souvent, mais les essais ont montré des écarts (voir « Limites connues ») : relisez ce qu'il dit et ce qu'il écrit. Deux points seulement sont contrôlés par des tests automatiques : la page ne fait aucune requête sur le réseau, et la copie de la page n'écrase jamais un fichier qui existe.
+Ce sont des règles données à Claude, pas des verrous techniques. Claude les suit le plus souvent, mais les essais ont montré des écarts (voir « Limites connues ») : relisez ce qu'il dit et ce qu'il écrit. Deux points seulement sont contrôlés par des tests automatiques : rien ne vient d'Internet, et la copie de la page n'écrase jamais un fichier qui existe. Pour le premier, les tests couvrent le moteur de la page et les écrans d'essai ; pour vos propres écrans, le contrôle (`verifier.mjs`, voir « Node ») refuse tout ce qui vient d'Internet.
 
 Les règles :
 
@@ -114,7 +114,7 @@ Si le dossier arrive sur le serveur par une copie régulière, une correction ne
 Node, version 18 ou plus, sert à deux petits scripts du plugin :
 
 - `copier.mjs` copie la page dans le dossier de maquettes, sans jamais écraser un fichier qui existe ;
-- `verifier.mjs` contrôle les maquettes sans rien afficher : chaque écran du plan a son fichier, et l'inverse ; les liens entre écrans mènent quelque part ; les codes sont uniques ; le HTML est bien fermé ; il liste aussi les [crochets] restants.
+- `verifier.mjs` contrôle les maquettes sans rien afficher : chaque écran du plan a son fichier, et l'inverse ; les liens entre écrans mènent quelque part ; les codes sont uniques ; le HTML est bien fermé ; rien ne vient d'Internet ; il liste aussi les [crochets] restants.
 
 Sans Node, tout marche quand même. Claude écrit alors lui-même les fichiers de la page, fait les mêmes contrôles à la main, et vous le dit. Ouvrir les maquettes ne demande jamais Node : un navigateur suffit.
 
@@ -130,7 +130,7 @@ Ce chiffre est fragile : un seul passage, un seul projet, le modèle Sonnet, com
 
 **Défauts de conduite vus pendant les essais.** Claude peut affirmer un rendu qu'il n'a pas vu (par exemple qu'un tableau déborde, sans avoir lu les styles du projet), reprendre des textes du projet alors qu'il dit n'avoir repris aucune donnée, ou retirer de la liste un manque que vous avez seulement laissé de côté. La méthode a reçu une règle contre chacun, mais ces règles n'ont pas été remesurées. Relisez ce qu'il dit.
 
-**Ce qui a été essayé pour la page.** Elle est contrôlée par des tests automatiques sous Edge et sous Chrome, en l'ouvrant par son adresse de fichier et par une adresse web locale, à 390 px de large, en clair et en sombre, avec un toucher simulé. Elle ne fait aucune requête hors de son dossier.
+**Ce qui a été essayé pour la page.** Elle est contrôlée par des tests automatiques sous Edge et sous Chrome, en l'ouvrant par son adresse de fichier et par une adresse web locale, à 390 px de large, en clair et en sombre, avec un toucher simulé. Pendant ces tests, le moteur de la page et les écrans d'essai n'ont fait aucune requête hors de leur dossier ; pour vos propres écrans, le contrôle refuse tout ce qui vient d'Internet.
 
 **Ce qui n'a pas été essayé.** Firefox et Safari ; un vrai téléphone, au doigt ; le vrai presse-papiers (il a été remplacé par un faux pendant les tests) ; l'installation par `/plugin marketplace add` de bout en bout (le plugin a seulement été chargé depuis son dossier) ; un essai par une personne qui n'a pas construit l'outil.
 

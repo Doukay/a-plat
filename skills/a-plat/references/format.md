@@ -40,7 +40,7 @@ window.A_PLAT = {
     etat: "a-completer",           // existe | a-completer | manque | prevue
     raison: "Une phrase courte : ce qui a été constaté.", // laissé de côté par la personne : la ligne reste, la raison finit par « Laissé de côté par la personne le AAAA-MM-JJ. »
     source: "src/page.js",         // d'où vient l'affirmation : fichier, et ligne si elle aide
-    aConfirmer: true,              // true tant que ce n'a pas été vu marcher
+    aConfirmer: true,              // true tant que ce n'a pas été vu marcher ni dit par la personne
     ecrans: ["A2"]                 // codes des écrans dessinés pour cette page ; [] sinon
   }],
   rangees: [{
@@ -69,7 +69,8 @@ Règles que le contrôle vérifie :
 - `version`, `rangees`, `ecrans` et `etatDesLieux` sont obligatoires, même vides : `[]`.
 - Chaque code d'écran est unique. Chaque code cité dans `etatDesLieux[].ecrans` existe dans `ecrans`.
 - Chaque écran du plan a son fichier dans `ecrans/`, et chaque fichier HTML de `ecrans/` a son écran dans le plan. Le dossier `ecrans/` doit exister dès qu'un écran est écrit ; sans écran dans le plan, il peut manquer.
-- Un `fichier` ne contient ni `..`, ni adresse complète, ni barre oblique inverse : la page le refuserait.
+- Un `fichier` (d'un écran ou d'un `actuel`) ne contient ni `..`, ni adresse complète, ni barre au début, ni barre oblique inverse : la page le refuserait. Deux écrans n'ont jamais le même `fichier`, et deux rangées jamais le même `id`.
+- Un `actuel.fichier` se cherche dans `actuel/`, qu'il commence par `actuel/` ou non.
 
 Pour le format `les-deux`, chaque version est un écran à part, avec son code, sa largeur et sa hauteur.
 
@@ -95,7 +96,7 @@ Un écran est un fichier HTML ordinaire, qui s'ouvre aussi seul :
 - Les écrans se relient par des liens ordinaires vers le fichier de l'écran suivant : `<a href="B4-merci.html">`. Un lien doit mener à un fichier qui existe.
 - `data-nom="Bouton Envoyer"` donne le nom qui apparaîtra dans la correction. À mettre sur les éléments qu'on voudra citer et qui n'ont pas de texte clair.
 - `relais.js` est obligatoire, juste avant `</body>` : sans lui, la page ne sait pas quel élément a été touché.
-- Un écran ne charge rien depuis Internet : ni script, ni image, ni feuille de style.
+- Un écran ne charge rien depuis Internet : ni script, ni image, ni cadre, ni vidéo, ni feuille de style, ni `url(…)` ou `@import` dans un style. Le contrôle regarde `src`, `srcset`, `poster`, `data`, `action` et `href` sur toutes les balises (sauf les liens `<a>`), les `<style>` et les attributs `style`.
 
 ## L'existant : `actuel`
 
@@ -125,7 +126,7 @@ Le gris est le point de départ. Pour passer à la charte, on change seulement l
 Par défaut, rien ne vient d'Internet. Si la personne demande une police en ligne pour sa charte, et seulement alors :
 
 1. `reglages.policeEnLigne: true` dans `plan.js`.
-2. Dans chaque écran concerné, un `<link>` vers `https://fonts.googleapis.com` ou `https://fonts.gstatic.com` : ce sont les seules adresses que le contrôle accepte.
+2. Dans chaque écran concerné, un `<link>` (ou un `@import` dans un `<style>`) vers `https://fonts.googleapis.com` ou `https://fonts.gstatic.com` : ce sont les seules adresses que le contrôle accepte, et seulement pour une feuille de style ou une police, jamais pour un script ou une image.
 3. Dire à la personne que la page contactera ce service pour charger la police.
 
 ## Les messages entre l'écran et la page

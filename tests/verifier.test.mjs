@@ -473,3 +473,112 @@ test("un existant en HTML qui sort du dossier des maquettes : code 1, rien n'est
   assert.match(sortie, /autre\.html/);
   assert.match(sortie, /dossier/);
 });
+
+test("un fichier d'écran qui sort de ecrans/ : code 1, la règle est dite et le fichier n'est pas lu", () => {
+  const dossier = preparer();
+  writeFileSync(join(dossier, "secret.html"), "<!doctype html><html><div></html>");
+  modifier(dossier, "plan.js", (t) => t.replace('fichier: "B1-pret.html"', 'fichier: "../secret.html"'));
+  rmSync(join(dossier, "ecrans/B1-pret.html"));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 1, sortie);
+  assert.match(sortie, /B1 a un fichier « \.\.\/secret\.html » refusé/);
+  assert.match(sortie, /dossier ecrans\//);
+  assert.doesNotMatch(sortie, /<div>|n'est pas fermée/, "le fichier hors du dossier n'est pas lu");
+});
+
+// ---------------------------------------------------------------- rien ne vient d'Internet, quelle que soit la balise
+
+const AJOUTS_D_INTERNET = [
+  ["une image (img src)", '<img src="https://exemple.test/photo.png" alt="">'],
+  ["un candidat de srcset",'<img src="../actuel/A2-fiche.png" srcset="petit.png 1x, https://exemple.test/grand.png 2x" alt="">'],
+  ["un cadre (iframe src)", '<iframe src="//exemple.test/page.html" title="x"></iframe>'],
+  ["une vidéo (poster)", '<video poster="https://exemple.test/affiche.png"></video>'],
+  ["une source de vidéo", '<video><source src="https://exemple.test/film.mp4"></video>'],
+  ["un objet (data)", '<object data="https://exemple.test/doc.pdf"></object>'],
+  ["un formulaire (action)", '<form action="https://exemple.test/envoi"><button>Envoyer</button></form>'],
+  ["une adresse de base (base href)", '<base href="https://exemple.test/">'],
+  ["un @import dans un <style>", '<style>@import url("https://exemple.test/style.css");</style>'],
+  ["un @import en texte dans un <style>", "<style>@import '//exemple.test/style.css';</style>"],
+  ["un url() dans un <style>", "<style>.carte { background: url(https://exemple.test/fond.png); }</style>"],
+  ["un url() dans un attribut style", '<div style="background-image: url(\'https://exemple.test/fond.png\')">x</div>']
+];
+
+for (const [nom, ajout] of AJOUTS_D_INTERNET) {
+  test(`${nom} venant d'Internet : code 1, l'adresse est citée`, () => {
+    const dossier = preparer();
+    modifier(dossier, "ecrans/A2-fiche.html", (t) => t.replace("<h1>Perceuse sans fil</h1>", `<h1>Perceuse sans fil</h1>${ajout}`));
+    const { code, sortie } = lancer(dossier);
+    assert.equal(code, 1, sortie);
+    assert.match(sortie, /exemple\.test/);
+    assert.match(sortie, /A2-fiche\.html/);
+  });
+}
+
+test("des adresses locales dans src, srcset, style et url() restent acceptées", () => {
+  const dossier = preparer();
+  modifier(dossier, "ecrans/A2-fiche.html", (t) => t.replace("<h1>Perceuse sans fil</h1>",
+    '<h1>Perceuse sans fil</h1><img src="../actuel/A2-fiche.png" srcset="../actuel/A2-fiche.png 1x, data:image/png;base64,AAAA 2x" alt="">' +
+    '<style>/* https://exemple.test/ en commentaire */ .x { background: url("../actuel/A2-fiche.png"); content: "//"; }</style>' +
+    '<div style="background: url(data:image/png;base64,AAAA)">x</div>'));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+});
+
+test("un existant en HTML avec une image d'Internet : code 1", () => {
+  const { code, sortie } = lancer(preparerAvecActuelHtml(ACTUEL_HTML.replace("<h1>", '<img src="https://exemple.test/logo.png" alt=""><h1>')));
+  assert.equal(code, 1);
+  assert.match(sortie, /exemple\.test/);
+  assert.match(sortie, /actuel\/A1-accueil\.html/);
+});
+
+const IMPORT_DE_POLICE = '<style>@import url("https://fonts.googleapis.com/css2?family=Lora&display=swap");</style>';
+
+test("une police importée dans un <style> est refusée par défaut", () => {
+  const dossier = preparer();
+  modifier(dossier, "ecrans/A2-fiche.html", (t) => t.replace("</head>", `${IMPORT_DE_POLICE}</head>`));
+  assert.equal(lancer(dossier).code, 1);
+});
+
+test("avec policeEnLigne, une police importée dans un <style> ou chargée par url() est acceptée", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace("policeEnLigne: false", "policeEnLigne: true"));
+  modifier(dossier, "ecrans/A2-fiche.html", (t) => t.replace("</head>",
+    `${IMPORT_DE_POLICE}<style>@font-face { font-family: Lora; src: url(https://fonts.gstatic.com/s/lora/v1/a.woff2); }</style></head>`));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+});
+
+test("avec policeEnLigne, une image venant de l'adresse des polices reste refusée", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace("policeEnLigne: false", "policeEnLigne: true"));
+  modifier(dossier, "ecrans/A2-fiche.html", (t) => t.replace("<h1>", '<img src="https://fonts.gstatic.com/x.png" alt=""><h1>'));
+  assert.equal(lancer(dossier).code, 1);
+});
+
+// ---------------------------------------------------------------- l'existant se cherche dans actuel/, comme la page
+
+test("un existant écrit sans actuel/ se cherche dans actuel/, comme le fait la page", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace('fichier: "actuel/A2-fiche.png"', 'fichier: "A2-fiche.png"'));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+});
+
+test("un existant écrit sans actuel/ et posé à la racine du dossier est absent pour la page : code 1", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace('fichier: "actuel/A2-fiche.png"', 'fichier: "A2-fiche.png"'));
+  cpSync(join(dossier, "actuel/A2-fiche.png"), join(dossier, "A2-fiche.png"));
+  rmSync(join(dossier, "actuel/A2-fiche.png"));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 1, sortie);
+  assert.match(sortie, /actuel\/A2-fiche\.png/);
+});
+
+test("un existant en HTML écrit sans actuel/ est contrôlé dans actuel/", () => {
+  const dossier = preparerAvecActuelHtml(ACTUEL_HTML.replace('<script src="../a-plat/relais.js"></script>', ""));
+  modifier(dossier, "plan.js", (t) => t.replace('fichier: "actuel/A1-accueil.html"', 'fichier: "A1-accueil.html"'));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 1, sortie);
+  assert.match(sortie, /actuel\/A1-accueil\.html/);
+  assert.match(sortie, /relais\.js/);
+});

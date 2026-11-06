@@ -73,6 +73,9 @@ test("le README dit que les règles ne sont pas des verrous et ce que les tests 
   const texte = lire();
   assert.match(texte, /règles données à Claude, pas des verrous techniques/);
   assert.match(texte, /Deux points seulement sont contrôlés par des tests automatiques/);
+  assert.match(texte, /les tests couvrent le moteur de la page et les écrans d'essai ; pour vos propres écrans, le contrôle/);
+  assert.match(texte, /refuse tout ce qui vient d'Internet/);
+  assert.doesNotMatch(texte, /aucune requête sur le réseau|Elle ne fait aucune requête hors de son dossier/);
   assert.doesNotMatch(texte, /ne fait jamais/i);
   assert.match(texte, /doit vous le dire avant de copier/);
 });
