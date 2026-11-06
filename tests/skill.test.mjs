@@ -150,6 +150,13 @@ test("changer le rangement après coup : les codes restent, rangees et rangee ch
   assert.match(texte, /lettre d'un code peut ne plus correspondre à sa rangée/);
 });
 
+test("ecrans.md : une capture fournie arrive dans actuel/ par la personne, ou par une copie de ce seul fichier", () => {
+  const ligne = ligneDe(lire("references", "ecrans.md"), "**Capture fournie :**");
+  assert.match(ligne, /demander à la personne d'y poser le fichier elle-même/);
+  assert.match(ligne, /une seule commande de copie ordinaire qui nomme ce seul fichier/);
+  assert.match(ligne, /jamais avec un joker \(`\*`\)/);
+});
+
 test("ecrans.md : proposer avant d'ajouter un écran non demandé, et d'autres prénoms à chaque projet", () => {
   const texte = lire("references", "ecrans.md");
   assert.match(texte, /écran que la personne n'a pas demandé/);
