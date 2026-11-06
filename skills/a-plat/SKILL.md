@@ -40,7 +40,7 @@ Chercher un `plan.js` contenant `window.A_PLAT`, dans `maquettes/` puis ailleurs
 | Ce qui est trouvé | Ce qu'il faut faire |
 |---|---|
 | Un `plan.js` d'À plat | Reprendre : ne rien recopier, lire le plan et les écrans, relire le projet (étape 1), puis signaler ce qui a changé (étape 2). |
-| Un dossier qui contient `a-plat/moteur.js` sans `plan.js` d'À plat, ou un `maquettes/` vide | C'est le dossier de l'outil, copie interrompue ou pas commencée : reprendre la copie (étape 2) dans ce dossier, sans rien retirer. |
+| Un dossier qui contient `a-plat/moteur.js` (ou un `index.html` qui le charge) sans `plan.js` d'À plat, ou un `maquettes/` vide | C'est le dossier de l'outil, copie interrompue ou pas commencée : reprendre la copie (étape 2) dans ce dossier, sans rien retirer. |
 | Un dossier `maquettes/` d'autres fichiers, sans `plan.js` d'À plat | Ne rien y écrire, ne rien écraser. Demander d'abord dans quel nouveau dossier écrire, par exemple `maquettes-a-plat/` (la page et le contrôle marchent avec n'importe quel nom de dossier). Ne jamais proposer d'écrire dans ce dossier, même à côté de ses fichiers. Attendre la réponse avant de lire le projet. |
 | Ni l'un ni l'autre, et un projet avec du code ou des documents | Étape 1, en écrivant ensuite dans `maquettes/`. |
 | Ni l'un ni l'autre, et presque rien dans le dossier | Étape 1, cas de l'idée. |

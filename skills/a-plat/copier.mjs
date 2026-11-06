@@ -5,9 +5,10 @@
 // - Crée le dossier s'il n'existe pas, avec ecrans/ et actuel/.
 // - Copie index.html, commun.css, ecran-type.html et tout a-plat/. Jamais plan.js : Claude l'écrit.
 // - N'écrase jamais un fichier qui existe : il est gardé tel quel, et la liste le dit.
-// - Refuse un dossier qui a déjà des fichiers sans être à l'outil (ni a-plat/moteur.js,
-//   ni plan.js d'À plat) : rien n'y est écrit.
-// Code de sortie : 0 copie faite ou déjà complète, 1 modèle abîmé, 2 dossier absent, refusé ou pas un dossier.
+// - Refuse un dossier qui a déjà des fichiers sans être à l'outil (ni a-plat/moteur.js, ni un
+//   index.html qui charge a-plat/moteur.js, ni plan.js d'À plat) : rien n'y est écrit.
+// Code de sortie : 0 copie faite ou déjà complète, 1 modèle abîmé, 2 dossier absent, refusé,
+// pas un dossier, ou impossible à lire ou à créer.
 // Node seul, sans bibliothèque (Node 18 ou plus).
 import { constants, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -16,26 +17,44 @@ import { fileURLToPath } from "node:url";
 const MODELE = fileURLToPath(new URL("./modele", import.meta.url));
 const DOSSIERS = ["a-plat", "ecrans", "actuel"];
 
-function aCopier() {
-  const moteur = readdirSync(join(MODELE, "a-plat")).filter((nom) => statSync(join(MODELE, "a-plat", nom)).isFile());
-  return ["index.html", "commun.css", "ecran-type.html", ...moteur.sort().map((nom) => `a-plat/${nom}`)];
-}
-
-function estDeLOutil(dossier) {
-  if (existsSync(join(dossier, "a-plat", "moteur.js"))) return true;
-  const plan = join(dossier, "plan.js");
-  if (!existsSync(plan)) return false;
-  try {
-    return readFileSync(plan, "utf8").includes("window.A_PLAT");
-  } catch {
-    return false;
-  }
-}
-
 // writeSync : le message part en entier avant la sortie, même vers un tuyau sous Windows.
 function sortir(code, lignes) {
   writeSync(code === 0 ? 1 : 2, lignes.join("\n") + "\n");
   process.exit(code);
+}
+
+// Fait l'action ; si le système la refuse, sort avec ce code et un message en français,
+// sans trace d'erreur.
+function essayer(action, code, message) {
+  try {
+    return action();
+  } catch (erreur) {
+    return sortir(code, [`${message} (${erreur && erreur.code ? `code ${erreur.code}` : "erreur du système"}).`]);
+  }
+}
+
+function aCopier() {
+  return essayer(() => {
+    const moteur = readdirSync(join(MODELE, "a-plat")).filter((nom) => statSync(join(MODELE, "a-plat", nom)).isFile());
+    return ["index.html", "commun.css", "ecran-type.html", ...moteur.sort().map((nom) => `a-plat/${nom}`)];
+  }, 1, "Le modèle est abîmé : le dossier a-plat du skill ne peut pas être lu. Rien n'a été copié");
+}
+
+function lireSiPossible(chemin) {
+  try {
+    return readFileSync(chemin, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+// Le dossier est à l'outil s'il a son moteur, une page index.html qui charge ce moteur
+// (copie interrompue avant a-plat/), ou un plan.js d'À plat.
+function estDeLOutil(dossier) {
+  if (existsSync(join(dossier, "a-plat", "moteur.js"))) return true;
+  const index = lireSiPossible(join(dossier, "index.html"));
+  if (/<script\b[^>]*\bsrc\s*=\s*["']?(?:\.\/)?a-plat\/moteur\.js/i.test(index)) return true;
+  return lireSiPossible(join(dossier, "plan.js")).includes("window.A_PLAT");
 }
 
 const argument = process.argv[2];
@@ -45,10 +64,12 @@ if (!argument) {
 
 const destination = resolve(argument);
 if (existsSync(destination)) {
-  if (!statSync(destination).isDirectory()) {
+  const infos = essayer(() => statSync(destination), 2, `« ${argument} » ne peut pas être lu : rien n'a été copié`);
+  if (!infos.isDirectory()) {
     sortir(2, [`« ${argument} » existe et n'est pas un dossier : rien n'a été copié.`]);
   }
-  if (readdirSync(destination).length > 0 && !estDeLOutil(destination)) {
+  const contenu = essayer(() => readdirSync(destination), 2, `Le dossier « ${argument} » ne peut pas être lu : rien n'a été copié`);
+  if (contenu.length > 0 && !estDeLOutil(destination)) {
     sortir(2, [
       `Le dossier « ${argument} » contient déjà des fichiers et n'est pas un dossier d'À plat : rien n'a été copié.`,
       "Choisissez un autre dossier, par exemple un nouveau dossier à côté de celui-ci."
@@ -66,7 +87,8 @@ const dejaLa = [];
 for (const sous of ["", ...DOSSIERS]) {
   const chemin = join(destination, sous);
   if (!existsSync(chemin)) {
-    mkdirSync(chemin, { recursive: true });
+    essayer(() => mkdirSync(chemin, { recursive: true }), 2,
+      `Le dossier « ${sous ? `${argument}/${sous}` : argument} » ne peut pas être créé : rien n'a été copié`);
     if (sous) crees.push(`${sous}/`);
   }
 }

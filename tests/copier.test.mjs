@@ -122,3 +122,38 @@ test("sans dossier donné, ou si c'est un fichier : code 2 et un message clair",
   assert.equal(surFichier.code, 2);
   assert.match(surFichier.sortie, /n'est pas un dossier/);
 });
+
+const TRACE_D_ERREUR = /\bat .*\(.*:\d+:\d+\)|\n\s+at /;
+
+test("un dossier impossible à créer : code 2, un message en français, sans trace d'erreur", () => {
+  const fichier = join(racine, `bloque-${++numero}.txt`);
+  writeFileSync(fichier, "x");
+  const { code, sortie } = lancer(join(fichier, "maquettes"));
+  assert.equal(code, 2, sortie);
+  assert.match(sortie, /ne peut pas être créé|n'a pas pu être créé/);
+  assert.match(sortie, /rien n'a été copié|Rien n'a été copié/i);
+  assert.doesNotMatch(sortie, TRACE_D_ERREUR);
+});
+
+test("un dossier dont l'index.html charge a-plat/moteur.js est celui de l'outil : la copie reprend", () => {
+  const dossier = neuf();
+  mkdirSync(dossier, { recursive: true });
+  const index = '<!doctype html><html><body><script src="a-plat/moteur.js"></script></body></html>\n';
+  writeFileSync(join(dossier, "index.html"), index);
+  writeFileSync(join(dossier, "commun.css"), "/* déjà là */\n");
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+  assert.equal(readFileSync(join(dossier, "index.html"), "utf8"), index, "index.html n'est pas remplacé");
+  assert.equal(readFileSync(join(dossier, "commun.css"), "utf8"), "/* déjà là */\n");
+  assert.ok(existsSync(join(dossier, "a-plat", "moteur.js")));
+});
+
+test("un index.html qui ne charge pas a-plat/moteur.js ne rend pas le dossier à l'outil", () => {
+  const dossier = neuf();
+  mkdirSync(dossier, { recursive: true });
+  writeFileSync(join(dossier, "index.html"), '<!doctype html><html><body><script src="app.js"></script></body></html>\n');
+  const avant = tout(dossier);
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 2, sortie);
+  assert.deepEqual(tout(dossier), avant);
+});
