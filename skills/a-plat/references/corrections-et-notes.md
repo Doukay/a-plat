@@ -55,6 +55,8 @@ La personne le dit (« passe en ordinateur », « on arrête la relecture ») : 
 
 Les notes sont dans `rangees[].notes`, à côté des écrans, jamais dessinées dessus. Une note tient en une phrase courte.
 
+Dès qu'une note concerne un ou des écrans précis, remplir `ecrans` avec leurs codes : `ecrans: ["A1", "A3"]`. La page la montre alors sous chacun de ces écrans. Laisser une note sans `ecrans` seulement quand elle vaut pour toute la rangée : elle s'affiche sous le titre de la rangée.
+
 | `type` | Pour |
 |---|---|
 | `decision` | Ce que la personne a tranché. |

@@ -56,6 +56,35 @@ test("validerPlan refuse un type de note hors liste et le cite", () => {
   assert.match(texte, /remarque/);
 });
 
+test("validerPlan accepte une note qui cite des écrans par leur code, ou une liste vide", () => {
+  const plan = chargerPlanComplet();
+  plan.rangees[0].notes[0].ecrans = ["A1", "A2"];
+  plan.rangees[0].notes.push({ type: "source", date: "2026-11-06", texte: "Pour toute la rangée.", ecrans: [] });
+  assert.deepEqual(validerPlan(plan), []);
+});
+
+test("validerPlan refuse un champ ecrans de note qui n'est pas une liste, et cite la rangée et la note", () => {
+  for (const valeur of ["A1", 3, { A1: true }, null]) {
+    const plan = chargerPlanComplet();
+    plan.rangees[0].notes[0].ecrans = valeur;
+    const erreurs = validerPlan(plan);
+    assert.equal(erreurs.length, 1, `ecrans: ${JSON.stringify(valeur)}`);
+    assert.match(erreurs[0], /La note 1 de la rangée A/);
+    assert.match(erreurs[0], /ecrans/);
+    assert.match(erreurs[0], /liste de codes/);
+  }
+});
+
+test("validerPlan refuse un code inconnu dans les écrans d'une note, et cite la rangée, la note et le code", () => {
+  const plan = chargerPlanComplet();
+  plan.rangees[0].notes.push({ type: "decision", date: "2026-11-06", texte: "Deuxième.", ecrans: ["A1", "Q7", 4] });
+  const erreurs = validerPlan(plan);
+  const numero = plan.rangees[0].notes.length;
+  assert.equal(erreurs.length, 2);
+  assert.match(erreurs[0], new RegExp(`La note ${numero} de la rangée A cite l'écran « Q7 », qui n'existe pas dans ecrans`));
+  assert.match(erreurs[1], new RegExp(`La note ${numero} de la rangée A cite l'écran 4`));
+});
+
 test("validerPlan refuse une version différente de 1", () => {
   const plan = chargerPlanComplet();
   plan.version = 2;

@@ -72,6 +72,7 @@
     if (!etatDesLieux) erreurs.push("Le champ etatDesLieux doit être une liste.");
 
     var idsDeRangee = [];
+    var notesACiter = []; // { nom, numero, ecrans } : les codes cités se vérifient une fois les écrans lus
     (rangees || []).forEach(function (rangee, i) {
       if (!estObjet(rangee)) {
         erreurs.push("rangees[" + i + "] doit être un objet.");
@@ -97,6 +98,14 @@
           erreurs.push("La note " + (j + 1) + " de " + nom + " a un type " + trouve +
             " qui n'est pas permis (type : " + TYPES_DE_NOTE.join(", ") + ").");
         }
+        // ecrans (facultatif) : les codes des écrans que la note concerne.
+        if (!estObjet(note) || note.ecrans === undefined) return;
+        if (!Array.isArray(note.ecrans)) {
+          erreurs.push("La note " + (j + 1) + " de " + nom + " a un champ ecrans " + montrer(note.ecrans) +
+            " : il doit être une liste de codes d'écran, comme [\"A1\", \"A3\"].");
+          return;
+        }
+        notesACiter.push({ nom: nom, numero: j + 1, ecrans: note.ecrans });
       });
     });
 
@@ -141,6 +150,15 @@
         erreurs.push(nom + " a un statut " + montrer(ecran.statut) +
           " qui n'est pas permis (statut : " + STATUTS.join(", ") + ").");
       }
+    });
+
+    notesACiter.forEach(function (note) {
+      note.ecrans.forEach(function (code) {
+        if (!estTexte(code) || codes.indexOf(code) === -1) {
+          erreurs.push("La note " + note.numero + " de " + note.nom + " cite l'écran " + montrer(code) +
+            ", qui n'existe pas dans ecrans.");
+        }
+      });
     });
 
     (etatDesLieux || []).forEach(function (ligne, i) {
