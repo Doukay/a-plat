@@ -25,13 +25,13 @@ Sous Windows, garder ce chemin entre guillemets, avec des `/` dans Bash. Les cit
 - **Lancer le projet.** Ne jamais installer, construire, démarrer ou lancer le projet sans l'accord de la personne. Avant de le demander, lui dire que cela peut écrire dans le projet et lire sa configuration. Sans cet accord, tout reste `aConfirmer: true`.
 - **Secrets.** Ne jamais ouvrir `.env`, clés ni dossiers de secrets. Seul leur nom peut être cité, jamais leur contenu.
 - **Données réelles.** Aucun nom de client, adresse, chiffre réel ou secret du projet ne passe dans les maquettes. Les exemples sont inventés, avec un seul jeu d'exemples pour tout le projet. Les valeurs saisies ou d'exemple écrites dans les fichiers de données ou de départ du projet (noms, objets, notes, textes) sont remplacées, même si elles semblent inventées.
-- **Inconnu.** Ce qui n'est pas connu (prix, durée, texte officiel, fait) s'écrit entre [crochets]. Ne jamais l'inventer.
+- **Inconnu.** Ce que le projet doit fixer lui-même et qui n'est pas connu (prix de vente, durée, texte officiel, adresse de contact, fait) s'écrit entre [crochets]. Ne jamais l'inventer. Les montants, dates et nombres d'exemple (une dépense, un solde, un nombre de membres) font partie du jeu d'exemples : ils s'inventent, et les totaux se calculent à partir d'eux, pour que l'écran se lise.
 - **Sources.** Chaque affirmation sur le projet dit d'où elle vient (`source`). `aConfirmer` vaut `true` pour tout ce qui a été lu sans être vu marcher, et `false` seulement pour ce qui a été vu marcher ou ce que la personne dit elle-même (son idée, une confirmation).
 - **Manques.** Ce qui manque devient une question. Une page qui manque ne se dessine que si la personne le demande. Un manque qu'elle laisse de côté reste dans la liste, marqué comme tel avec la date.
 - **Ce qui est vu.** Ne jamais dire qu'une page marche, ni comment elle s'affiche (débordement, mise en page), sans l'avoir vu ; si c'est vu, dire comment (outil, largeur). Sinon, écrire « lu dans le code, à essayer pour confirmer ».
 - **Commandes.** Une commande par appel, jamais enchaînée avec `;`, `&&` ou `|`, ni en boucle : une commande composée peut être refusée et fait perdre un tour. Ce que Claude écrit dans le dossier de maquettes (`plan.js`, écrans, pages redessinées, `passage-au-code.md`) s'écrit avec les outils de fichiers, jamais par une commande ou un script. Seules la copie du modèle (`copier.mjs`) et celle d'une capture fournie passent par une commande.
 - **Fichiers de l'outil.** Les fichiers copiés du modèle (`index.html`, `a-plat/`, `ecran-type.html`) ne se modifient pas. Dans `commun.css`, seul change le bloc UI (`:root[data-finition="ui"]`, les valeurs lues dans les styles du projet), et une classe qui manque s'ajoute à la fin, écrite avec les variables seulement (voir `references/format.md`).
-- **Aides.** Un gros lot peut se partager entre des aides (sous-agents). Chacun reçoit dans son appel ce fichier et les références de son étape, en entier, et le même jeu d'exemples, sans fichier de consignes à part. Un aide n'écrit que ses fichiers d'écran et d'actuel, et ne parle pas à la personne : seul Claude principal écrit `plan.js` et lui parle. Ce que les aides écrivent est relu comme le reste, avant d'être montré.
+- **Aides.** Un gros lot peut se partager entre des aides (sous-agents). Chacun reçoit dans son appel ce fichier et les références de son étape, en entier, le même jeu d'exemples et les écrans de référence de la coquille (« La coquille commune » dans `references/ecrans.md`), sans fichier de consignes à part. Un aide n'écrit que ses fichiers d'écran et d'actuel, et ne parle pas à la personne : seul Claude principal écrit `plan.js` et lui parle. Ce que les aides écrivent est relu comme le reste, avant d'être montré. Pour lire le projet, un aide de recherche sur un modèle plus léger suffit, s'il cite ses sources ; pour dessiner et relire, le même modèle que Claude principal.
 
 **Parler à la personne :** en français, en phrases simples, sans jargon, en la vouvoyant sauf si elle tutoie. Chaque message ne pose qu'une question, la dernière, écrite en toutes lettres avec ses choix. Le reste (points à trancher, choix proposés) s'écrit en phrases, sans point d'interrogation : la personne y répond quand elle veut.
 
@@ -59,7 +59,7 @@ Les huit étapes se font dans l'ordre. **Arrêt** veut dire : finir le message p
 
 **S'il n'y a qu'une idée :** poser des questions courtes, une à la fois, et attendre chaque réponse : dans chaque message, une seule question, un seul point d'interrogation. Quatre ou cinq suffisent : à quoi ça sert, pour qui, ce que la personne y fait d'abord, sur quel appareil, ce qui est déjà décidé. S'arrêter dès que la liste des pages peut être faite. Rien n'est dessiné avant que la personne ait vu la liste.
 
-**S'il y a déjà des maquettes :** relire aussi le projet comme ci-dessus, et comparer avec `etatDesLieux`. Seul `etatDesLieux` se met à jour : ne jamais réécrire `rangees`, `ecrans` ni `reglages` en reprise. Ils ne changent que sur une demande de la personne (étape 6). Les codes d'écran, les notes et les écrans validés ne bougent pas. Après l'état des lieux de reprise et son arrêt : si `reglages` existe, le rappeler en une ligne et continuer à l'étape 5, ou à l'étape 4 s'il n'y a encore aucun écran (sans `reglages`, étape 3) ; ajouter des notes ou de nouveaux écrans est permis, réécrire ne l'est pas.
+**S'il y a déjà des maquettes :** relire aussi le projet comme ci-dessus, et comparer avec `etatDesLieux`. Seuls `etatDesLieux` et `avancement` se mettent à jour : ne jamais réécrire `rangees`, `ecrans` ni `reglages` en reprise. Ils ne changent que sur une demande de la personne (étape 6). Les codes d'écran, les notes et les écrans validés ne bougent pas. Après l'état des lieux de reprise et son arrêt : si `reglages` existe, le rappeler en une ligne et continuer à l'étape 5, ou à l'étape 4 s'il n'y a encore aucun écran (sans `reglages`, étape 3) ; ajouter des notes ou de nouveaux écrans est permis, réécrire ne l'est pas.
 
 ### 2. État des lieux
 
@@ -69,7 +69,7 @@ Lire `references/etat-des-lieux.md`, puis :
 2. Dossier neuf, vide ou copie interrompue : y copier la page par une seule commande, `node "<skill>/copier.mjs" "<dossier>"` (par exemple `maquettes`), telle quelle, sans jamais retaper le moteur à la main. Le script crée le dossier, ne remplace jamais un fichier qui existe, refuse un dossier qui n'est pas à l'outil (code 2) et dit ce qu'il a copié. Si la commande est refusée, l'écrire ainsi : « La copie des fichiers de l'outil a été refusée. Sans eux, la page ne peut pas s'afficher. Voulez-vous l'autoriser ? »
    - Sans Node : lire chaque fichier du modèle (`index.html`, `commun.css`, `ecran-type.html`, et chaque fichier de `a-plat/`), puis l'écrire dans le dossier avec les outils de fichiers, sans jamais écraser un fichier qui existe, jamais `plan.exemple.js`, et le dire à la personne. Ne créer aucun dossier vide ni `.gitkeep` : `ecrans/` et `actuel/` naissent avec leur premier fichier.
    - Ne jamais donner à la personne une autre commande de copie, et ne jamais copier les fichiers du modèle avec un joker (`*`), `-Recurse`, `-Force`, `&&` ou `;`.
-3. Écrire `plan.js` après la copie : `etatDesLieux`, avec `rangees: []` et `ecrans: []` tant que rien n'est dessiné, et sans `reglages` tant qu'ils ne sont pas acceptés. Le format est dans `references/format.md`.
+3. Écrire `plan.js` après la copie : `etatDesLieux` et `avancement` (le niveau et sa raison, `references/lire-un-projet.md`), avec `rangees: []` et `ecrans: []` tant que rien n'est dessiné, et sans `reglages` tant qu'ils ne sont pas acceptés. Le format est dans `references/format.md`.
 4. Lancer le contrôle.
 5. Montrer l'état des lieux dans la conversation aussi : le compte clair par état, toutes les pages, ce qui n'a pas été lu, puis les points à trancher.
 
@@ -93,17 +93,21 @@ Proposer les cinq réglages d'après ce que le projet contient, chacun avec sa r
 
 ### 4. Premiers écrans
 
-Lire `references/ecrans.md`. Dessiner 1 ou 2 écrans seulement, ceux nommés à l'étape 3, quel que soit le rythme choisi : pour un projet, parmi les pages les plus importantes du parcours principal, en préférant une page dont le changement se voit à l'écran, pour que la direction se juge. Pour une idée, l'accord sur la liste vaut demande de dessiner : ce sont les 1 ou 2 écrans du début du parcours principal. Faire ce qui est dit dans « Après chaque lot ». Demander si la direction et le niveau de détail conviennent.
+Lire `references/ecrans.md`. Dessiner 1 ou 2 écrans seulement, ceux nommés à l'étape 3, quel que soit le rythme choisi : pour un projet, parmi les pages les plus importantes du parcours principal, en préférant une page dont le changement se voit à l'écran, pour que la direction se juge. Pour une idée, l'accord sur la liste vaut demande de dessiner : ce sont les 1 ou 2 écrans du début du parcours principal. Leur coquille (barre, menu, onglets) vient du code du gabarit et servira de référence (`references/ecrans.md`). Faire ce qui est dit dans « Après chaque lot ». Demander si la direction et le niveau de détail conviennent.
 
 **Arrêt.** Le reste ne se dessine qu'après sa réponse.
 
 ### 5. Les écrans
 
-Continuer selon le rythme choisi : un écran, une rangée, ou tout, puis « Après chaque lot » et **arrêt**.
+Continuer selon le rythme choisi : un écran, une rangée, ou tout, puis « Après chaque lot » et **arrêt**, sauf si la personne a demandé d'enchaîner (plus bas).
+
+- **Avant le premier lot :** fixer la coquille commune d'après les premiers écrans (`references/ecrans.md`). Pour un gros projet (plus de 30 pages), dire en une phrase combien d'écrans restent à dessiner, dont combien d'inchangés, et que ce sera long.
+- **L'ordre :** d'abord les pages qui changent (à compléter, ou avec un changement demandé), rangée par rangée, puis les pages inchangées. Ce qui apporte quelque chose se voit tôt. Chaque écran prend sa place de parcours dans `ecrans` (l'ordre d'affichage), et son code le numéro libre suivant de sa rangée.
+- **Enchaîner :** si la personne a demandé de tout faire d'un coup ou d'enchaîner les lots, ne pas s'arrêter entre les lots. Faire « Après chaque lot » pour chacun, sans attendre, et ne s'arrêter qu'à la fin, ou devant une question qui bloque. Si une limite force l'arrêt avant (durée, budget du lancement, longueur de la conversation), dire où on en est et ce qui reste, et finir par la seule question « Je continue avec <ce qui reste>, ou on s'arrête ici ? ».
 
 - **Page qui existe, sans changement :** un seul dessin de ce qu'elle montre, avec `commun.css` comme les autres écrans, marqué `inchange: true`. Pas d'actuel à côté.
 - **Page qui existe, avec un changement demandé :** l'écran actuel et la proposition, côte à côte. L'`actuel` vient d'une capture fournie par la personne, sinon il est redessiné d'après le code et marqué `redessine`.
-- **Page à compléter :** l'actuel et la proposition, et seul ce qui change est mis en avant. Si rien de ce qui lui manque ne se voit à l'écran (une redirection, un envoi), un seul dessin `inchange: true`, et le manque en note.
+- **Page à compléter :** l'actuel et la proposition, et seul ce qui change est mis en avant. Si rien de ce qui lui manque ne se voit à l'écran (une redirection, un envoi), un seul dessin `inchange: true`, et le manque en note `a-coder` ou `a-trancher` qui cite cet écran.
 - **Page qui manque :** dessinée seulement si la personne le demande.
 - **Page prévue :** dessinée seulement si la personne le demande. Pour une idée, toutes les pages sont prévues, et l'accord sur la liste vaut cette demande.
 
@@ -123,7 +127,7 @@ Les décisions restent à côté des écrans, jamais dessus : notes courtes, ave
 
 ## Après chaque lot
 
-1. **Relecture** (si `relecture: true`) : relire chaque écran du lot, en entier, contre le code de sa page (sans code, contre ce que la personne a dit ou demandé), avant de le montrer, jamais un échantillon. Rien d'ajouté sans demande, rien d'inventé (élément, ligne, montant), chaque chiffre affiché cohérent avec les autres, aucune donnée réelle, inconnu entre [crochets], liens justes. Un lot trop gros pour être relu en entier se montre en plus petits lots. Si `relecture: false`, dire que ce n'est pas relu.
+1. **Relecture** (si `relecture: true`) : relire chaque écran du lot, en entier, contre le code de sa page (sans code, contre ce que la personne a dit ou demandé), avant de le montrer, jamais un échantillon. Rien d'ajouté sans demande, rien d'inventé hors du jeu d'exemples (élément, ligne, montant), chaque chiffre affiché cohérent avec les autres, aucune donnée réelle, inconnu entre [crochets], liens justes, coquille identique à celle de référence. Un lot trop gros pour être relu en entier se montre en plus petits lots. Si `relecture: false`, dire que ce n'est pas relu.
 2. **Contrôle :** lancer `node "<skill>/verifier.mjs" <dossier>` et corriger jusqu'à ce qu'il réussisse. Si Node est absent, faire les contrôles soi-même et le dire (liste dans `references/format.md`).
 3. **Rendu :** avec un moyen déjà disponible (navigateur piloté, Playwright), ouvrir la page et l'écran, et regarder ; ne rien installer ni télécharger pour cela. Les captures prises pour vérifier vont dans un dossier temporaire, jamais dans le projet. Sans moyen de regarder, écrire « je n'ai pas vu le rendu ».
 4. **Compte rendu**, dans le message : ce qui a été vérifié et comment, ce qui ne l'a pas été, ce qui vient du projet (structure, noms des champs, libellés) et ce qui est inventé, sans jamais dire que rien n'a été repris si c'est faux, les [crochets] restants, le fichier à ouvrir d'un double-clic (`<dossier>/index.html`) et l'adresse de l'écran (`#ecran/A2`).
@@ -136,7 +140,7 @@ Les décisions restent à côté des écrans, jamais dessus : notes courtes, ave
 | « Je dessine tout de suite, ce sera plus parlant. » | L'état des lieux d'abord, puis 1 ou 2 écrans, avec un arrêt à chaque fois. |
 | « Je vais faire une page de synthèse, ou la publier. » | Le résultat, c'est `plan.js` et les écrans dans le dossier de maquettes, affichés par la page copiée du modèle. |
 | « Le code le fait, donc ça marche. » | C'est « lu », pas « vu marcher » : `aConfirmer: true`. |
-| « Je mets un chiffre plausible. » | [crochets]. |
+| « Je mets un chiffre plausible. » | Le prix de vente ou le tarif du projet, une durée, un fait : [crochets]. Un montant ou un nombre d'exemple : celui du jeu d'exemples, et les totaux calculés à partir de lui. |
 | « Je reprends les données d'exemple du projet, c'est plus réaliste. » | Exemples inventés, un seul jeu, même si celles du projet semblent inventées. |
 | « Je peux corriger ce bug dans le code au passage. » | Le signaler. L'outil n'écrit que dans le dossier de maquettes. |
 | « Je redessine l'actuel, puis la même chose en gris comme proposition. » | Sans changement, un seul dessin, `inchange: true`. |

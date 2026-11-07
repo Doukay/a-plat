@@ -260,8 +260,11 @@ test("la planche pose les rangées dans l'ordre, avec leurs titres-liens, les no
     // Le nom au-dessus de chaque écran : code, badges, titre.
     const nomA1 = page.locator('.planche .vignette[data-code="A1"] .vignette-lien');
     assert.equal(espaces(await nomA1.locator(".vignette-code").innerText()), "A1");
-    assert.equal(espaces(await nomA1.locator(".badge-valide").innerText()), "Validé");
-    assert.equal(espaces(await page.locator('.planche .vignette[data-code="A3"] .badge-inchange').innerText()), "Inchangé");
+    // Le mot reste dans la page pour les lecteurs d'écran ; à 30 %, la planche montre la marque courte.
+    assert.equal(espaces(await nomA1.locator(".badge-valide .badge-mot").innerText()), "Validé");
+    assert.equal(await nomA1.locator(".badge-valide .badge-court").isVisible(), true);
+    // A3 est inchangé et sa page est à compléter : ce qui manque ne se voit pas à l'écran.
+    assert.equal(espaces(await page.locator('.planche .vignette[data-code="A3"] .badge-inchange .badge-mot').innerText()), "Inchangé à l'écran");
     const nom = await nomA1.boundingBox();
     const image = await page.locator('.planche .vignette[data-code="A1"] .cadre-boite').boundingBox();
     assert.ok(nom.y + nom.height <= image.y + 1, "le nom est au-dessus de l'écran");
@@ -478,7 +481,7 @@ test("#rangee/A montre son titre en grand, ses écrans côte à côte à une tai
     assert.equal(espaces(await a2.locator(".rangee-carte-code").innerText()), "A2");
     assert.equal(await a2.getByRole("link", { name: "Ouvrir A2 ›" }).getAttribute("href"), "#ecran/A2");
     assert.equal(espaces(await cartes.nth(0).locator(".badge-valide").innerText()), "Validé");
-    assert.equal(espaces(await cartes.nth(2).locator(".badge-inchange").innerText()), "Inchangé");
+    assert.equal(espaces(await cartes.nth(2).locator(".badge-inchange").innerText()), "Inchangé à l'écran");
     // Les notes : sous la carte de l'écran, et celles de la rangée sous son titre.
     assert.match(await a2.locator(".notes-ecran").innerText(), /Décision[\s\S]*2026-11-04[\s\S]*Caution retirée\./);
     assert.equal(await a2.locator(".notes-ecran s").innerText(), "Caution de 20 €");
@@ -558,6 +561,29 @@ test("#ecran/A2 montre sous l'écran les notes qui le citent, et garde le pannea
 });
 
 // ---------------------------------------------------------------- le téléphone
+
+test("à 390 px, un code long avec « Validé » et « Inchangé à l'écran » tient sur sa ligne : les badges deviennent ✓ et =", async () => {
+  const plan = {
+    version: 1, projet: "Long",
+    etatDesLieux: [{ page: "Fiche", groupe: "G", etat: "a-completer", raison: "Un lien mène au mauvais onglet.", source: "src/fiche.js", ecrans: ["A123"] }],
+    rangees: [{ id: "A", titre: "Rangée", notes: [{ type: "a-coder", date: "2026-11-07", texte: "Le lien ouvre l'onglet Tous.", ecrans: ["A123"] }] }],
+    ecrans: [ecran("A123", "Fiche d'un outil", { rangee: "A", statut: "valide", inchange: true })]
+  };
+  const dossier = genererFixture({ plan, ecrans: { "A123.html": ecranHtml("A123", "<h1>Fiche</h1>") } });
+  await avecPage(dossier, { adresse: "ensemble", largeur: 390, hauteur: 844 }, async ({ page, erreurs }) => {
+    const ligne = page.locator('.glisse .vignette[data-code="A123"] .vignette-ligne');
+    assert.ok(await ligne.evaluate((el) => el.scrollWidth <= el.clientWidth + 1), "rien n'est coupé");
+    assert.deepEqual(await ligne.locator(".badge-court").allInnerTexts(), ["✓", "="]);
+    assert.match(await ligne.evaluate((el) => el.textContent), /Validé.*Inchangé à l'écran/);
+    assert.deepEqual(erreurs, []);
+  });
+  // L'écran seul dit pourquoi il est inchangé, et ses notes sont là.
+  await avecPage(dossier, { adresse: "ecran/A123", largeur: 1320 }, async ({ page }) => {
+    assert.equal((await page.locator(".volet-proposition .volet-titre").innerText()).trim(),
+      "Existant ; le changement ne se voit pas à l'écran, voir les notes");
+    assert.equal((await page.locator(".ecran-entete .badge-inchange").innerText()).trim(), "Inchangé à l'écran");
+  });
+});
 
 test("à 390 px, la vue d'ensemble est une colonne : chaque rangée glisse de côté, écran par écran, sans faire déborder la page", async () => {
   await avecPage(FIXTURE, { adresse: "ensemble", largeur: 390, hauteur: 844 }, async ({ page, erreurs }) => {
@@ -854,6 +880,27 @@ test("un code d'écran n'est jamais coupé, et le titre se cache quand l'écran 
     const bouton = a2.getByRole("button", { name: "1 note" });
     assert.equal(espaces(await bouton.innerText()), "1");
     assert.ok((await bouton.boundingBox()).width <= (await a2.boundingBox()).width + 0.5, "le bouton tient dans la largeur de l'écran");
+  });
+});
+
+test("à 100 %, les badges de la planche gardent leur mot ; la marque courte ne sert qu'aux écrans étroits", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    const badge = page.locator('.planche .vignette[data-code="A1"] .badge-valide');
+    assert.equal(await badge.locator(".badge-court").isVisible(), true, "à 30 %, ✓");
+    assert.ok((await badge.locator(".badge-mot").boundingBox()).width <= 1, "à 30 %, le mot est caché à l'œil");
+    // Le mot reste dans le nom du lien (lecteurs d'écran), et revient au survol ; la marque non.
+    const lienA3 = page.locator('.planche .vignette[data-code="A3"] .vignette-lien');
+    assert.match(await lienA3.evaluate((el) => el.textContent), /Inchangé à l'écran/);
+    assert.equal(await lienA3.locator(".badge-court").getAttribute("aria-hidden"), "true");
+    assert.match(await lienA3.getAttribute("title"), /^A3 · Inchangé à l'écran · /);
+    const ligneA3 = page.locator('.planche .vignette[data-code="A3"] .vignette-ligne');
+    assert.ok(await ligneA3.evaluate((el) => el.scrollWidth <= el.clientWidth + 1), "rien n'est coupé à 30 %");
+    await page.getByRole("button", { name: "100 %, taille réelle" }).click();
+    assert.equal(espaces(await badge.innerText()), "Validé");
+    assert.equal(await badge.locator(".badge-court").isVisible(), false);
+    // Le mot, la marque et le code tiennent sur la ligne, sans rien couper.
+    const ligne = page.locator('.planche .vignette[data-code="A3"] .vignette-ligne');
+    assert.ok(await ligne.evaluate((el) => el.scrollWidth <= el.clientWidth + 1), "rien n'est coupé à 100 %");
   });
 });
 

@@ -19,7 +19,7 @@ Le format exact d'un écran est dans `references/format.md`. Ici : quoi dessiner
 |---|---|
 | Existe, sans changement | Un seul dessin, avec `commun.css` comme les autres écrans : ce que la page montre aujourd'hui, au propre, avec `inchange: true` et `actuel: null`. Pas de redessin de l'existant à côté : deux fois le même contenu n'apprend rien, et coûte le double. |
 | Existe, avec un changement demandé ou accepté par la personne | L'`actuel` et la proposition, côte à côte. |
-| À compléter | L'`actuel` et la proposition, côte à côte, et seul ce qui change est mis en avant, par un `.bandeau` autour de l'élément et une `.pastille` « Nouveau ». Si rien de ce qui manque ne se voit à l'écran (une redirection, un envoi), un seul dessin `inchange: true`, et le manque en note. |
+| À compléter | L'`actuel` et la proposition, côte à côte, et seul ce qui change est mis en avant, par un `.bandeau` autour de l'élément et une `.pastille` « Nouveau ». Si rien de ce qui manque ne se voit à l'écran (une redirection, un envoi), un seul dessin `inchange: true`, et le manque en note `a-coder` ou `a-trancher` avec `ecrans` : elle s'affiche sous l'écran, et la page le marque « Inchangé à l'écran ». |
 | Manque | Rien, sauf si la personne l'a demandé. |
 | Prévue | Rien, sauf si la personne l'a demandé. Pour une idée, toutes les pages sont prévues : l'accord sur la liste vaut demande, en commençant par le début du parcours principal. |
 
@@ -33,6 +33,16 @@ Le niveau de détail suit le projet et la demande : un projet à ses débuts, pe
 
 Dans une proposition, préférer des lignes (`.ligne`, `.liste`) à un tableau plus large que l'écran.
 
+## La coquille commune
+
+Ce qui revient sur presque chaque écran (barre du haut, menu de côté, barre d'onglets du bas, pastilles comme « Pro ») est la coquille. Elle est la même partout, sinon les écrans se contredisent d'un lot à l'autre.
+
+- La coquille de référence vient des premiers écrans (étape 4), acceptés par la personne, un par format dessiné, et le compte rendu dit lesquels. Elle est prise dans le code qui la dessine (le gabarit, le menu), pas dans une page au hasard. Un format pas encore dessiné prend pour référence son premier écran, relu contre ce même code.
+- Chaque écran la recopie mot pour mot : mêmes liens, même ordre, mêmes pastilles. Seul change l'élément actif (la page où l'on est).
+- Les actuels redessinés ont aussi une seule coquille, la leur, celle du code : la même dans tous les actuels.
+- Un écran qui n'a pas la coquille dans le projet (connexion, page publique, fenêtre) ne l'a pas non plus dans la maquette.
+- Si la coquille doit changer après coup, la changer dans tous les écrans d'un coup, propositions et actuels, et le dire.
+
 ## L'existant : capture ou redessin
 
 Dire une seule fois que des captures des pages qui existent sont les bienvenues, à l'arrêt de l'étape 2 ou de l'étape 3, avant tout dessin, en une phrase et pas comme une question de plus. Elles servent pour les pages qui changent : une page inchangée n'a pas d'actuel. Rappeler qu'une capture peut montrer des données réelles : mieux vaut qu'elle n'en contienne pas.
@@ -44,7 +54,8 @@ Dire une seule fois que des captures des pages qui existent sont les bienvenues,
 ## Les textes
 
 - **Libellés de l'interface :** ceux du projet quand ils existent, mot pour mot. Sinon de vrais textes, simples, jamais de « lorem ipsum ».
-- **Ce qui n'est pas connu :** prix, durée, délai, nom officiel, texte légal, adresse de contact, entre [crochets] : `[durée à choisir]`.
+- **Ce qui n'est pas connu :** ce que le projet doit fixer lui-même, prix de vente, durée, délai, nom officiel, texte légal, adresse de contact, entre [crochets] : `[durée à choisir]`.
+- **Les montants et nombres d'exemple :** une dépense, un solde, un total, un nombre de membres ou de visites viennent du jeu d'exemples, pas des crochets. Les totaux se calculent à partir des montants affichés, pour rester justes. Un écran couvert de crochets ne se lit plus.
 - **Ce qui est connu :** un chiffre ou une règle écrite dans le projet garde sa valeur. Si deux sources se contredisent, [crochets] et une note `a-trancher`.
 
 ## Un seul jeu d'exemples

@@ -6,7 +6,7 @@ import vm from "node:vm";
 
 const require = createRequire(import.meta.url);
 const CHEMIN_LOGIQUE = "../skills/a-plat/modele/a-plat/logique.js";
-const { validerPlan, texteCorrections, ecranParFichier, fichierSur } = require(CHEMIN_LOGIQUE);
+const { validerPlan, texteCorrections, ecranParFichier, fichierSur, nomDeLAvancement, inchangesACompleter } = require(CHEMIN_LOGIQUE);
 
 function chargerPlanComplet() {
   const texte = readFileSync(new URL("./fixtures/complet/plan.js", import.meta.url), "utf8");
@@ -287,4 +287,74 @@ test("validerPlan refuse un écran inchange: true qui a aussi un actuel", () => 
   assert.match(texte, new RegExp(ecran.code));
   assert.match(texte, /inchange/);
   assert.match(texte, /actuel/);
+});
+
+test("validerPlan accepte un plan sans avancement, et chacun des quatre niveaux", () => {
+  const plan = chargerPlanComplet();
+  delete plan.avancement;
+  assert.deepEqual(validerPlan(plan), []);
+  for (const niveau of ["idee", "debut", "en-cours", "avance"]) {
+    plan.avancement = { niveau, raison: "parce que les pages sont là (src/)." };
+    assert.deepEqual(validerPlan(plan), [], niveau);
+  }
+});
+
+test("validerPlan refuse un niveau d'avancement inconnu, et cite les quatre permis", () => {
+  for (const avancement of [{ niveau: "avancé", raison: "x" }, { raison: "x" }]) {
+    const plan = chargerPlanComplet();
+    plan.avancement = avancement;
+    assert.match(erreursDe(plan), /avancement\.niveau : idee, debut, en-cours, avance, sans accent/, JSON.stringify(avancement));
+  }
+  for (const avancement of ["avance", null, ["avance"]]) {
+    const plan = chargerPlanComplet();
+    plan.avancement = avancement;
+    assert.match(erreursDe(plan), /doit être un objet \{ niveau, raison \}/, JSON.stringify(avancement));
+  }
+});
+
+test("pour la page, un avancement mal écrit ne refuse pas le plan : il ne s'affiche pas, c'est tout", () => {
+  for (const avancement of [{ niveau: "avancé", raison: "x" }, "avance", null, { niveau: "avance", raison: "" }]) {
+    const plan = chargerPlanComplet();
+    plan.avancement = avancement;
+    assert.deepEqual(validerPlan(plan, { pourLaPage: true }), [], JSON.stringify(avancement));
+    assert.equal(nomDeLAvancement(plan), null, JSON.stringify(avancement));
+  }
+  const plan = chargerPlanComplet();
+  plan.avancement = { niveau: "constructor", raison: "x" };
+  assert.equal(nomDeLAvancement(plan), null, "un nom hérité d'Object n'est pas un niveau");
+});
+
+test("validerPlan refuse un avancement sans raison", () => {
+  const plan = chargerPlanComplet();
+  plan.avancement = { niveau: "avance", raison: "" };
+  assert.match(erreursDe(plan), /avancement\.raison/);
+});
+
+test("nomDeLAvancement donne le niveau en toutes lettres, ou null", () => {
+  const plan = chargerPlanComplet();
+  plan.avancement = { niveau: "en-cours", raison: "x" };
+  assert.equal(nomDeLAvancement(plan), "en cours");
+  plan.avancement.niveau = "avance";
+  assert.equal(nomDeLAvancement(plan), "avancé");
+  delete plan.avancement;
+  assert.equal(nomDeLAvancement(plan), null);
+  assert.equal(nomDeLAvancement(null), null);
+});
+
+test("inchangesACompleter rend les écrans inchangés des pages à compléter, et seulement eux", () => {
+  const plan = chargerPlanComplet();
+  // A2 : page à compléter ; B1 : page qui existe. Les deux deviennent inchangés.
+  for (const code of ["A2", "B1"]) {
+    const ecran = plan.ecrans.find((e) => e.code === code);
+    ecran.inchange = true;
+    ecran.actuel = null;
+  }
+  assert.deepEqual(inchangesACompleter(plan), ["A2"]);
+  // Deux pages à compléter qui citent le même écran : il ne compte qu'une fois.
+  plan.etatDesLieux.push({ ...plan.etatDesLieux[0], page: "Autre page" });
+  assert.deepEqual(inchangesACompleter(plan), ["A2"]);
+  plan.etatDesLieux.pop();
+  plan.etatDesLieux[0].etat = "existe";
+  assert.deepEqual(inchangesACompleter(plan), []);
+  assert.deepEqual(inchangesACompleter({}), []);
 });

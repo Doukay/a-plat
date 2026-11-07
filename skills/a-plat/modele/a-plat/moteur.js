@@ -213,6 +213,14 @@
     conteneur.appendChild(titreDeVue("État des lieux"));
     var lignes = plan.etatDesLieux;
 
+    var avancement = window.APlatLogique.nomDeLAvancement(plan);
+    if (avancement) {
+      var ligneDAvancement = creer("p", "avancement");
+      ligneDAvancement.appendChild(creer("strong", "", "Avancement : "));
+      ligneDAvancement.appendChild(document.createTextNode(avancement + ", " + plan.avancement.raison));
+      conteneur.appendChild(ligneDAvancement);
+    }
+
     if (lignes.length === 0) {
       conteneur.appendChild(message("Aucune page n'est encore listée", [
         "L'état des lieux est vide pour l'instant.",
@@ -710,9 +718,45 @@
     return repli;
   }
 
+  // Un badge garde son mot, et une marque courte que la planche montre à sa place quand
+  // l'écran est trop étroit à l'écran pour le mot (voir .badge-court dans le style).
+  function badge(classe, mot, court) {
+    var element = creer("span", classe);
+    element.appendChild(creer("span", "badge-mot", mot));
+    var marque = creer("span", "badge-court", court);
+    marque.setAttribute("aria-hidden", "true");
+    element.appendChild(marque);
+    return element;
+  }
+
+  // Les badges d'un écran : { classe, mot, court }. L'écran inchangé d'une page à compléter
+  // dit « Inchangé à l'écran » : ce qui lui manque ne se voit pas à l'écran (voir ses notes).
+  function badgesDe(ecran) {
+    var liste = [];
+    if (ecran.statut === "valide") liste.push({ classe: "badge-valide", mot: "Validé", court: "✓" });
+    if (ecran.inchange === true) {
+      liste.push({ classe: "badge-inchange", mot: horsEcran(ecran) ? "Inchangé à l'écran" : "Inchangé", court: "=" });
+    }
+    return liste;
+  }
+
   function ajouterLesBadges(conteneur, ecran) {
-    if (ecran.statut === "valide") conteneur.appendChild(creer("span", "badge-valide", "Validé"));
-    if (ecran.inchange === true) conteneur.appendChild(creer("span", "badge-inchange", "Inchangé"));
+    badgesDe(ecran).forEach(function (b) {
+      conteneur.appendChild(badge(b.classe, b.mot, b.court));
+    });
+  }
+
+  function horsEcran(ecran) {
+    return inchangesACompleter().indexOf(ecran.code) !== -1;
+  }
+
+  // Calculé une fois par plan (la page est déjà passée par lirePlan pour s'afficher).
+  var memoireDesInchanges = { plan: null, codes: [] };
+  function inchangesACompleter() {
+    if (memoireDesInchanges.plan !== window.A_PLAT) {
+      memoireDesInchanges = { plan: window.A_PLAT, codes: window.APlatLogique.inchangesACompleter(window.A_PLAT) };
+    }
+    return memoireDesInchanges.codes;
   }
 
   // Le titre d'une rangée, qui mène à sa vue en grand, suivi de son nombre d'écrans.
@@ -809,7 +853,8 @@
     var haut = creer("div", "vignette-haut");
     var lien = creer("a", "vignette-lien");
     lien.setAttribute("href", lienDeLEcran(ecran.code));
-    lien.setAttribute("title", ecran.code + " · " + nomCourt(ecran.titre));
+    // Le survol redonne les mots des badges, que la planche réduit à ✓ et = sous un écran étroit.
+    lien.setAttribute("title", [ecran.code].concat(badgesDe(ecran).map(function (b) { return b.mot; }), [nomCourt(ecran.titre)]).join(" · "));
     var ligne = creer("span", "vignette-ligne");
     ligne.appendChild(creer("span", "vignette-code", ecran.code));
     ajouterLesBadges(ligne, ecran);
@@ -862,6 +907,7 @@
   var ZOOM_TOUT_VOIR_MINIMAL = 0.15; // « Tout voir » ne descend pas plus bas, sauf pour la largeur
   var NOTES_LISIBLES = 220;          // largeur à l'écran (px) sous laquelle les notes d'un écran se replient
   var TITRE_LISIBLE = 40;            // largeur à l'écran (px) sous laquelle le titre d'un écran se cache
+  var BADGES_LISIBLES = 300;         // largeur à l'écran (px) sous laquelle « Validé », « Inchangé » deviennent ✓, =
   var SEUIL_DU_TIRER = 5;            // pixels à parcourir à la souris avant qu'un appui devienne un déplacement
   var SEUIL_DU_TIRER_AU_DOIGT = 12;  // la même chose au doigt ou au stylet, qui tremblent davantage
   var MARGE_DE_LA_PLANCHE = 24;
@@ -1040,7 +1086,7 @@
     for (var i = 0; i < elements.length; i++) {
       // La largeur écrite par dessinerVignette : celle d'une rangée repliée ne se mesure pas.
       var largeur = parseFloat(elements[i].style.width) || LARGEUR_PAR_DEFAUT;
-      vignettes.push({ element: elements[i], largeur: largeur, etroite: null, minuscule: null });
+      vignettes.push({ element: elements[i], largeur: largeur, etroite: null, minuscule: null, courts: null });
     }
 
     function marquer(element, classe, oui) {
@@ -1055,6 +1101,9 @@
         var aLEcran = vignette.largeur * zoom;
         var etroite = aLEcran < NOTES_LISIBLES;
         var minuscule = aLEcran < TITRE_LISIBLE;
+        var courts = aLEcran < BADGES_LISIBLES;
+        if (courts !== vignette.courts) marquer(vignette.element, "badges-courts", courts);
+        vignette.courts = courts;
         if (etroite !== vignette.etroite) marquer(vignette.element, "notes-etroites", etroite);
         if (minuscule !== vignette.minuscule) marquer(vignette.element, "sans-titre", minuscule);
         vignette.etroite = etroite;
@@ -1525,7 +1574,8 @@
     var aUnActuel = estObjet(ecran.actuel) && estTexte(ecran.actuel.fichier);
     if (aUnActuel) comparaison.appendChild(dessinerActuel(ecran, largeur, hauteur));
 
-    var titreDuVolet = aUnActuel ? "Proposition" : (ecran.inchange === true ? "Existant, sans changement proposé" : "");
+    var titreDuVolet = aUnActuel ? "Proposition" : (ecran.inchange !== true ? "" :
+      (horsEcran(ecran) ? "Existant ; le changement ne se voit pas à l'écran, voir les notes" : "Existant, sans changement proposé"));
     var proposition = creerVolet("volet-proposition", titreDuVolet, largeur);
     var fichier = fichierSur(ecran.fichier);
     if (fichier) {

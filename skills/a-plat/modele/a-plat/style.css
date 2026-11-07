@@ -1100,6 +1100,24 @@ body[data-mise="plein"] #vue {
   line-height: 1.5;
   white-space: nowrap;
 }
+/* La marque courte (✓, =) ne sert que sur la planche, quand l'écran est étroit à l'écran, et
+   dans la colonne du téléphone, où chaque écran fait 170 px : le mot reste lu par les
+   lecteurs d'écran, la marque ne l'est pas. */
+.badge-court { display: none; }
+.planche .vignette.badges-courts .badge-court,
+.glisse .vignette .badge-court { display: inline; }
+.planche .vignette.badges-courts .badge-mot,
+.glisse .vignette .badge-mot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- l'avancement du projet, en tête de l'état des lieux ---- */
+.avancement { margin: 0 0 12px; max-width: 70ch; }
 
 /* ---- l'existant introuvable : une phrase à la place de l'image ---- */
 .actuel-manque {

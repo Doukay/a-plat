@@ -6,6 +6,9 @@
   var ETATS = ["existe", "a-completer", "manque", "prevue"];
   var TYPES_DE_NOTE = ["decision", "a-trancher", "a-verifier", "a-coder", "source"];
   var STATUTS = ["a-relire", "valide"];
+  // L'avancement du projet, jugé à l'état des lieux, et son nom en toutes lettres.
+  var NIVEAUX = ["idee", "debut", "en-cours", "avance"];
+  var NOMS_DES_NIVEAUX = { idee: "idée", debut: "début", "en-cours": "en cours", avance: "avancé" };
 
   function estObjet(valeur) {
     return typeof valeur === "object" && valeur !== null && !Array.isArray(valeur);
@@ -75,6 +78,20 @@
     if (!rangees) erreurs.push("Le champ rangees doit être une liste.");
     if (!ecrans) erreurs.push("Le champ ecrans doit être une liste.");
     if (!etatDesLieux) erreurs.push("Le champ etatDesLieux doit être une liste.");
+
+    // avancement (facultatif) : { niveau, raison }, écrit à l'état des lieux. Il ne fait que
+    // s'afficher : la page ne le refuse pas (nomDeLAvancement l'ignore), le contrôle si.
+    if (plan.avancement !== undefined && !pourLaPage) {
+      if (!estObjet(plan.avancement)) {
+        erreurs.push("L'avancement vaut " + montrer(plan.avancement) +
+          " : il doit être un objet { niveau, raison }, comme { niveau: \"en-cours\", raison: \"parce que…\" }.");
+      } else if (NIVEAUX.indexOf(plan.avancement.niveau) === -1) {
+        erreurs.push("L'avancement a un niveau " + montrer(plan.avancement.niveau) + " qui n'est pas permis (avancement.niveau : " +
+          NIVEAUX.join(", ") + ", sans accent).");
+      } else if (!estTexte(plan.avancement.raison)) {
+        erreurs.push("L'avancement n'a pas de raison : avancement.raison dit en une phrase pourquoi ce niveau, avec ses sources.");
+      }
+    }
 
     var idsDeRangee = [];
     var notesACiter = []; // { nom, numero, ecrans } : les codes cités se vérifient une fois les écrans lus
@@ -208,8 +225,35 @@
     return null;
   }
 
+  // Le nom de l'avancement en toutes lettres (« en cours »), ou null s'il n'est pas écrit.
+  function nomDeLAvancement(plan) {
+    if (!estObjet(plan) || !estObjet(plan.avancement) || !estTexte(plan.avancement.raison)) return null;
+    if (!Object.prototype.hasOwnProperty.call(NOMS_DES_NIVEAUX, plan.avancement.niveau)) return null;
+    return NOMS_DES_NIVEAUX[plan.avancement.niveau];
+  }
+
+  // Les codes des écrans inchangés d'une page à compléter : ce qui lui manque ne se voit
+  // pas à l'écran (une redirection, un lien), et doit se lire dans une note sous l'écran.
+  function inchangesACompleter(plan) {
+    var codes = [];
+    if (!estObjet(plan) || !Array.isArray(plan.ecrans) || !Array.isArray(plan.etatDesLieux)) return codes;
+    var inchanges = [];
+    plan.ecrans.forEach(function (ecran) {
+      if (estObjet(ecran) && ecran.inchange === true && estTexte(ecran.code)) inchanges.push(ecran.code);
+    });
+    plan.etatDesLieux.forEach(function (ligne) {
+      if (!estObjet(ligne) || ligne.etat !== "a-completer" || !Array.isArray(ligne.ecrans)) return;
+      ligne.ecrans.forEach(function (code) {
+        if (inchanges.indexOf(code) !== -1 && codes.indexOf(code) === -1) codes.push(code);
+      });
+    });
+    return codes;
+  }
+
   var logique = {
     validerPlan: validerPlan,
+    nomDeLAvancement: nomDeLAvancement,
+    inchangesACompleter: inchangesACompleter,
     fichierSur: fichierSur,
     texteCorrections: texteCorrections,
     ecranParFichier: ecranParFichier

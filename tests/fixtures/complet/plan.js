@@ -27,6 +27,7 @@ window.A_PLAT = {
     aConfirmer: false,
     ecrans: ["B1"]
   }],
+  avancement: { niveau: "en-cours", raison: "parce que le prêt a ses pages (src/pret.js) et la fiche n'est pas finie (src/fiche.js)." },
   rangees: [{
     id: "A",
     titre: "Trouver un outil",

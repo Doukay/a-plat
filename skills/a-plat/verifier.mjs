@@ -495,14 +495,47 @@ function estUnFichier(chemin) {
   }
 }
 
+// Ce qui ne casse pas la page mais se perdrait : l'avancement jugé à l'état des lieux et
+// jamais écrit, et l'écran inchangé d'une page à compléter sans note qui dise son manque.
+// Un dossier dont la page date d'avant l'avancement (son a-plat/moteur.js ne le connaît pas)
+// ne le montre pas, ni « Inchangé à l'écran » : un avertissement dit comment mettre la page à jour.
+function avertissementsDuPlan(dossier, plan, inchangesACompleter) {
+  const avertissements = [];
+  const moteur = join(dossier, "a-plat", "moteur.js");
+  if (estUnFichier(moteur) && !/nomDeLAvancement/.test(readFileSync(moteur, "utf8"))) {
+    avertissements.push("Avertissement : la page de ce dossier date d'avant l'avancement (a-plat/moteur.js ne le connaît pas) : elle ne montre ni l'avancement ni « Inchangé à l'écran ». " +
+      "Pour passer au nouveau modèle, suivre « Reprendre des maquettes » dans references/etat-des-lieux.md.");
+  }
+  const lignes = Array.isArray(plan.etatDesLieux) ? plan.etatDesLieux : [];
+  if (lignes.length > 0 && plan.avancement === undefined) {
+    avertissements.push("Avertissement : l'avancement n'est pas écrit dans plan.js (avancement: { niveau, raison }) : la page ne peut pas le montrer.");
+  }
+  if (typeof inchangesACompleter !== "function") return avertissements;
+  const cites = new Set();
+  for (const rangee of Array.isArray(plan.rangees) ? plan.rangees : []) {
+    for (const note of rangee && Array.isArray(rangee.notes) ? rangee.notes : []) {
+      if (note && (note.type === "a-coder" || note.type === "a-trancher") && Array.isArray(note.ecrans)) {
+        note.ecrans.forEach((code) => cites.add(code));
+      }
+    }
+  }
+  for (const code of inchangesACompleter(plan)) {
+    if (!cites.has(code)) {
+      avertissements.push(`Avertissement : l'écran ${code} est inchangé, mais sa page est à compléter et aucune note a-coder ou a-trancher ne le cite : si ce qui manque ne se voit pas à l'écran, une note avec ecrans: ["${code}"] le dit, sous l'écran.`);
+    }
+  }
+  return avertissements;
+}
+
 function controler(argument) {
   if (!argument) {
     return { code: 2, lignes: ["Il manque le dossier des maquettes. Usage : node verifier.mjs <dossier>"] };
   }
   let validerPlan;
   let fichierSur;
+  let inchangesACompleter;
   try {
-    ({ validerPlan, fichierSur } = chargerLaLogique());
+    ({ validerPlan, fichierSur, inchangesACompleter } = chargerLaLogique());
   } catch (erreur) {
     return { code: 2, lignes: [erreur.message, "Le contrôle n'a pas pu démarrer : réinstaller le plugin À plat."] };
   }
@@ -526,7 +559,7 @@ function controler(argument) {
   }
 
   const erreurs = [...validerPlan(plan)];
-  const infos = [];
+  const infos = [...avertissementsDuPlan(dossier, plan, inchangesACompleter)];
   const finition = controlerLaFinition(dossier, plan);
   erreurs.push(...finition.erreurs);
   infos.push(...finition.infos);

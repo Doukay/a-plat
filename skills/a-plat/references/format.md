@@ -43,6 +43,10 @@ window.A_PLAT = {
     aConfirmer: true,              // true tant que ce n'a pas été vu marcher ni dit par la personne
     ecrans: ["A2"]                 // codes des écrans dessinés pour cette page ; [] sinon
   }],
+  avancement: {                    // écrit à l'état des lieux ; la page le montre en tête de l'état des lieux
+    niveau: "en-cours",            // idee | debut | en-cours | avance
+    raison: "parce que trois parcours sur cinq ont leurs pages (src/pages/)." // une phrase, avec ses sources
+  },
   rangees: [{
     id: "A",                       // une lettre, que prennent les codes de ses nouveaux écrans
     titre: "Nom de la rangée",
@@ -64,7 +68,8 @@ window.A_PLAT = {
     actuel: { fichier: "actuel/A2-fiche.png", origine: "capture" }
     // origine : capture | redessine ; actuel: null quand il n'y a pas d'existant
     // inchange: true (facultatif) : page qui existe, sans changement proposé ; le fichier
-    // dessine l'existant, seul, et actuel vaut null. La page l'affiche « Inchangé ».
+    // dessine l'existant, seul, et actuel vaut null. La page l'affiche « Inchangé », ou
+    // « Inchangé à l'écran » si sa page est à compléter (ce qui manque ne se voit pas).
   }]
 };
 ```
@@ -77,7 +82,8 @@ Règles que le contrôle vérifie :
 - Chaque écran du plan a son fichier dans `ecrans/`, et chaque fichier HTML de `ecrans/` a son écran dans le plan. Le dossier `ecrans/` doit exister dès qu'un écran est écrit ; sans écran dans le plan, il peut manquer.
 - Un `fichier` (d'un écran ou d'un `actuel`) ne contient ni `..`, ni adresse complète, ni barre au début, ni barre oblique inverse : la page le refuserait. Deux écrans n'ont jamais le même `fichier`, et deux rangées jamais le même `id`.
 - Un `actuel.fichier` se cherche dans `actuel/`, qu'il commence par `actuel/` ou non.
-- `inchange`, s'il est là, vaut `true` ou `false`. Un écran `inchange: true` n'a pas d'actuel.
+- `inchange`, s'il est là, vaut `true` ou `false`. Un écran `inchange: true` n'a pas d'actuel. S'il appartient à une page `a-completer` et qu'aucune note `a-coder` ou `a-trancher` ne le cite dans `ecrans`, le contrôle avertit : le manque doit se lire sous l'écran.
+- `avancement`, s'il est là, a un `niveau` parmi `idee`, `debut`, `en-cours`, `avance`, et une `raison`. Absent alors que l'état des lieux a des pages, le contrôle avertit.
 - `reglages.finition`, s'il est là, vaut `gris`, `gris-puis-charte` ou `charte`. Avec les deux dernières, `commun.css` a son bloc UI, aux noms exacts de l'UX, et son bloc UX reste celui du modèle (voir « UX et UI »).
 - Un écran (`ecrans/`) n'écrit aucune couleur : ni code (`#c0392b`), ni `rgb()`, `hsl()`, `color()`, ni nom de couleur, dans un attribut `style` ou un `<style>`. `transparent`, `inherit`, `currentColor` et `var(…)` sont permis. L'existant (`actuel/`) n'est pas concerné.
 

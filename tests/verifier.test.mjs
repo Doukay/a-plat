@@ -731,3 +731,46 @@ test("un existant en HTML écrit sans actuel/ est contrôlé dans actuel/", () =
   assert.match(sortie, /actuel\/A1-accueil\.html/);
   assert.match(sortie, /relais\.js/);
 });
+
+test("un état des lieux sans avancement : code 0, avec un avertissement qui dit quoi écrire", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace(/\n  avancement: [^\n]*/, ""));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+  assert.match(sortie, /Avertissement : l'avancement n'est pas écrit dans plan\.js \(avancement: \{ niveau, raison \}\)/);
+});
+
+test("sans page à l'état des lieux, l'avancement absent n'est pas signalé", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace(/\n  avancement: [^\n]*/, "").replace(/etatDesLieux: \[[\s\S]*?\n  \}\],/, "etatDesLieux: [],"));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+  assert.doesNotMatch(sortie, /avancement/);
+});
+
+test("un dossier dont la page date d'avant l'avancement : avertissement qui dit comment la mettre à jour", () => {
+  const dossier = preparer();
+  mkdirSync(join(dossier, "a-plat"), { recursive: true });
+  writeFileSync(join(dossier, "a-plat", "moteur.js"), "// ancienne page\n");
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+  assert.match(sortie, /Avertissement : la page de ce dossier date d'avant l'avancement/);
+  assert.match(sortie, /Reprendre des maquettes/);
+  writeFileSync(join(dossier, "a-plat", "moteur.js"), "// window.APlatLogique.nomDeLAvancement(plan)\n");
+  assert.doesNotMatch(lancer(dossier).sortie, /date d'avant l'avancement/);
+});
+
+test("un écran inchangé d'une page à compléter sans note qui le cite : code 0, avertissement qui cite l'écran", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace('actuel: { fichier: "actuel/A2-fiche.png", origine: "capture" }', "actuel: null, inchange: true"));
+  const sans = lancer(dossier);
+  assert.equal(sans.code, 0, sans.sortie);
+  assert.match(sans.sortie, /Avertissement : l'écran A2 est inchangé, mais sa page est à compléter/);
+  // Une décision qui cite A2 ne compte pas ; une note a-coder, si.
+  modifier(dossier, "plan.js", (t) => t.replace('ancien: "Caution de 20 €" }', 'ancien: "Caution de 20 €", ecrans: ["A2"] }'));
+  assert.match(lancer(dossier).sortie, /l'écran A2 est inchangé/);
+  modifier(dossier, "plan.js", (t) => t.replace('{ type: "decision", date: "2026-11-04"', '{ type: "a-coder", date: "2026-11-04"'));
+  const avec = lancer(dossier);
+  assert.equal(avec.code, 0, avec.sortie);
+  assert.doesNotMatch(avec.sortie, /Avertissement/);
+});

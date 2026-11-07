@@ -513,7 +513,7 @@ test("le code de l'écran est visible et sélectionnable dans la vue d'un écran
 test("un écran validé porte le mot « Validé » sur sa vignette et près de son code, en texte ; les autres non", async () => {
   await avecPage(fixtureDeBase(), { adresse: "ensemble" }, async ({ page }) => {
     const vignetteB1 = page.locator('.vignette[data-code="B1"]');
-    assert.equal(espaces(await vignetteB1.locator(".badge-valide").innerText()), "Validé");
+    assert.equal(espaces(await vignetteB1.locator(".badge-valide .badge-mot").innerText()), "Validé");
     assert.equal(await page.locator('.vignette[data-code="A2"] .badge-valide').count(), 0);
     assert.equal(await page.locator(".badge-valide").count(), 1);
   });

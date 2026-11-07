@@ -68,6 +68,21 @@ test("avec le plan complet, chaque page montre son état, sa raison et sa source
   });
 });
 
+test("l'avancement du plan s'affiche en tête de l'état des lieux, et rien sans lui", async () => {
+  await avecPage("complet", {}, async ({ page }) => {
+    const ligne = page.locator("#vue .avancement");
+    assert.equal(await ligne.count(), 1);
+    assert.equal((await ligne.innerText()).replace(/\s+/g, " ").trim(),
+      "Avancement : en cours, parce que le prêt a ses pages (src/pret.js) et la fiche n'est pas finie (src/fiche.js).");
+    const avant = await ligne.evaluate((el) => el.compareDocumentPosition(document.querySelector("li.ligne")) & Node.DOCUMENT_POSITION_FOLLOWING);
+    assert.ok(avant, "avant la liste des pages");
+  });
+  await avecPage("plans-pieges/quatre-etats", {}, async ({ page }) => {
+    await page.locator("li.ligne").first().waitFor();
+    assert.equal(await page.locator("#vue .avancement").count(), 0);
+  });
+});
+
 test("les quatre états ont chacun leur mot, et les pages sont rangées par groupe", async () => {
   await avecPage("plans-pieges/quatre-etats", {}, async ({ page }) => {
     const mots = await page.locator("li.ligne .etat").allTextContents();

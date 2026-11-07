@@ -276,7 +276,7 @@ test("un écran inchange: true est seul, étiqueté « Existant, sans changement
     assert.equal(espaces(await page.locator(".ecran-entete .badge-inchange").innerText()), "Inchangé");
   });
   await avecPage(dossier, { adresse: "ensemble", largeur: 1320 }, async ({ page }) => {
-    assert.equal(espaces(await page.locator(".vignette .badge-inchange").innerText()), "Inchangé");
+    assert.equal(espaces(await page.locator(".vignette .badge-inchange .badge-mot").innerText()), "Inchangé");
   });
 });
 
