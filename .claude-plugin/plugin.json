@@ -3,7 +3,21 @@
   "description": "Met à plat un projet sous forme de maquettes : ce qui existe, ce qui est à compléter, ce qui manque, écran par écran.",
   "version": "0.1.0",
   "author": {
-    "name": "Les contributeurs d'À plat"
+    "name": "Doukay",
+    "url": "https://github.com/Doukay"
   },
-  "license": "MIT"
+  "homepage": "https://github.com/Doukay/a-plat",
+  "repository": "https://github.com/Doukay/a-plat",
+  "documentationUrl": "https://github.com/Doukay/a-plat/blob/main/docs/README.md",
+  "privacyPolicyUrl": "https://github.com/Doukay/a-plat/blob/main/docs/confidentialite-et-securite.md",
+  "supportUrl": "https://github.com/Doukay/a-plat/issues",
+  "license": "MIT",
+  "keywords": [
+    "maquettes",
+    "écrans",
+    "état des lieux",
+    "interface",
+    "conception",
+    "français"
+  ]
 }

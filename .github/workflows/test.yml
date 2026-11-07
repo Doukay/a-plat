@@ -1,0 +1,31 @@
+# Les tests sur Linux et Windows, avec chaque version de Node. Seulement à la demande (Actions, Tests,
+# Run workflow) : au quotidien ils tournent sur l'ordinateur de qui développe. Rien à installer : le lanceur intégré à Node.
+# Les tests de la page (npm run test:page) n'y sont pas : ils demandent Playwright et un navigateur.
+name: Tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }} sur ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      # tests/*.test.mjs est développé par bash : sous Windows, Node 18 et 20 ne le font pas eux-mêmes.
+      - run: npm test --script-shell=bash
+        shell: bash

@@ -1,3 +1,16 @@
+# Réglages locaux de Claude Code et liste des mots privés (.claude/mots-interdits.txt)
+.claude/
+CLAUDE.local.md
+
+# Le dossier qu'À plat écrirait s'il était lancé sur son propre dépôt (racine seulement : skills/a-plat/ est l'outil)
+/a-plat/
+
+# Fichiers du système et des éditeurs
+.DS_Store
+Thumbs.db
+*.log
 node_modules/
-SUIVI.md
+
+# Réglages de travail du design et des plans
+.impeccable/
 .superpowers/

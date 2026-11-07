@@ -4,6 +4,9 @@
   "private": true,
   "description": "Plugin Claude Code qui met à plat un projet sous forme de maquettes.",
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "test:page": "node --test tests/page/*.test.mjs"

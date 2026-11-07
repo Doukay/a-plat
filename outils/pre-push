@@ -1,0 +1,6 @@
+#!/bin/sh
+# Crochet d'envoi : refuse l'envoi si le contrôle « rien de personnel » trouve quelque chose.
+# À poser une fois sur ton ordinateur, depuis le dossier du dépôt : cp outils/pre-push .git/hooks/pre-push
+# (il ne suit pas le dépôt : à reposer sur chaque ordinateur).
+racine="$(git rev-parse --show-toplevel)"
+exec node "$racine/outils/rien-de-personnel.mjs" "$racine"

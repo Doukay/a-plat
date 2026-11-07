@@ -1,7 +1,8 @@
 {
   "name": "a-plat",
   "owner": {
-    "name": "Les contributeurs d'À plat"
+    "name": "À plat",
+    "url": "https://github.com/Doukay/a-plat"
   },
   "metadata": {
     "description": "Un plugin pour mettre à plat un projet sous forme de maquettes."
@@ -10,7 +11,8 @@
     {
       "name": "a-plat",
       "source": "./",
-      "description": "Met à plat un projet sous forme de maquettes : ce qui existe, ce qui est à compléter, ce qui manque, écran par écran."
+      "description": "Met à plat un projet sous forme de maquettes : ce qui existe, ce qui est à compléter, ce qui manque, écran par écran.",
+      "category": "productivity"
     }
   ]
 }

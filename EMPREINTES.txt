@@ -1,0 +1,29 @@
+# a-plat 0.1.0 : SHA-256 de chaque fichier d'où le plugin tourne.
+# Vérifier une copie installée : récupère cette version, puis lance node outils/empreintes.mjs --check <dossier installé>.
+53188b8915e8f6ecd344ef479f381c22327c7137eee67ab1a755f13f68fc4d14  .claude-plugin/marketplace.json
+4984e083dae0c7e1f18c12d2f48c41323daf0877c7edaaf1d744839ca9e130e5  .claude-plugin/plugin.json
+09b710b2e22992ab6e60bd87f384f0d94106122ff5ba45391c6156db6c6ba111  package.json
+2a1aaefc67fbd796e2731ebc8ef41bfa8f23c237c3f94430aa4b2de51888bca3  skills/a-plat/SKILL.md
+d0fbb1962923322464d7afc5c15b965b677612c0fc44bb51a08d4aa8aa6e181a  skills/a-plat/copier.mjs
+80be2afa898619ece84b9f20fa6fb06627b5df88d25955f621aad143e855bee5  skills/a-plat/dossier.mjs
+673790e5e2c8a015eed9dc814350052bef3b1e850dac00613d442c07bbfde108  skills/a-plat/icones.mjs
+3cd315b3cdc0aefbfbe0b0927048617ecbf86c42e4937f789419f01763ff26e1  skills/a-plat/modele/a-plat/corrections.js
+90afbdcf4d76a6f7a935ce7fdc519eec797b49285137218632b31c7ce504bad8  skills/a-plat/modele/a-plat/logique.js
+349c697b3381e48ef85a889e92e637270c635c964c87181a25636c3bd22d1d2c  skills/a-plat/modele/a-plat/moteur.js
+9316bb4ce3f3f904848445a0ab2a68c788812c8cb2a6f583044eac5cc32346f7  skills/a-plat/modele/a-plat/relais.js
+313343e1e05f77496a3849282a8fb48d23580bc58416112c5a031f0a7db2598c  skills/a-plat/modele/a-plat/style.css
+6cdef950ad15264415a577eb334109a8e90678fabe46904e687eb5a0ebccf71e  skills/a-plat/modele/charte.css
+f37326f8e76905363a3848e03ddde390aa05d9b695ce6149c24648d878a87c89  skills/a-plat/modele/commun.css
+1495eefec41b591592ad3cbc6c60a5a83da2c0e69485103d1b6dfb9f09d355d3  skills/a-plat/modele/ecran-type.html
+ed52938c8ad8c3e8af81e2790577895a51a3a07ca9301d3c0d0d88b59d61bb6f  skills/a-plat/modele/index.html
+7373e5b385a78b7c5389641c0239653fd2deede66869b0d96b7607914d1f2108  skills/a-plat/modele/plan.exemple.js
+334408b0afb702ba51f3df6ba6258ec459058837175576942b31b3133385f59e  skills/a-plat/references/corrections-et-notes.md
+480bd35d958ccc98e75f32e3439fe54a52d2f7c0030963d91700d665745ca786  skills/a-plat/references/ecrans.md
+f98c805321ea867ad4f6257ac0ac403dbf0123bfe644fe84deea4ce131dd7b5f  skills/a-plat/references/etat-des-lieux.md
+bb717a308524c6ab5045cde4c54dc915ba34640d4560774a5048c8df53bd67d4  skills/a-plat/references/fidele.md
+7898a58da516eb54b5e386b71ab2709a7b75b2d17aa3e35a7399c55962a0c915  skills/a-plat/references/format.md
+becba3cef7482ac73375f449c302860cc517df0319715b379e27448fe86a37d9  skills/a-plat/references/lire-un-projet.md
+1ce49746b712ed32ddcbe710f10902db801efd0bb00f192522dca7a64324d9d0  skills/a-plat/references/passage-au-code.md
+010f5f680698662683c18abedaa499d9f613f1c156a5674d4aff20bebb66684d  skills/a-plat/reprendre.mjs
+b2d8ea5eff3f01da79d5e4c769b35d2b1de0617d83e1ae33ae1f35817c24dafa  skills/a-plat/style-du-projet.mjs
+03c097f068476fb7dbcbb475d22caa2db735df54ce1a942dc0bcac33076e675e  skills/a-plat/verifier.mjs
