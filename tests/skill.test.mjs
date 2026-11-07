@@ -237,7 +237,21 @@ test("le routeur, les gardes d'accès et le chargement des données se lisent co
     assert.match(etats, motif, `le §4 de lire-un-projet.md doit parler de ${motif}`);
   }
   assert.doesNotMatch(texte, /identifiant inconnu/, "l'adresse inconnue se dit une seule fois, en général");
-  assert.ok(texte.trimEnd().split(/\r?\n/).length <= 100, "lire-un-projet.md ne doit pas s'allonger de redites");
+  // 100 lignes, plus les 4 du §10 « Juger l'avancement », ajouté avec le bouton UX ⇄ UI.
+  assert.ok(texte.trimEnd().split(/\r?\n/).length <= 104, "lire-un-projet.md ne doit pas s'allonger de redites");
+});
+
+test("la finition se propose d'après l'avancement du projet, jugé à la lecture et dit au début de l'état des lieux", () => {
+  const lecture = section(lire("references", "lire-un-projet.md"), "10.");
+  for (const niveau of [/\*\*idée\*\*/, /\*\*début\*\*/, /\*\*en cours\*\*/, /\*\*avancé ou en ligne\*\*/, /deux constats et leur source/]) {
+    assert.match(lecture, niveau);
+  }
+  const ligne = texteDuSkill.split(/\r?\n/).find((l) => l.startsWith("| Finition |")) ?? "";
+  assert.match(ligne, /idée ou début, gris ; en cours, gris puis charte ; avancé ou en ligne, charte/);
+  assert.match(lire("references", "etat-des-lieux.md"), /\*\*Avancement :\*\*/);
+  const ecrans = lire("references", "ecrans.md");
+  for (const motif of [/styles du projet/, /jamais de couleur/, /\.chiffre/, /\.surtitre/]) assert.match(ecrans, motif);
+  assert.doesNotMatch(toutLeTexte(), /en ne changeant que `commun\.css`/, "plus de « passer à la charte » à l'ancienne");
 });
 
 test("une page n'est « Existe » que si chaque rôle annoncé y a toutes ses tâches", () => {

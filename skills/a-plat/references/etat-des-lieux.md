@@ -47,6 +47,8 @@ Le montrer dans la conversation aussi, sans renvoyer seulement à la page, et da
 ```markdown
 **État des lieux de <projet>** (lu dans le code, rien n'a été lancé)
 
+**Avancement :** <idée, début, en cours, ou avancé> : <constat> (<source>) ; <constat> (<source>).
+
 <n> pages ou fonctions : <a> existent, <b> à compléter, <c> manquent, <d> prévues.
 <e> sont à essayer pour confirmer.
 

@@ -66,6 +66,11 @@ Il ne reprend ni les données du projet (base, fichiers d'exemple, captures), ni
 
 ## Finition
 
-- `gris` et le début de `gris-puis-charte` : `commun.css` tel quel. L'attention va à ce que dit l'écran, pas aux couleurs.
-- `charte` : régler les variables de `commun.css` d'après le projet avant le premier écran (voir `references/format.md`).
-- `gris-puis-charte` : passer à la charte quand la personne le dit, en ne changeant que `commun.css`, puis regarder de nouveau les écrans.
+Chaque écran est dessiné une seule fois. `commun.css` lui donne deux visages, par deux blocs de variables aux mêmes noms (voir « UX et UI » dans `references/format.md`) : l'UX, la maquette en gris, et l'UI, les couleurs, polices et arrondis du projet. Le bouton « UX | UI » de la page passe de l'un à l'autre pour tous les écrans d'un coup.
+
+- `gris` : pas de bouton, tout reste en UX. L'attention va à ce que dit l'écran, pas aux couleurs.
+- `gris-puis-charte` : le bouton, avec un départ en UX. Écrire le bloc UI avant le premier écran ; la personne bascule quand elle veut.
+- `charte` : le bouton, avec un départ en UI.
+- Les valeurs UI se lisent dans les styles du projet (fichiers de style, variables, thème, charte), avant le premier écran. Une valeur qui n'y est pas se demande ; ne jamais l'inventer.
+- Un écran n'écrit jamais de couleur ni d'attribut `style` : sinon, le bouton ne peut plus rien pour lui. Un bouton à sa largeur, c'est `.bouton.court` ; un lien d'action, `.action`.
+- Ce qu'on lit en premier sur un écran (le chiffre clé : un solde, un total, un nombre) est en grand, avec `.chiffre` (ou `.chiffre.moyen`), précédé de son petit libellé gris `.surtitre`. La carte la plus importante peut être mise en avant avec `.carte.forte`.

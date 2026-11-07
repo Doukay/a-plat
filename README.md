@@ -23,7 +23,7 @@ Le résultat est une seule page, `maquettes/index.html`, qui s'ouvre d'un double
 2. **Vue d'ensemble.** Une grande planche : toutes les rangées l'une sous l'autre, chaque écran à sa vraie taille, avec son code (A1, A2, B1…). La molette déplace la planche, Ctrl + molette zoome. Une note s'affiche sous l'écran qu'elle concerne, ou sous le titre de la rangée si elle vaut pour toute la rangée. Toucher le titre d'une rangée l'ouvre en grand : ses écrans à une taille de lecture, et les pages de l'état des lieux qui les citent. Le chevron devant le titre replie la rangée pour gagner de la place ; la page s'en souvient pour ce projet.
 3. **Écrans.** Un écran en grand, avec l'actuel à côté s'il existe, et ses notes dessous. Toucher un écran de la vue d'ensemble ou d'une rangée ouvre cette vue.
 
-La barre noire du haut dit où l'on est, avec une flèche pour remonter d'un niveau. Sa recherche trouve un écran par son code ou un mot de son titre (touche `/`). Deux boutons règlent ce que fait un toucher sur un écran : **Corriger** désigne l'élément touché pour une correction, **Essayer le parcours** suit les boutons et les liens comme dans l'application. Sur un téléphone, la vue d'ensemble devient une colonne où chaque rangée glisse de côté. La page marche en clair et en sombre.
+La barre noire du haut dit où l'on est, avec une flèche pour remonter d'un niveau. Sa recherche trouve un écran par son code ou un mot de son titre (touche `/`). Son bouton **UX | UI** montre tous les écrans soit en maquette grise (UX), soit aux couleurs de votre projet (UI), sans les redessiner. Deux boutons règlent ce que fait un toucher sur un écran : **Corriger** désigne l'élément touché pour une correction, **Essayer le parcours** suit les boutons et les liens comme dans l'application. Sur un téléphone, la vue d'ensemble devient une colonne où chaque rangée glisse de côté. La page marche en clair et en sombre.
 
 ## Installation
 
@@ -104,7 +104,7 @@ Claude les propose d'après votre projet, avec une raison. Vous les changez à t
 |---|---|
 | Format | téléphone, ordinateur, ou les deux |
 | Rangement des écrans | par parcours, par personne, par module, par moment, ou existant et nouveau |
-| Finition | gris, charte, ou gris puis charte |
+| Finition | gris (maquette seule), gris puis charte (bouton UX \| UI, départ en gris), ou charte (bouton, départ aux couleurs du projet) |
 | Rythme | écran par écran, par lots, ou tout d'un coup |
 | Relecture par Claude avant de montrer | oui ou non |
 

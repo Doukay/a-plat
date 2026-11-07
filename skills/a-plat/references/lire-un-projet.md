@@ -94,3 +94,9 @@ Un manque doit tenir en une phrase avec sa preuve. Sans preuve dans le projet, c
 Finir par la liste : fichiers non ouverts et pourquoi (secrets, trop gros, binaires, dossiers écartés), parties survolées, et ce qui n'a pas été vu marcher.
 
 `aConfirmer` vaut `true` pour tout ce qui a seulement été lu. Il ne vaut `false` que si la personne a accepté qu'on lance l'application, qu'elle a tourné devant Claude et que la page a été vue, ou si la personne l'a confirmé.
+
+## 10. Juger l'avancement
+
+Quatre niveaux, d'après ce qui a été lu : **idée**, presque rien (une description, des notes, pas de page) ; **début**, quelques pages, pas de styles à soi ; **en cours**, des parcours entiers, des styles qui commencent (quelques couleurs, une police) ; **avancé ou en ligne**, la plupart des pages existent, des styles ou une charte dans le code (variables de couleurs, thème), un déploiement (adresse en ligne, configuration d'hébergement).
+
+L'avancement se dit en une ligne au début du message d'état des lieux, avec deux constats et leur source : « Projet en cours : trois parcours sur cinq ont leurs pages (src/pages/), les couleurs sont dans src/styles/theme.css. » Il sert à proposer la finition (voir l'étape 3 de `SKILL.md`), et les valeurs UI se lisent dans ces mêmes styles.

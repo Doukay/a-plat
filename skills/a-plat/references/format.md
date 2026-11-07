@@ -9,7 +9,7 @@ maquettes/
   index.html      la page, copiée du modèle, jamais modifiée
   a-plat/         le moteur de la page, copié du modèle, jamais modifié
   plan.js         réglages, état des lieux, rangées, écrans, notes : écrit par Claude
-  commun.css      le style commun : ses variables du haut font la charte ; une classe qui manque s'ajoute à la fin
+  commun.css      le style commun : deux blocs de variables en tête, UX et UI ; Claude n'écrit que le bloc UI ; une classe qui manque s'ajoute à la fin
   ecran-type.html le point de départ d'un écran, à copier dans ecrans/
   ecrans/         un fichier HTML par écran
   actuel/         l'existant : captures, ou pages redessinées
@@ -29,7 +29,7 @@ window.A_PLAT = {
   reglages: {
     format: "telephone",           // telephone | ordinateur | les-deux
     rangement: "parcours",         // parcours | personne | module | moment | existant-nouveau
-    finition: "gris-puis-charte",  // gris | charte | gris-puis-charte
+    finition: "gris-puis-charte",  // gris | charte | gris-puis-charte : le bouton « UX | UI » (voir « UX et UI »)
     rythme: "ecran",               // ecran | lots | tout
     relecture: true,               // true : Claude relit chaque écran avant de le montrer
     policeEnLigne: false           // true seulement si la personne demande une police en ligne pour sa charte
@@ -99,7 +99,7 @@ Un écran est un fichier HTML ordinaire, qui s'ouvre aussi seul :
 
 - `modele/ecran-type.html` montre toutes les classes de base. Il se copie dans `ecrans/` sous le nom de l'écran, car ses liens relatifs (`../commun.css`, `../a-plat/relais.js`) ne marchent que de là. Remplacer `X0` par le code dans `data-ecran` et dans `<title>`, retirer le grand commentaire du haut.
 - `data-ecran` vaut exactement le code du plan.
-- Un écran n'écrit aucune couleur ni aucun style à lui : tout passe par les classes de `commun.css` (`.entete`, `.retour`, `.page`, `.onglets`, `.bouton`, `.discret`, `.champ`, `.etiquette`, `.carte`, `.vignette`, `.ligne`, `.pile`, `.deux`, `.doux`, `.petit`, `.gras`, `.centre`, `.liste`, `.puces`, `.puce`, `.pastille`, `.bandeau`, `.faits`, `.etapes`, `.vide`, `.segments`). Si un écran a besoin d'autre chose, ajouter la classe à la fin de `commun.css`, en n'y écrivant que ses variables, jamais une couleur en dur : la charte passe alors aussi par elle.
+- Un écran n'écrit aucune couleur ni aucun style à lui : tout passe par les classes de `commun.css` (`.entete`, `.retour`, `.page`, `.onglets`, `.bouton`, `.discret`, `.court`, `.action`, `.champ`, `.etiquette`, `.carte`, `.forte`, `.vignette`, `.chiffre`, `.moyen`, `.surtitre`, `.ligne`, `.pile`, `.deux`, `.doux`, `.petit`, `.gras`, `.centre`, `.liste`, `.puces`, `.puce`, `.pastille`, `.bandeau`, `.faits`, `.etapes`, `.vide`, `.segments`). Jamais d'attribut `style` : un bouton à sa largeur, c'est `.bouton.court` ; un lien d'action bleu, `.action`. Si un écran a besoin d'autre chose, ajouter la classe à la fin de `commun.css`, en n'y écrivant que ses variables, jamais une couleur en dur : l'UX et l'UI passent alors aussi par elle.
 - Les écrans se relient par des liens ordinaires vers le fichier de l'écran suivant : `<a href="B4-merci.html">`. Un lien doit mener à un fichier qui existe.
 - `data-nom="Bouton Envoyer"` donne le nom qui apparaîtra dans la correction. À mettre sur les éléments qu'on voudra citer et qui n'ont pas de texte clair.
 - `relais.js` est obligatoire, juste avant `</body>` : sans lui, la page ne sait pas quel élément a été touché.
@@ -112,21 +112,42 @@ Un écran est un fichier HTML ordinaire, qui s'ouvre aussi seul :
 
 Un `actuel` en HTML doit porter `relais.js`, comme un écran (`<script src="../a-plat/relais.js"></script>`), et ne rien charger depuis Internet. Il n'a pas besoin de `data-ecran` et garde le style du projet, pour ressembler à ce qui existe : il reprend dans un `<style>` les règles des styles du projet qui le concernent, sans en ajouter.
 
-## De gris à la charte
+## UX et UI
 
-Le gris est le point de départ. Pour passer à la charte, on change seulement les six variables en tête de `commun.css`, jamais les écrans :
+Chaque écran est dessiné une seule fois. Ses couleurs viennent de deux blocs de variables en tête de `commun.css`, aux mêmes noms :
+
+- **UX**, sur `:root` : la maquette en gris, façon fiche produit, avec un seul bleu pour ce qui agit. C'est le point de départ, et ce que montre un écran ouvert seul. Ce bloc ne se change pas.
+- **UI**, sur `:root[data-finition="ui"]` : les couleurs, les polices et les arrondis du projet. C'est le seul bloc que Claude écrit. Dans le modèle, il reprend les valeurs UX.
 
 ```css
---ecran-fond: #ffffff;
---ecran-texte: #1f1f1f;
---ecran-accent: #3d3d3d;
---ecran-trait: #8c8c8c;
---ecran-police: ui-sans-serif, system-ui, sans-serif;
---ecran-arrondi: 8px;
+:root[data-finition="ui"] {
+  --ecran-page: #f4f4f0;           /* le fond derrière les cartes */
+  --ecran-fond: #ffffff;           /* les cartes, l'en-tête, les champs */
+  --ecran-texte: #222222;          /* l'encre ; les gris de lecture en sont tirés */
+  --ecran-trait: #bbbbbb;          /* les filets et les bords */
+  --ecran-accent: #1f3b63;         /* ce qui agit : boutons, liens d'action */
+  --ecran-sur-accent: #ffffff;     /* le texte posé sur l'accent */
+  --ecran-mise-en-avant: #e6e6df;  /* l'aplat d'une carte mise en avant (.carte.forte) */
+  --ecran-police: Arial, Helvetica, sans-serif;
+  --ecran-police-titre: Arial, Helvetica, sans-serif;
+  --ecran-arrondi: 4px;            /* les cartes et les champs */
+  --ecran-arrondi-bouton: 4px;     /* les boutons et les choix (des pilules en UX) */
+}
 ```
 
-- **Accent clair :** si le texte posé sur l'accent devient illisible (boutons, pastilles), changer aussi `--ecran-sur-accent` pour une couleur foncée. Elle vaut par défaut la couleur du fond.
-- **Valeurs :** elles viennent de ce que le projet utilise déjà (ses fichiers de style, sa charte). Ce qui n'y est pas se demande : ne pas inventer une charte.
+- **D'où viennent les valeurs UI :** des styles du projet (ses fichiers de style, ses variables, sa charte), lus avant le premier écran. Une valeur qui n'y est pas se demande : ne jamais inventer une charte.
+- **Accent clair :** si le texte posé sur l'accent devient illisible (boutons, pastilles), mettre `--ecran-sur-accent` à une couleur foncée.
+- **Un écran n'écrit jamais de couleur.** Sinon, le bouton « UX | UI » ne peut plus rien pour lui.
+
+`reglages.finition` règle le bouton « UX | UI » de la barre de la page :
+
+| `finition` | Le bouton | Au départ |
+|---|---|---|
+| `gris` (ou rien) | absent : tout reste en UX | UX |
+| `gris-puis-charte` | présent | UX |
+| `charte` | présent | UI |
+
+Ensuite, la page retient le choix de la personne pour ce projet. L'actuel (capture ou redessin) garde toujours le vrai style du projet. Avec `charte` ou `gris-puis-charte`, le contrôle exige le bloc UI. S'il reprend encore les valeurs UX, le contrôle avertit : « l'UI n'a pas encore les couleurs du projet ».
 
 ## `policeEnLigne`
 

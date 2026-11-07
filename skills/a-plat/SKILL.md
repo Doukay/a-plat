@@ -30,7 +30,7 @@ Sous Windows, garder ce chemin entre guillemets, avec des `/` dans Bash. Les cit
 - **Manques.** Ce qui manque devient une question. Une page qui manque ne se dessine que si la personne le demande. Un manque qu'elle laisse de côté reste dans la liste, marqué comme tel avec la date.
 - **Ce qui est vu.** Ne jamais dire qu'une page marche, ni comment elle s'affiche (débordement, mise en page), sans l'avoir vu ; si c'est vu, dire comment (outil, largeur). Sinon, écrire « lu dans le code, à essayer pour confirmer ».
 - **Commandes.** Une commande par appel, jamais enchaînée avec `;`, `&&` ou `|`, ni en boucle : une commande composée peut être refusée et fait perdre un tour. Ce que Claude écrit dans le dossier de maquettes (`plan.js`, écrans, pages redessinées, `passage-au-code.md`) s'écrit avec les outils de fichiers, jamais par une commande ou un script. Seules la copie du modèle (`copier.mjs`) et celle d'une capture fournie passent par une commande.
-- **Fichiers de l'outil.** Les fichiers copiés du modèle (`index.html`, `a-plat/`, `ecran-type.html`) ne se modifient pas. Dans `commun.css`, seules changent les variables du haut (finition `charte`), et une classe qui manque s'ajoute à la fin, écrite avec ces variables seulement (voir `references/format.md`).
+- **Fichiers de l'outil.** Les fichiers copiés du modèle (`index.html`, `a-plat/`, `ecran-type.html`) ne se modifient pas. Dans `commun.css`, seul change le bloc UI (`:root[data-finition="ui"]`, les valeurs lues dans les styles du projet), et une classe qui manque s'ajoute à la fin, écrite avec les variables seulement (voir `references/format.md`).
 - **Aides.** Un gros lot peut se partager entre des aides (sous-agents). Chacun reçoit dans son appel ce fichier et les références de son étape, en entier, et le même jeu d'exemples, sans fichier de consignes à part. Un aide n'écrit que ses fichiers d'écran et d'actuel, et ne parle pas à la personne : seul Claude principal écrit `plan.js` et lui parle. Ce que les aides écrivent est relu comme le reste, avant d'être montré.
 
 **Parler à la personne :** en français, en phrases simples, sans jargon, en la vouvoyant sauf si elle tutoie. Chaque message ne pose qu'une question, la dernière, écrite en toutes lettres avec ses choix. Le reste (points à trancher, choix proposés) s'écrit en phrases, sans point d'interrogation : la personne y répond quand elle veut.
@@ -85,7 +85,7 @@ Proposer les cinq réglages d'après ce que le projet contient, chacun avec sa r
 |---|---|---|
 | Format | téléphone, ordinateur, les deux | D'après les styles, les documents et ce que dit la personne. Avec les deux, une vue n'a sa version ordinateur que si sa disposition y change vraiment. |
 | Rangement | parcours, personne, module, moment, existant et nouveau | Parcours par défaut. Personne si plusieurs rôles ont des pages à eux. Existant et nouveau si l'essentiel est déjà construit. |
-| Finition | gris, charte, gris puis charte | Pas de charte dans le projet : gris puis charte. Une charte : s'en servir tout de suite. |
+| Finition | gris (UX seul), gris puis charte (bouton UX ⇄ UI, départ en UX), charte (bouton, départ en UI) | D'après l'avancement (`references/lire-un-projet.md`) : idée ou début, gris ; en cours, gris puis charte ; avancé ou en ligne, charte. |
 | Rythme | écran par écran, par lots, tout d'un coup | Écran par écran si la personne découvre l'outil. |
 | Relecture | oui, non | Oui par défaut. |
 
@@ -142,5 +142,5 @@ Les décisions restent à côté des écrans, jamais dessus : notes courtes, ave
 | « Je redessine l'actuel, puis la même chose en gris comme proposition. » | Sans changement, un seul dessin, `inchange: true`. |
 | « Je pose toutes mes questions d'un coup, ce sera plus rapide. » | Une seule question par message ; le reste en points à trancher, sans point d'interrogation. |
 | « Je relis quelques écrans, le reste suivra. » | Chaque écran du lot, en entier, ou un lot plus petit. |
-| « Je change une couleur ou une règle de `commun.css` pour cet écran. » | Seule la charte change ses variables ; une classe qui manque s'ajoute à la fin, avec ces variables. |
+| « Je change une couleur ou une règle de `commun.css` pour cet écran. » | Seul le bloc UI change, d'après les styles du projet ; une classe qui manque s'ajoute à la fin, avec les variables. Un écran qui écrit une couleur ne suit plus le bouton UX ⇄ UI. |
 | « Je lis le `.env` pour comprendre la configuration. » | Son nom suffit. Il va dans ce qui n'a pas été lu. |
