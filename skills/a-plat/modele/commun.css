@@ -16,7 +16,7 @@
   --ecran-trait: #d2d2d7;         /* les filets et les bords */
   --ecran-accent: #0066cc;        /* la seule couleur de ce qui agit : boutons, liens d'action */
   --ecran-sur-accent: #ffffff;    /* le texte posé sur l'accent : foncé si l'accent est clair */
-  --ecran-mise-en-avant: #e8f0fa; /* l'aplat d'une carte mise en avant (.carte.forte) */
+  --ecran-mise-en-avant: #ececf0; /* l'aplat gris d'une carte mise en avant (.carte.forte) */
   --ecran-police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --ecran-police-titre: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --ecran-arrondi: 12px;          /* les cartes et les champs */
@@ -35,7 +35,7 @@
   --ecran-trait: #d2d2d7;
   --ecran-accent: #0066cc;
   --ecran-sur-accent: #ffffff;
-  --ecran-mise-en-avant: #e8f0fa;
+  --ecran-mise-en-avant: #ececf0;
   --ecran-police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --ecran-police-titre: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --ecran-arrondi: 12px;
@@ -80,17 +80,17 @@ img { max-width: 100%; }
 :focus-visible { outline: 2px solid var(--ecran-accent); outline-offset: 2px; }
 
 /* ---- la structure d'un écran : un en-tête, la page, puis (parfois) la barre du bas ----
-   La ligne du haut ne déborde jamais : ce qui ne tient pas est coupé proprement. */
+   La ligne du haut ne déborde jamais : un titre trop long est coupé par des points de
+   suspension ; un menu ou des puces placés dans l'en-tête passent à la ligne. */
 .entete {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
   min-height: 52px;
   padding: 4px 16px 4px 4px;
-  overflow: hidden;
   background: var(--ecran-fond);
   border-bottom: 1px solid var(--ecran-filet);
-  white-space: nowrap;
 }
 .entete > * { min-width: 0; }
 .entete h1 {
@@ -99,6 +99,7 @@ img { max-width: 100%; }
   font-size: 17px;
   letter-spacing: -0.02em;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .entete > h1:first-child { padding-left: 12px; }
 
@@ -265,19 +266,19 @@ a.carte.ligne::after { content: "›"; margin-left: auto; padding-left: 4px; fon
   align-self: flex-start;
   padding: 2px 10px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ecran-accent) 10%, var(--ecran-fond));
-  color: var(--ecran-accent);
+  background: color-mix(in srgb, var(--ecran-texte) 9%, var(--ecran-fond));
+  color: var(--ecran-texte);
   font-size: 12px;
   font-weight: 600;
 }
 .pastille.discrete { background: var(--ecran-creux); color: var(--ecran-doux); }
 
-/* Une remarque dans l'écran (ce qui change, ce qui reste à décider) : une teinte légère, pas une carte. */
+/* Une remarque dans l'écran (ce qui change, ce qui reste à décider) : un cadre en pointillés,
+   sans fond, pour ne pas la prendre pour une carte. Le bleu reste à ce qui agit. */
 .bandeau {
   padding: 12px 14px;
+  border: 1px dashed var(--ecran-trait);
   border-radius: var(--ecran-arrondi);
-  background: color-mix(in srgb, var(--ecran-accent) 6%, var(--ecran-fond));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ecran-accent) 30%, var(--ecran-fond));
 }
 
 .faits { display: flex; flex-direction: column; }
@@ -306,7 +307,7 @@ a.carte.ligne::after { content: "›"; margin-left: auto; padding-left: 4px; fon
   font-size: 13.5px;
   font-weight: 600;
 }
-.etapes li.fait::before { background: var(--ecran-accent); box-shadow: none; color: var(--ecran-sur-accent); }
+.etapes li.fait::before { background: var(--ecran-texte); box-shadow: none; color: var(--ecran-fond); }
 
 .vide { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 16px; text-align: center; }
 .vide .vignette { width: 96px; height: 96px; border-radius: 50%; }

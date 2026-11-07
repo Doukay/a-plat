@@ -81,8 +81,8 @@ test("deux blocs de variables en tête : l'UX sur :root, puis l'UI sur :root[dat
   const ux = variablesDe(toutes[0].corps);
   const ui = variablesDe(toutes[1].corps);
   assert.deepEqual(Object.keys(ui).sort(), Object.keys(ux).sort(), "les mêmes noms dans les deux blocs");
+  // Le seul contrôle du nombre de variables : les onze attendues, et seulement elles.
   assert.deepEqual(Object.keys(ux).sort(), [...VARIABLES].sort(), "les variables attendues, et seulement elles");
-  assert.ok(Object.keys(ux).length <= 11, "une dizaine de variables au plus");
   for (const variable of VARIABLES) {
     const motif = new RegExp(`${variable}\\s*:`, "g");
     assert.equal((sansCommentaires.match(motif) || []).length, 2, `${variable} n'est définie que dans les deux blocs`);
@@ -95,12 +95,12 @@ test("dans le modèle, le bloc UI reprend les valeurs UX, et dit que Claude y é
   assert.match(css, /Claude y écrit les valeurs du projet/);
 });
 
-test("en UX, les couleurs sont des gris, sauf un seul bleu pour ce qui agit (l'accent et l'aplat mis en avant)", () => {
+test("en UX, les couleurs sont des gris, sauf un seul bleu, l'accent, pour ce qui agit", () => {
   const ux = variablesDe(regles(sansCommentaires)[0].corps);
   for (const [nom, valeur] of Object.entries(ux)) {
     const couleurs = couleursDe(valeur);
     if (couleurs.length === 0) continue;
-    if (nom === "--ecran-accent" || nom === "--ecran-mise-en-avant") {
+    if (nom === "--ecran-accent") {
       const [r, g, b] = valeur.match(/[0-9a-f]{2}/gi).slice(0, 3).map((h) => parseInt(h, 16));
       assert.ok(b > r && b > g, `${nom} est un bleu (${valeur})`);
     } else {

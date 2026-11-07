@@ -32,25 +32,37 @@ const style = (page, selecteur, propriete) =>
 
 test("en UX, l'écran type est en gris, avec un seul bleu pour ce qui agit", async () => {
   await avecEcranType(async ({ page }) => {
+    // Un lien du modèle reçoit le focus au clavier : son contour (:focus-visible) compte aussi.
+    await page.keyboard.press("Tab");
     const releve = await page.evaluate(() => {
       const hors = [];
       const bleus = new Set();
-      const lire = (c) => (c.match(/[\d.]+/g) || []).slice(0, 4).map(Number);
+      // « rgb(0, 102, 204) », « rgba(0, 0, 0, 0) » ou, pour un color-mix, « color(srgb 0.9 0.94 0.98) » :
+      // ramenés sur 0–255, avec l'opacité à part.
+      const lire = (c) => {
+        const nombres = (c.match(/[\d.]+/g) || []).map(Number);
+        if (/^color\(srgb/.test(c)) return [nombres[0] * 255, nombres[1] * 255, nombres[2] * 255, nombres.length > 3 ? nombres[3] : 1];
+        return [nombres[0], nombres[1], nombres[2], nombres.length > 3 ? nombres[3] : 1];
+      };
+      // Ce qui agit : un bouton, un lien d'action, le retour, l'onglet ouvert, le contour du focus.
+      const agit = (el, p) => el.matches(".bouton, .action, .retour, .onglets a[aria-current]") || (p === "outlineColor" && el.matches(":focus-visible"));
       for (const el of document.querySelectorAll("body, body *")) {
         const s = getComputedStyle(el);
-        for (const p of ["color", "backgroundColor", "borderTopColor", "borderBottomColor", "outlineColor"]) {
+        for (const p of ["color", "backgroundColor", "borderTopColor", "borderBottomColor", "outlineColor", "boxShadow"]) {
           if (p.startsWith("border") && s[p.replace("Color", "Style")] === "none") continue;
+          if (p === "outlineColor" && s.outlineStyle === "none") continue;
+          if (p === "boxShadow" && s.boxShadow === "none") continue;
           const [r, g, b, a] = lire(s[p]);
           if (a === 0) continue; // transparent
-          // Un gris de La carte, à peine froid, ou le bleu (et ses teintes) de ce qui agit.
+          // Un gris de La carte, à peine froid.
           if (Math.max(r, g, b) - Math.min(r, g, b) <= 8) continue;
-          if (b > r && b > g) { bleus.add(`${el.className || el.tagName.toLowerCase()}`); continue; }
+          if (b > r && b > g && agit(el, p)) { bleus.add(`${el.className || el.tagName.toLowerCase()}`); continue; }
           hors.push(`${el.tagName.toLowerCase()}.${el.className} ${p} ${s[p]}`);
         }
       }
       return { hors, bleus: [...bleus] };
     });
-    assert.deepEqual(releve.hors, [], "aucune autre couleur");
+    assert.deepEqual(releve.hors, [], "aucune autre couleur : le bleu n'est que sur ce qui agit");
     assert.ok(releve.bleus.some((c) => /\bbouton\b/.test(c)), "le bouton est bleu");
     assert.ok(releve.bleus.some((c) => /\baction\b/.test(c)), "le lien d'action est bleu");
   });
@@ -112,6 +124,36 @@ test("le bloc UI s'applique quand l'écran porte data-finition=\"ui\", et seulem
     assert.equal(await style(page, ".bouton", "backgroundColor"), "rgb(0, 102, 204)", "ouvert seul : l'UX");
     await page.evaluate(() => document.documentElement.setAttribute("data-finition", "ui"));
     assert.equal(await style(page, ".bouton", "backgroundColor"), "rgb(192, 57, 43)", "en UI : l'accent du projet");
+  });
+});
+
+test("dans l'en-tête, un titre trop long est coupé, mais un menu passe à la ligne au lieu d'être coupé", async () => {
+  await avecEcranType(async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => {
+      const entete = document.querySelector(".entete");
+      entete.querySelector("h1").textContent = "Un titre d'écran beaucoup trop long pour tenir sur la ligne du haut";
+      const menu = document.createElement("nav");
+      menu.className = "puces";
+      menu.innerHTML = '<a class="puce" href="#">Accueil</a><a class="puce" href="#">Mes prêts</a><a class="puce" href="#">Mon compte</a><a class="puce" href="#">Aide</a>';
+      entete.appendChild(menu);
+    });
+    const mesures = await page.evaluate(() => {
+      const entete = document.querySelector(".entete");
+      const h1 = entete.querySelector("h1");
+      const liens = [...entete.querySelectorAll(".puce")].map((a) => a.getBoundingClientRect());
+      return {
+        titreCoupe: h1.scrollWidth > h1.clientWidth && getComputedStyle(h1).textOverflow === "ellipsis",
+        menuEntier: liens.every((r) => r.right <= entete.getBoundingClientRect().right + 0.5 && r.width > 0),
+        menuDessous: liens[0].top >= h1.getBoundingClientRect().bottom - 1,
+        coupeLEntete: getComputedStyle(entete).overflow,
+        deborde: document.documentElement.scrollWidth > document.documentElement.clientWidth
+      };
+    });
+    assert.ok(mesures.titreCoupe, "le titre est coupé par des points de suspension");
+    assert.ok(mesures.menuEntier && mesures.menuDessous, "le menu est entier, sur la ligne suivante");
+    assert.equal(mesures.coupeLEntete, "visible", "l'en-tête lui-même ne coupe rien");
+    assert.equal(mesures.deborde, false);
   });
 });
 
