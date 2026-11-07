@@ -50,7 +50,8 @@ window.A_PLAT = {
     // type : decision | a-trancher | a-verifier | a-coder | source
     // ancien : seulement quand une décision change ; la page l'affiche barré
     // ecrans (facultatif) : les codes des écrans que la note concerne ; la page l'affiche
-    // sous chacun d'eux. Sans ecrans, la note vaut pour toute la rangée, sous son titre.
+    // sous chacun d'eux. Sans ecrans, ou avec ecrans: [], la note vaut pour toute la rangée,
+    // et la page l'affiche sous le titre de la rangée.
   }],
   ecrans: [{
     code: "A2",                    // unique, sert dans les corrections
@@ -72,7 +73,7 @@ Règles que le contrôle vérifie :
 
 - `version`, `rangees`, `ecrans` et `etatDesLieux` sont obligatoires, même vides : `[]`.
 - Chaque code d'écran est unique. Chaque code cité dans `etatDesLieux[].ecrans` existe dans `ecrans`.
-- Le champ `ecrans` d'une note, s'il est là, est une liste de codes, et chacun existe dans `ecrans`. Sinon, l'erreur cite la rangée, le numéro de la note et le code inconnu.
+- Le champ `ecrans` d'une note, s'il est là, est une liste de codes, et chacun existe dans `ecrans`. Sinon, l'erreur cite la rangée, le numéro de la note et le code inconnu. La page, elle, s'affiche quand même si une note cite un écran absent : elle range la note sous le titre de sa rangée, mais le contrôle la signale toujours.
 - Chaque écran du plan a son fichier dans `ecrans/`, et chaque fichier HTML de `ecrans/` a son écran dans le plan. Le dossier `ecrans/` doit exister dès qu'un écran est écrit ; sans écran dans le plan, il peut manquer.
 - Un `fichier` (d'un écran ou d'un `actuel`) ne contient ni `..`, ni adresse complète, ni barre au début, ni barre oblique inverse : la page le refuserait. Deux écrans n'ont jamais le même `fichier`, et deux rangées jamais le même `id`.
 - Un `actuel.fichier` se cherche dans `actuel/`, qu'il commence par `actuel/` ou non.
@@ -147,7 +148,7 @@ Par défaut, rien ne vient d'Internet. Si la personne demande une police en lign
   - `{aPlat:1, type:"mode", mode:"corriger"|"essayer"}`
   - `{aPlat:1, type:"choisi", actif:true|false}` : `choisi` entoure le dernier élément touché, ou ne l'entoure plus
 
-Adresses de la page : `#etat`, `#ensemble`, `#ecran/A2`. Adresse vide : `#etat`.
+Adresses de la page : `#etat` (l'état des lieux), `#ensemble` (la planche de toutes les rangées), `#rangee/A` (une rangée en grand), `#ecran/A2` (un écran seul). Adresse vide : `#etat`.
 
 ## Le contrôle
 

@@ -261,6 +261,15 @@ test("un plan invalide (version 2) : code 1 et le champ est cité", () => {
   assert.match(sortie, /version/);
 });
 
+test("une note qui cite un écran absent du plan : code 1, la note et le code sont cités", () => {
+  // La page, elle, l'affiche sous le titre de la rangée (voir validerPlan, option pourLaPage).
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (texte) => texte.replace('texte: "Caution retirée."', 'texte: "Caution retirée.", ecrans: ["A1", "Z9"]'));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 1, sortie);
+  assert.match(sortie, /La note 1 de la rangée A cite l'écran « Z9 », qui n'existe pas/);
+});
+
 test("une capture de l'existant absente : code 1, le fichier est cité", () => {
   const dossier = preparer();
   rmSync(join(dossier, "actuel/A2-fiche.png"));

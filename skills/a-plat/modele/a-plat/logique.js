@@ -54,7 +54,12 @@
 
   // Renvoie la liste des erreurs du plan, en français. Liste vide si tout va bien.
   // Ne plante jamais, même sur un plan mal formé.
-  function validerPlan(plan) {
+  // options.pourLaPage : la page tolère qu'une note cite un écran absent du plan (un écran
+  // retiré dont on a oublié le code dans la note). Elle range alors la note sous le titre de
+  // sa rangée au lieu de refuser tout le plan. Le contrôle (verifier.mjs), lui, appelle
+  // validerPlan sans option et signale cette note comme une erreur à corriger.
+  function validerPlan(plan, options) {
+    var pourLaPage = Boolean(options && options.pourLaPage);
     var erreurs = [];
     if (!estObjet(plan)) {
       return ["Le plan est vide : window.A_PLAT doit être un objet."];
@@ -152,7 +157,7 @@
       }
     });
 
-    notesACiter.forEach(function (note) {
+    if (!pourLaPage) notesACiter.forEach(function (note) {
       note.ecrans.forEach(function (code) {
         if (!estTexte(code) || codes.indexOf(code) === -1) {
           erreurs.push("La note " + note.numero + " de " + note.nom + " cite l'écran " + montrer(code) +

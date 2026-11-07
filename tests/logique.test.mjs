@@ -85,6 +85,16 @@ test("validerPlan refuse un code inconnu dans les écrans d'une note, et cite la
   assert.match(erreurs[1], new RegExp(`La note ${numero} de la rangée A cite l'écran 4`));
 });
 
+test("pour la page, une note qui cite un écran absent ne bloque pas le plan ; pour le contrôle, si", () => {
+  const plan = chargerPlanComplet();
+  plan.rangees[0].notes[0].ecrans = ["A1", "Z9"];
+  assert.deepEqual(validerPlan(plan, { pourLaPage: true }), [], "la page affiche quand même le plan");
+  assert.match(validerPlan(plan).join("\n"), /cite l'écran « Z9 », qui n'existe pas/, "le contrôle le signale");
+  // Un champ ecrans qui n'est pas une liste reste une erreur, même pour la page : le plan est mal écrit.
+  plan.rangees[0].notes[0].ecrans = "A1";
+  assert.equal(validerPlan(plan, { pourLaPage: true }).length, 1);
+});
+
 test("validerPlan refuse une version différente de 1", () => {
   const plan = chargerPlanComplet();
   plan.version = 2;
