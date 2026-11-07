@@ -25,8 +25,21 @@ test("la démo passe le contrôle, avec ses 8 écrans, et signale ses textes ent
   assert.match(r.stdout, /texte(s)? entre crochets/);
 });
 
-test("le dossier de la démo ne contient que plan.js, ecrans/ et actuel/ : jamais une copie du modèle", () => {
-  assert.deepEqual(readdirSync(DEMO).sort(), ["actuel", "ecrans", "plan.js"]);
+test("le dossier de la démo ne contient que commun.css, plan.js, ecrans/ et actuel/ : jamais une copie de la page", () => {
+  assert.deepEqual(readdirSync(DEMO).sort(), ["actuel", "commun.css", "ecrans", "plan.js"]);
+});
+
+// Comme dans un vrai dossier de maquettes, seul le bloc UI de commun.css est propre au projet :
+// le reste est la copie exacte du modèle.
+test("le commun.css de la démo est celui du modèle, sauf son bloc UI, rempli des couleurs du projet", () => {
+  const modele = readFileSync(fileURLToPath(new URL("../skills/a-plat/modele/commun.css", import.meta.url)), "utf8");
+  const demo = readFileSync(join(DEMO, "commun.css"), "utf8");
+  const blocUI = /\/\* ---- UI : les couleurs du projet ----[\s\S]*?:root\[data-finition="ui"\] \{[^}]*\}/;
+  assert.match(modele, blocUI);
+  assert.match(demo, blocUI);
+  assert.equal(demo.replace(blocUI, "BLOC UI"), modele.replace(blocUI, "BLOC UI"), "hors du bloc UI, la démo suit le modèle");
+  assert.notEqual(demo.match(blocUI)[0], modele.match(blocUI)[0], "le bloc UI de la démo a les couleurs du projet");
+  assert.match(demo.match(blocUI)[0], /--ecran-accent: #1f3b63;/);
 });
 
 test("huit écrans de 390 de large, en trois rangées, dont un seul validé", () => {

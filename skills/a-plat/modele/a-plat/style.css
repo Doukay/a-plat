@@ -234,6 +234,35 @@ a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex="0"]:foc
   font-weight: 600;
 }
 
+/* Le bouton « UX | UI » : deux positions, dans une pilule du gris du champ de recherche. */
+.barre-finition {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--barre-champ);
+}
+.barre-finition button {
+  min-width: 44px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--barre-texte-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.barre-finition button:hover { color: var(--barre-texte); }
+.barre-finition button[aria-pressed="true"] {
+  background: var(--barre-filet);
+  color: var(--barre-texte);
+}
+.barre-finition button:focus-visible { outline: 2px solid var(--barre-anneau); outline-offset: 1px; }
+
 /* ---- le contenu ---- */
 #vue {
   max-width: 792px;
@@ -1348,11 +1377,12 @@ body.correction-ouverte {
   .fil-pas + .fil-pas::before { display: none; }
   .barre-vues a { min-height: 44px; padding: 0 10px; }
   .barre-corrections { min-height: 44px; }
+  .barre-finition button { min-height: 44px; }
 }
 
 /* Écran tactile plus large : des commandes de 44 px aussi. */
 @media (pointer: coarse) {
-  .barre-vues a, .barre-corrections { min-height: 44px; }
+  .barre-vues a, .barre-corrections, .barre-finition button { min-height: 44px; }
   .remonter { width: 44px; height: 44px; }
   .recherche input { height: 44px; }
 }

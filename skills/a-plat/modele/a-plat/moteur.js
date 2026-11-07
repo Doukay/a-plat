@@ -445,6 +445,7 @@
       entree.boite.classList.remove("introuvable");
     }
     envoyerLeMode(entree);
+    envoyerLaFinition(entree);
     if (typeof donnee.hauteur !== "number" || !isFinite(donnee.hauteur) || donnee.hauteur <= 0) return;
     var hauteur = Math.min(Math.ceil(donnee.hauteur), HAUTEUR_MAXIMALE_D_UN_CADRE);
     if (!entree.vignette) {
@@ -512,6 +513,48 @@
     cadres.forEach(function (entree) {
       if (entree.pret) envoyerLeMode(entree);
     });
+  }
+
+  // ---- la finition des écrans : UX (la maquette en gris) ou UI (les couleurs du projet)
+  //
+  // commun.css porte deux jeux de variables aux mêmes noms ; l'écran prend celui de l'UI quand
+  // relais.js pose data-finition="ui" sur sa racine. Le bouton « UX | UI » de la barre n'existe
+  // que si reglages.finition vaut "charte" (départ en UI) ou "gris-puis-charte" (départ en UX).
+  // Le choix de la personne est gardé par projet. L'actuel (capture ou redessin) n'est jamais
+  // touché : il garde le vrai style du projet.
+
+  var DEPART_DE_LA_FINITION = { "charte": "ui", "gris-puis-charte": "ux" };
+  var LIBELLES_DE_FINITION = { ux: "UX · maquette en gris", ui: "UI · couleurs du projet" };
+  var finition = "ux";
+
+  function cleDeLaFinition(plan) {
+    return "finition:" + (estTexte(plan.projet) ? plan.projet : "");
+  }
+
+  // La finition à montrer pour ce plan, ou null si le plan n'a pas de bouton (tout reste en UX).
+  function finitionDuPlan(plan) {
+    var reglage = plan && estObjet(plan.reglages) ? plan.reglages.finition : undefined;
+    if (typeof reglage !== "string" || !aLaCle(DEPART_DE_LA_FINITION, reglage)) return null;
+    var gardee = lireStock(cleDeLaFinition(plan));
+    return gardee === "ux" || gardee === "ui" ? gardee : DEPART_DE_LA_FINITION[reglage];
+  }
+
+  function envoyerLaFinition(entree) {
+    if (entree.lecture) return;
+    try {
+      entree.cadre.contentWindow.postMessage({ aPlat: 1, type: "finition", valeur: finition }, "*");
+    } catch (erreur) {
+      // cadre déjà retiré de la page
+    }
+  }
+
+  function changerLaFinition(nouvelle, plan) {
+    finition = nouvelle;
+    garderStock(cleDeLaFinition(plan), nouvelle);
+    cadres.forEach(function (entree) {
+      if (entree.pret) envoyerLaFinition(entree);
+    });
+    marquerLaFinition(plan);
   }
 
   // ------------------------------------------------------------ 4c. rangées, écrans et notes
@@ -1724,6 +1767,52 @@
     }
   }
 
+  // ---- le bouton « UX | UI », à droite, devant les liens des vues
+
+  var zoneDeFinition = null; // { racine, boutons: { ux, ui } }, ou null quand le plan n'en a pas
+
+  function dessinerLaFinition(plan) {
+    var depart = plan ? finitionDuPlan(plan) : null;
+    var droite = document.querySelector(".barre .barre-droite");
+    if (depart === null || !droite) {
+      if (zoneDeFinition && zoneDeFinition.racine.parentNode) zoneDeFinition.racine.parentNode.removeChild(zoneDeFinition.racine);
+      zoneDeFinition = null;
+      finition = "ux";
+      return;
+    }
+    finition = depart;
+    if (!zoneDeFinition) {
+      var racine = creer("div", "barre-finition");
+      racine.setAttribute("role", "group");
+      racine.setAttribute("aria-label", "Finition des écrans");
+      var boutons = {};
+      ["ux", "ui"].forEach(function (valeur) {
+        var bouton = creer("button", "", valeur.toUpperCase());
+        bouton.setAttribute("type", "button");
+        bouton.setAttribute("title", LIBELLES_DE_FINITION[valeur]);
+        bouton.addEventListener("click", function () {
+          var lisible = window.APlatMoteur.planCourant();
+          if (lisible) changerLaFinition(valeur, lisible);
+        });
+        boutons[valeur] = bouton;
+        racine.appendChild(bouton);
+      });
+      zoneDeFinition = { racine: racine, boutons: boutons };
+    }
+    var vues = droite.querySelector(".barre-vues");
+    if (zoneDeFinition.racine.parentNode !== droite) droite.insertBefore(zoneDeFinition.racine, vues);
+    marquerLaFinition(plan);
+  }
+
+  // Les boutons enfoncés, et le titre de l'onglet qui dit discrètement où l'on est.
+  function marquerLaFinition(plan) {
+    if (!zoneDeFinition) return;
+    zoneDeFinition.boutons.ux.setAttribute("aria-pressed", finition === "ux" ? "true" : "false");
+    zoneDeFinition.boutons.ui.setAttribute("aria-pressed", finition === "ui" ? "true" : "false");
+    var projet = estTexte(plan.projet) ? plan.projet + " · " : "";
+    document.title = projet + LIBELLES_DE_FINITION[finition] + " · À plat";
+  }
+
   // La hauteur de la barre, que la planche et la rangée utilisent pour se poser dessous.
   function mesurerLaBarre() {
     var barre = document.querySelector(".barre");
@@ -1775,6 +1864,7 @@
     document.title = projet ? projet + " · À plat" : "À plat";
     marquerLaBarre(lue.vue);
     dessinerLeFil(lue, lecture);
+    dessinerLaFinition(lecture.statut === "bon" ? lecture.plan : null);
     fermerLesResultats();
 
     conteneur.textContent = "";

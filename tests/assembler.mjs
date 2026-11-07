@@ -1,6 +1,7 @@
 // Le seul endroit où l'on assemble un dossier de maquettes pour les essais :
 // le modèle de page (skills/a-plat/modele), puis une fixture par-dessus.
-// Une fixture ne contient jamais de copie de la page : seulement plan.js, ecrans/ et actuel/.
+// Une fixture ne contient jamais de copie de la page : seulement plan.js, ecrans/ et actuel/,
+// et parfois commun.css quand elle a un bloc UI à elle (la démo).
 // Aucune bibliothèque ici, pour que tests/assembler-demo.mjs marche avec Node seul.
 import { cpSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
