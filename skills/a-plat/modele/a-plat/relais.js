@@ -10,11 +10,18 @@
 //                   lien (avec l'adresse touchée)
 //   page -> écran : mode ("corriger" ou "essayer"), choisi (actif : true ou false), qui entoure
 //                   ou n'entoure plus le dernier élément touché, finition ("ux" ou "ui"), qui
-//                   choisit le jeu de variables de commun.css (data-finition sur <html>)
+//                   change le jeu de variables de commun.css (data-finition sur <html>)
+// La finition de départ arrive avant tout message, dans l'adresse du cadre
+// (« A2-fiche.html?finition=ui ») : elle s'applique dès le démarrage, avant le premier rendu.
 (function () {
   "use strict";
 
   if (window.parent === window) return;
+
+  // La finition donnée par la page dans l'adresse du cadre. Sans elle (ou avec une autre
+  // valeur), l'écran reste en UX.
+  var depart = /[?&]finition=(ux|ui)(?:&|$)/.exec(window.location.search);
+  if (depart) document.documentElement.setAttribute("data-finition", depart[1]);
 
   var LONGUEUR_DU_TEXTE = 40;
   var SELECTEUR_DES_ELEMENTS = "a, button, input, select, textarea, label, h1, h2, h3, h4, img";
@@ -164,9 +171,12 @@
       if (donnee.valeur !== "ux" && donnee.valeur !== "ui") return;
       if (document.documentElement.getAttribute("data-finition") === donnee.valeur) return;
       document.documentElement.setAttribute("data-finition", donnee.valeur);
-      // Les polices du projet peuvent changer la hauteur de l'écran : on la redit. Seulement
-      // quand la finition a vraiment changé, pour ne pas répondre sans fin à la page.
-      annoncerLaHauteur();
+      // Les polices du projet peuvent changer la hauteur de l'écran : on la redit, seulement
+      // quand la finition a vraiment changé, pour ne pas répondre sans fin à la page. La page
+      // vient de rendre au cadre sa hauteur de départ : on attend deux images qu'elle compte.
+      window.requestAnimationFrame(function () {
+        window.requestAnimationFrame(annoncerLaHauteur);
+      });
       return;
     }
     if (donnee.type !== "mode") return;

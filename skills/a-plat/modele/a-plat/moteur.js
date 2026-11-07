@@ -77,6 +77,26 @@
     }
   }
 
+  // La clé d'un réglage de la page pour ce dossier de maquettes et ce projet :
+  // « finition:/C:/projets/maquettes/:Prêtoutil ». Le chemin du dossier sépare deux copies
+  // des maquettes d'un même projet (le dossier, sans index.html).
+  function cleDuDossier(nom, plan) {
+    var dossier = String(window.location.pathname || "").replace(/index\.html?$/i, "");
+    return nom + ":" + dossier + ":" + (plan && typeof plan.projet === "string" ? plan.projet : "");
+  }
+
+  // Lit un réglage sous sa clé ; s'il n'y est pas, sous l'ancienne clé, sans le dossier
+  // (« finition:Prêtoutil »), et le range sous la nouvelle : un pliage ou un choix déjà
+  // retenu n'est pas perdu.
+  function lireAvecLAncienneCle(nom, plan) {
+    var cle = cleDuDossier(nom, plan);
+    var valeur = lireStock(cle);
+    if (valeur !== null) return valeur;
+    var ancienne = lireStock(nom + ":" + (plan && typeof plan.projet === "string" ? plan.projet : ""));
+    if (ancienne !== null) garderStock(cle, ancienne);
+    return ancienne;
+  }
+
   // ------------------------------------------------------------ 3. lecture du plan
 
   // Renvoie { statut, plan, erreurs } avec statut "absent", "casse", "refuse" ou "bon".
@@ -389,13 +409,19 @@
     } else {
       cadre.style.height = config.hauteur + "px";
     }
-    cadre.setAttribute("src", config.chemin);
+    // La finition voyage dans l'adresse du cadre : relais.js l'applique dès son démarrage.
+    // L'actuel n'en reçoit pas : il garde le vrai style du projet.
+    cadre.setAttribute("src", config.lecture ? config.chemin : avecLaFinition(config.chemin));
+    // relais.js est à la fin de l'écran : le navigateur peut peindre une première image avant
+    // lui, donc avant la finition. Le cadre reste caché jusqu'à son message pret, qui ne part
+    // qu'une fois la finition posée : on ne voit jamais un écran dans la mauvaise finition.
+    cadre.style.visibility = "hidden";
     boite.appendChild(cadre);
 
     var entree = {
       cadre: cadre, boite: boite, code: config.code, chemin: config.chemin,
       vignette: Boolean(config.vignette), lecture: Boolean(config.lecture),
-      echelle: echelle, suit: Boolean(config.vignette && config.suit),
+      echelle: echelle, suit: Boolean(config.vignette && config.suit), hauteur: config.hauteur,
       pret: false, minuteur: null, voile: null
     };
     cadres.push(entree);
@@ -435,6 +461,7 @@
 
   function surPret(entree, donnee) {
     entree.pret = true;
+    entree.cadre.style.visibility = ""; // l'écran a sa finition : on peut le montrer
     if (entree.minuteur) {
       window.clearTimeout(entree.minuteur);
       entree.minuteur = null;
@@ -528,15 +555,23 @@
   var finition = "ux";
 
   function cleDeLaFinition(plan) {
-    return "finition:" + (estTexte(plan.projet) ? plan.projet : "");
+    return cleDuDossier("finition", plan);
   }
 
   // La finition à montrer pour ce plan, ou null si le plan n'a pas de bouton (tout reste en UX).
   function finitionDuPlan(plan) {
     var reglage = plan && estObjet(plan.reglages) ? plan.reglages.finition : undefined;
     if (typeof reglage !== "string" || !aLaCle(DEPART_DE_LA_FINITION, reglage)) return null;
-    var gardee = lireStock(cleDeLaFinition(plan));
+    var gardee = lireAvecLAncienneCle("finition", plan);
     return gardee === "ux" || gardee === "ui" ? gardee : DEPART_DE_LA_FINITION[reglage];
+  }
+
+  // L'adresse d'un écran avec la finition de la page : « ecrans/A2.html?finition=ui ».
+  function avecLaFinition(chemin) {
+    var coupe = chemin.indexOf("#");
+    var avant = coupe === -1 ? chemin : chemin.slice(0, coupe);
+    var apres = coupe === -1 ? "" : chemin.slice(coupe);
+    return avant + (avant.indexOf("?") === -1 ? "?" : "&") + "finition=" + finition + apres;
   }
 
   function envoyerLaFinition(entree) {
@@ -552,7 +587,15 @@
     finition = nouvelle;
     garderStock(cleDeLaFinition(plan), nouvelle);
     cadres.forEach(function (entree) {
-      if (entree.pret) envoyerLaFinition(entree);
+      if (!entree.pret || entree.lecture) return;
+      // Un écran ne se mesure jamais plus bas que son cadre : on rend d'abord au cadre sa
+      // hauteur de départ, pour qu'un écran qui raccourcit dans la nouvelle finition puisse
+      // le dire. relais.js renvoie alors sa vraie hauteur.
+      if (!entree.vignette || entree.suit) {
+        entree.cadre.style.height = entree.hauteur + "px";
+        if (entree.suit) entree.boite.style.height = Math.round(entree.hauteur * entree.echelle) + "px";
+      }
+      envoyerLaFinition(entree);
     });
     marquerLaFinition(plan);
   }
@@ -690,17 +733,18 @@
 
   // ---- les rangées repliées de la vue d'ensemble, retenues par projet
   //
-  // La liste des rangées repliées est gardée sous « a-plat:rangees-repliees:<projet> », la même
-  // pour la planche et la colonne du téléphone. lireStock et garderStock passent par un
-  // try/catch : sans stockage, tout commence déplié et le pliage dure le temps de la visite.
+  // La liste des rangées repliées est gardée sous « a-plat:rangees-repliees:<dossier>:<projet> »
+  // (voir cleDuDossier), la même pour la planche et la colonne du téléphone. lireStock et
+  // garderStock passent par un try/catch : sans stockage, tout commence déplié et le pliage dure
+  // le temps de la visite.
 
   function cleDesReplis(plan) {
-    return "rangees-repliees:" + (estTexte(plan.projet) ? plan.projet : "");
+    return cleDuDossier("rangees-repliees", plan);
   }
 
   // { "A": true } pour chaque rangée repliée.
   function lireLesReplis(plan) {
-    var brut = lireStock(cleDesReplis(plan));
+    var brut = lireAvecLAncienneCle("rangees-repliees", plan);
     var repliees = {};
     if (Array.isArray(brut)) {
       brut.forEach(function (id) {
@@ -1545,7 +1589,9 @@
 
     // L'état des lieux n'est pas au-dessous de la vue d'ensemble : le fil le nomme, sans flèche.
     if (lue.vue === "etat") {
-      pas.push({ texte: "État des lieux", lien: "#etat" });
+      // Sur un téléphone, où le fil ne garde qu'un pas, ce pas-là redirait le lien de droite :
+      // le fil y montre plutôt le projet (voir .fil-vue dans le style).
+      pas.push({ texte: "État des lieux", lien: "#etat", classe: "fil-vue" });
     } else if (plan && lue.vue === "rangee") {
       var rangee = rangeeParId(plan, lue.reste);
       pas.push(rangee ? { texte: nomDeRangee(rangee), lien: lienDeLaRangee(rangee.id) } : { texte: lue.reste || "Rangée", lien: null });
@@ -1566,7 +1612,7 @@
     var marquerIci = lue.vue === "rangee" || lue.vue === "ecran";
     liste.textContent = "";
     pas.forEach(function (etape, i) {
-      var element = creer("li", "fil-pas");
+      var element = creer("li", "fil-pas" + (etape.classe ? " " + etape.classe : ""));
       if (i === pas.length - 1) {
         var ici = creer("span", "fil-ici", etape.texte);
         if (marquerIci) ici.setAttribute("aria-current", "page");

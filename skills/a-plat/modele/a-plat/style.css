@@ -257,9 +257,11 @@ a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex="0"]:foc
   cursor: pointer;
 }
 .barre-finition button:hover { color: var(--barre-texte); }
+/* Le bouton enfoncé, en négatif : clair sur la barre noire, pour que les deux états se
+   distinguent nettement (plus de 3:1 entre son fond et celui de la pilule). */
 .barre-finition button[aria-pressed="true"] {
-  background: var(--barre-filet);
-  color: var(--barre-texte);
+  background: var(--barre-texte);
+  color: var(--barre);
 }
 .barre-finition button:focus-visible { outline: 2px solid var(--barre-anneau); outline-offset: 1px; }
 
@@ -1358,7 +1360,9 @@ body.correction-ouverte {
 }
 
 /* ---- téléphone (700 px et moins) : la barre passe sur deux lignes et défile avec la page,
-   les commandes font 44 px ; le fil ne garde que le niveau courant. ---- */
+   les commandes font 44 px ; le fil ne garde que le niveau courant. Ligne 1 : le fil et les
+   vues ; ligne 2 : la recherche, puis le bouton UX | UI et le compte des corrections, s'il y
+   en a. La zone de droite s'efface (display: contents) pour que ses boutons se rangent. ---- */
 @media (max-width: 700px) {
   .barre {
     position: static;
@@ -1368,13 +1372,19 @@ body.correction-ouverte {
     padding-bottom: 8px;
   }
   .barre-gauche { flex: 1 1 120px; }
-  .barre-droite { flex: 0 1 auto; gap: 4px; }
-  .recherche { order: 3; flex: 1 1 100%; min-width: 0; }
+  .barre-droite { display: contents; }
+  .barre-vues { order: 2; }
+  .recherche { order: 3; flex: 1 1 160px; min-width: 0; }
+  .barre-finition { order: 4; padding: 0; }
+  .barre-corrections { order: 5; }
   .recherche input { height: 44px; }
   .recherche-touche { display: none; }
   .remonter { width: 44px; height: 44px; }
   .fil-pas:not(:last-child) { display: none; }
   .fil-pas + .fil-pas::before { display: none; }
+  /* Sur l'état des lieux, le dernier pas redirait le lien de droite : on montre le projet. */
+  .fil-pas.fil-vue { display: none; }
+  .fil-pas:has(+ .fil-vue) { display: flex; }
   .barre-vues a { min-height: 44px; padding: 0 10px; }
   .barre-corrections { min-height: 44px; }
   .barre-finition button { min-height: 44px; }

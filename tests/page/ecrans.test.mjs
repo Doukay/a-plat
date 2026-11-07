@@ -174,7 +174,7 @@ test("sur la planche, un écran est un vrai lien, à sa vraie taille, sans touch
     assert.equal(await cadre.getAttribute("tabindex"), "-1");
     assert.match(await cadre.getAttribute("title"), /A2/);
     assert.match(await cadre.getAttribute("title"), /Fiche d'un outil/);
-    assert.equal(await cadre.getAttribute("src"), "ecrans/A2-fiche.html");
+    assert.equal(await cadre.getAttribute("src"), "ecrans/A2-fiche.html?finition=ux", "la page donne la finition dans l'adresse du cadre");
     assert.equal(await cadre.evaluate((el) => getComputedStyle(el).pointerEvents), "none");
     // Vraie taille dans la planche : 390 de large, au moins 844 de haut ; c'est la planche qui est réduite.
     const taille = await vignette.locator(".cadre-boite").evaluate((el) => ({ l: el.offsetWidth, h: el.offsetHeight }));
@@ -228,7 +228,7 @@ test("#ecran/A2 avec une capture : l'actuel et la proposition côte à côte à 
     const p = await proposition.boundingBox();
     assert.ok(a.x + a.width <= p.x + 1, "l'actuel est à gauche de la proposition");
     assert.ok(Math.abs(a.y - p.y) < 4, "ils sont alignés en haut");
-    assert.equal(await proposition.locator("iframe").getAttribute("src"), "ecrans/A2-fiche.html");
+    assert.equal(await proposition.locator("iframe").getAttribute("src"), "ecrans/A2-fiche.html?finition=ux");
   });
   await avecPage("ecrans-variantes", { adresse: "ecran/A2", largeur: 390, hauteur: 844 }, async ({ page }) => {
     const a = await page.locator(".volet-actuel").boundingBox();
@@ -261,7 +261,7 @@ test("sans actuel, la proposition est seule", async () => {
     assert.equal(await page.locator(".volet-actuel").count(), 0);
     const contenu = await texte(page, "#vue");
     assert.doesNotMatch(contenu, /Capture de l'existant|Redessiné d'après le code/);
-    assert.equal(await page.locator(".volet-proposition iframe").getAttribute("src"), "ecrans/B1-pret.html");
+    assert.equal(await page.locator(".volet-proposition iframe").getAttribute("src"), "ecrans/B1-pret.html?finition=ux");
   });
 });
 
@@ -387,7 +387,7 @@ test("en mode « Corriger », toucher un élément ne fait rien dans l'écran et
       ["A1", "Titre"]
     ]);
     assert.equal(await page.evaluate(() => location.hash), "#ecran/A1", "le lien n'a mené nulle part");
-    assert.match(cadre.url(), /A1-accueil\.html$/);
+    assert.match(cadre.url(), /A1-accueil\.html\?finition=ux$/);
   });
 });
 
@@ -401,7 +401,7 @@ test("en mode « Corriger », un formulaire et un bouton de l'écran ne font rie
     await page.frameLocator("#vue iframe").getByPlaceholder("Un mot pour le voisin").press("Enter");
     await page.waitForFunction(() => window.__touches.length >= 1);
     assert.deepEqual((await touches(page))[0], ["A2", "Bouton Demander"]);
-    assert.match(cadre.url(), /A2-fiche\.html$/, "l'écran n'a pas été remplacé par la page du formulaire");
+    assert.match(cadre.url(), /A2-fiche\.html\?finition=ux$/, "l'écran n'a pas été remplacé par la page du formulaire");
     assert.equal(await page.evaluate(() => location.hash), "#ecran/A2");
   });
 });

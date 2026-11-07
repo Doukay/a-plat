@@ -14,9 +14,11 @@ const UX = "#0066cc";
 const UI = "#c0392b";
 
 // Le commun.css du modèle, avec un bloc UI aux couleurs d'un projet : un autre accent, un autre fond.
+// Pour l'essai seulement, une boîte qui grandit en UI (comme le ferait une police du projet).
 function communAvecUneUI() {
   return readFileSync(MODELE, "utf8").replace(/(:root\[data-finition="ui"\] \{)([^}]*)\}/, (_, debut, corps) =>
-    debut + corps.replace(`--ecran-accent: ${UX};`, `--ecran-accent: ${UI};`).replace("--ecran-page: #f5f5f7;", "--ecran-page: #fdf6e3;") + "}");
+    debut + corps.replace(`--ecran-accent: ${UX};`, `--ecran-accent: ${UI};`).replace("--ecran-page: #f5f5f7;", "--ecran-page: #fdf6e3;") + "}") +
+    "\n.selon-finition { height: 200px; }\n:root[data-finition=\"ui\"] .selon-finition { height: 1600px; }\n";
 }
 
 const ecran = (code, titre, plus = {}) => ({ code, titre, fichier: `${code}.html`, largeur: 390, hauteur: 844, statut: "a-relire", actuel: null, ...plus });
@@ -34,9 +36,12 @@ function fixture(finition) {
     ]
   };
   if (finition !== undefined) plan.reglages = { finition };
-  const corps = (titre) => `<main class="page"><h1>${titre}</h1><div class="carte">Une carte</div><a class="bouton" href="#">Agir</a></main>`;
+  const corps = (titre, plus = "") => `<main class="page"><h1>${titre}</h1><div class="carte">Une carte</div><a class="bouton" href="#">Agir</a>${plus}</main>`;
   const ecrans = {};
   for (const e of plan.ecrans) ecrans[`${e.code}.html`] = ecranHtml(e.code, corps(e.titre));
+  // A1 mène à A2, pour le mode « Essayer le parcours » ; A2 change de hauteur selon la finition.
+  ecrans["A1.html"] = ecranHtml("A1", corps("Accueil", '<a class="action" href="A2.html">Voir la fiche</a>'));
+  ecrans["A2.html"] = ecranHtml("A2", corps("Fiche", '<div class="selon-finition"></div>'));
   return genererFixture({
     plan, ecrans,
     autres: {
@@ -118,7 +123,8 @@ test("le choix est retenu par projet, et se relit sans erreur quand localStorage
   await avecPage(PAR_FINITION.charte, { adresse: "ensemble" }, async ({ page }) => {
     await groupe(page).getByRole("button", { name: "UX" }).click();
     assert.equal(await enfonce(page), "UX");
-    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("a-plat:finition:Essai"))), "ux");
+    // La clé dit le dossier des maquettes (le chemin de la page, sans index.html) et le projet.
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("a-plat:finition:" + location.pathname.replace(/index\.html$/, "") + ":Essai"))), "ux");
     await page.reload();
     await groupe(page).waitFor();
     assert.equal(await enfonce(page), "UX", "après un rechargement");
@@ -218,4 +224,175 @@ test("un écran ouvert seul, hors de la page, s'affiche en UX", async () => {
     assert.equal(await page.evaluate(() => document.documentElement.getAttribute("data-finition")), null);
     assert.equal(await page.locator(".bouton").evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(0, 102, 204)");
   });
+});
+
+// ---------------------------------------------------------------- série de corrections
+
+// Dans chaque cadre d'écran, note à chacune des premières images (requestAnimationFrame passe
+// juste avant de peindre) la finition, et si relais.js a déjà démarré. La page ne note rien.
+const NOTER_LES_PREMIERES_IMAGES = () => {
+  if (window.parent === window) return;
+  window.__images = [];
+  const noter = () => {
+    window.__images.push((window.APlatRelais ? "relais:" : "avant:") + (document.documentElement.getAttribute("data-finition") || "aucune"));
+    if (window.__images.length < 8) requestAnimationFrame(noter);
+  };
+  requestAnimationFrame(noter);
+};
+
+// Dès que relais.js a démarré, chaque image est dans la finition voulue. Avant lui, le navigateur
+// a pu peindre une image sans finition : le cadre est alors encore caché (voir le test du cadre lent).
+async function imagesDe(page, selecteur, voulue) {
+  const ecranDeLaVue = await cadre(page, selecteur);
+  await ecranDeLaVue.waitForFunction(() => window.__images && window.__images.length >= 8);
+  const images = await ecranDeLaVue.evaluate(() => window.__images);
+  assert.ok(images.some((i) => i.startsWith("relais:")), `relais.js a démarré : ${images.join(" ")}`);
+  assert.deepEqual(images.filter((i) => i.startsWith("relais:") && i !== `relais:${voulue}`), [], images.join(" "));
+  assert.equal(await page.locator(selecteur).evaluate((el) => getComputedStyle(el).visibility), "visible", "montré après son message pret");
+  return images;
+}
+
+test("un écran ne se montre jamais dans la mauvaise finition : elle voyage dans l'adresse du cadre", async () => {
+  for (const [adresse, selecteur] of [["ecran/A2", ".volet-proposition iframe"], ["rangee/A", '.rangee-carte iframe[data-code="A2"]'], ["ensemble", '.planche iframe[data-code="A2"]']]) {
+    await avecPage(PAR_FINITION.charte, { adresse, largeur: 1440, hauteur: 900, avant: NOTER_LES_PREMIERES_IMAGES }, async ({ page }) => {
+      assert.match(await page.locator(selecteur).getAttribute("src"), /\?finition=ui$/);
+      await imagesDe(page, selecteur, "ui");
+    });
+  }
+  // L'actuel, lui, ne reçoit rien dans son adresse.
+  await avecPage(PAR_FINITION.charte, { adresse: "ecran/A1" }, async ({ page }) => {
+    assert.equal(await page.locator(".volet-actuel iframe").getAttribute("src"), "actuel/A1.html");
+  });
+});
+
+test("un cadre reste caché tant que son écran n'a pas dit pret, c'est-à-dire tant qu'il n'a pas sa finition", async () => {
+  // Un écran dont relais.js arrive en retard : pendant plus d'une seconde, il est peint sans finition.
+  const plan = {
+    version: 1, projet: "Lent", etatDesLieux: [], reglages: { finition: "charte" }, rangees: [{ id: "A", titre: "A", notes: [] }],
+    ecrans: [ecran("A1", "Lent", { rangee: "A" })]
+  };
+  const lent = ecranHtml("A1", '<main class="page"><a class="bouton" href="#">Agir</a></main><script>setTimeout(function () { var s = document.createElement("script"); s.src = "../a-plat/relais.js"; document.body.appendChild(s); }, 1200);</script>', { relais: false });
+  const dossier = genererFixture({ plan, ecrans: { "A1.html": lent }, autres: { "commun.css": communAvecUneUI() } });
+  await avecPage(dossier, { adresse: "ecran/A1", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    const iframe = page.locator(".volet-proposition iframe");
+    const ecranLent = await cadre(page, ".volet-proposition iframe");
+    await ecranLent.waitForFunction(() => document.querySelector(".bouton") !== null);
+    assert.equal(await ecranLent.evaluate(() => document.documentElement.getAttribute("data-finition")), null, "peint sans finition…");
+    assert.equal(await iframe.evaluate((el) => getComputedStyle(el).visibility), "hidden", "… mais caché");
+    await page.waitForFunction(() => getComputedStyle(document.querySelector(".volet-proposition iframe")).visibility === "visible");
+    assert.equal(await ecranLent.evaluate(() => document.documentElement.getAttribute("data-finition")), "ui", "montré seulement en UI");
+  });
+});
+
+test("en « Essayer le parcours », l'écran suivant naît lui aussi dans la finition de la page, sans clignement", async () => {
+  await avecPage(PAR_FINITION.charte, { adresse: "ecran/A1", largeur: 1440, hauteur: 900, avant: NOTER_LES_PREMIERES_IMAGES }, async ({ page }) => {
+    await page.locator(".mode button", { hasText: "Essayer le parcours" }).click();
+    const a1 = await cadre(page, ".volet-proposition iframe");
+    await a1.waitForFunction(() => document.documentElement.dataset.aPlatMode === "essayer");
+    await a1.locator("a.action").click();
+    await page.waitForFunction(() => location.hash === "#ecran/A2");
+    await page.locator('.volet-proposition iframe[data-code="A2"]').waitFor();
+    // Le lien de l'écran ne fait pas naviguer le cadre : la page dessine un nouveau cadre, avec
+    // la finition dans son adresse, et la lui redit à son message pret.
+    assert.match(await page.locator(".volet-proposition iframe").getAttribute("src"), /A2\.html\?finition=ui$/);
+    await imagesDe(page, ".volet-proposition iframe", "ui");
+    assert.equal((await finitionDe(await cadre(page, ".volet-proposition iframe"), "ui")).accent, UI);
+  });
+});
+
+test("après un changement de finition, l'écran redit sa hauteur, et son cadre la suit, en grandissant comme en raccourcissant", async () => {
+  await avecPage(PAR_FINITION.charte, { adresse: "rangee/A", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    const hauteur = () => page.locator('.rangee-carte[data-code="A2"] .cadre-boite').evaluate((el) => el.offsetHeight);
+    const attendre = (test) => page.waitForFunction(test, null, { timeout: 4000 });
+    // En UI, la boîte de 1600 px rend l'écran plus long que ses 844 px : le cadre suit (à 90 %).
+    await attendre(() => document.querySelector('.rangee-carte[data-code="A2"] .cadre-boite').offsetHeight > 1600 * 0.9);
+    const enUI = await hauteur();
+    // En UX, l'écran est plus court que 844 px : le cadre revient à sa hauteur de départ, et non
+    // à la plus grande hauteur qu'il a connue.
+    await groupe(page).getByRole("button", { name: "UX" }).click();
+    await attendre(() => document.querySelector('.rangee-carte[data-code="A2"] .cadre-boite').offsetHeight < 800);
+    assert.equal(await hauteur(), Math.round(844 * 0.9), `en UX : ${await hauteur()} (en UI : ${enUI})`);
+    await groupe(page).getByRole("button", { name: "UI" }).click();
+    await attendre(() => document.querySelector('.rangee-carte[data-code="A2"] .cadre-boite').offsetHeight > 1600 * 0.9);
+    assert.equal(await hauteur(), enUI, "de nouveau en UI, la même hauteur qu'au départ");
+  });
+});
+
+test("après un changement de vue, et sans stockage, les cadres de la nouvelle vue ont la finition choisie", async () => {
+  const refus = () => {
+    Object.defineProperty(window, "localStorage", { configurable: true, get() { throw new DOMException("refusé", "SecurityError"); } });
+  };
+  for (const avant of [undefined, refus]) {
+    await avecPage(PAR_FINITION.charte, { adresse: "ensemble", largeur: 1440, hauteur: 900, avant }, async ({ page, erreurs }) => {
+      await groupe(page).getByRole("button", { name: "UX" }).click();
+      for (const [adresse, selecteur] of [["#rangee/A", '.rangee-carte iframe[data-code="A2"]'], ["#ecran/B1", ".volet-proposition iframe"], ["#ensemble", '.planche iframe[data-code="A1"]']]) {
+        await page.evaluate((a) => { location.hash = a; }, adresse);
+        await page.waitForFunction((a) => location.hash === a && document.body.dataset.vue === a.slice(1).split("/")[0], adresse);
+        assert.match(await page.locator(selecteur).getAttribute("src"), /\?finition=ux$/, `${adresse} : adresse du cadre`);
+        assert.equal((await finitionDe(await cadre(page, selecteur), "ux")).accent, UX, `${adresse}${avant ? ", sans stockage" : ""}`);
+      }
+      assert.deepEqual(erreurs, []);
+    });
+  }
+});
+
+// Le contraste entre deux couleurs « rgb(…) », d'après leur luminance relative.
+function contraste(a, b) {
+  const luminance = (texte) => {
+    const [r, g, bl] = texte.match(/[\d.]+/g).slice(0, 3).map((v) => {
+      const c = Number(v) / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [clair, sombre] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (clair + 0.05) / (sombre + 0.05);
+}
+
+test("le bouton enfoncé est en négatif, et ses deux états se distinguent à plus de 3:1", async () => {
+  await avecPage(PAR_FINITION.charte, { adresse: "ensemble" }, async ({ page }) => {
+    const couleurs = await groupe(page).evaluate((el) => {
+      const enfonce = el.querySelector('[aria-pressed="true"]');
+      const relache = el.querySelector('[aria-pressed="false"]');
+      return {
+        pilule: getComputedStyle(el).backgroundColor,
+        fondEnfonce: getComputedStyle(enfonce).backgroundColor,
+        texteEnfonce: getComputedStyle(enfonce).color,
+        fondRelache: getComputedStyle(relache).backgroundColor,
+        texteRelache: getComputedStyle(relache).color
+      };
+    });
+    assert.equal(couleurs.fondEnfonce, "rgb(245, 245, 247)");
+    assert.equal(couleurs.texteEnfonce, "rgb(0, 0, 0)");
+    assert.equal(couleurs.fondRelache, "rgba(0, 0, 0, 0)", "relâché, le bouton laisse voir la pilule");
+    assert.ok(contraste(couleurs.fondEnfonce, couleurs.pilule) >= 3, "entre les deux états");
+    assert.ok(contraste(couleurs.texteEnfonce, couleurs.fondEnfonce) >= 4.5, "le texte enfoncé se lit");
+    assert.ok(contraste(couleurs.texteRelache, couleurs.pilule) >= 4.5, "le texte relâché se lit");
+  });
+});
+
+test("au téléphone, la barre garde la même hauteur avec le bouton UX | UI qu'en finition « gris »", async () => {
+  for (const largeur of [390, 360]) {
+    for (const adresse of ["etat", "ensemble", "ecran/A2"]) {
+      const mesure = (fixtureDeLaFinition) => avecPage(fixtureDeLaFinition, { adresse, largeur, hauteur: 844 }, async ({ page }) => {
+        await page.waitForTimeout(150);
+        if (adresse === "etat") {
+          // Le fil ne redit pas le lien de droite : il montre le projet.
+          assert.equal(await page.locator(".fil a").innerText(), "À plat · Essai");
+          assert.equal(await page.locator(".fil-vue").isVisible(), false);
+        }
+        return page.evaluate(() => ({
+          hauteur: document.querySelector(".barre").getBoundingClientRect().height,
+          deborde: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          bouton: Boolean(document.querySelector(".barre-finition"))
+        }));
+      });
+      const gris = await mesure(PAR_FINITION.gris);
+      const avecBouton = await mesure(PAR_FINITION.charte);
+      assert.equal(gris.bouton, false);
+      assert.equal(avecBouton.bouton, true);
+      assert.ok(Math.abs(avecBouton.hauteur - gris.hauteur) < 1, `${largeur} px, #${adresse} : ${avecBouton.hauteur} avec le bouton, ${gris.hauteur} en gris`);
+      assert.equal(avecBouton.deborde, false);
+    }
+  }
 });

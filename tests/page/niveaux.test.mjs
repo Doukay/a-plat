@@ -922,8 +922,17 @@ test("le résultat choisi dans la recherche se voit nettement, en clair comme en
 // ---------------------------------------------------------------- rangées repliables
 
 const plier = (page, id) => page.locator(`#vue .rangee[data-rangee="${id}"] .rangee-plier`);
-const STOCK_DES_REPLIS = "a-plat:rangees-repliees:Essai";
-const repliesGardees = (page) => page.evaluate((cle) => JSON.parse(localStorage.getItem(cle) || "null"), STOCK_DES_REPLIS);
+// La clé dit le dossier des maquettes (le chemin de la page, sans index.html) et le projet.
+const repliesGardees = (page) => page.evaluate(() =>
+  JSON.parse(localStorage.getItem("a-plat:rangees-repliees:" + location.pathname.replace(/index\.html$/, "") + ":Essai") || "null"));
+
+test("un pliage retenu sous l'ancienne clé, sans le dossier, est relu une fois puis rangé sous la nouvelle", async () => {
+  const ancienne = `try { if (!sessionStorage.getItem("deja")) { localStorage.setItem("a-plat:rangees-repliees:Essai", JSON.stringify(["B"])); sessionStorage.setItem("deja", "1"); } } catch (e) {}`;
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900, avant: ancienne }, async ({ page }) => {
+    assert.equal(await plier(page, "B").getAttribute("aria-expanded"), "false", "l'ancien pliage n'est pas perdu");
+    assert.deepEqual(await repliesGardees(page), ["B"], "il est rangé sous la nouvelle clé");
+  });
+});
 
 test("sur la planche, replier une rangée cache ses écrans, fait remonter la suivante, et aria-expanded suit", async () => {
   await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page, erreurs }) => {
