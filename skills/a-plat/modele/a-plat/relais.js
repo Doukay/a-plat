@@ -9,7 +9,8 @@
 //   écran -> page : pret (avec la hauteur), element (avec le nom, et où il est : haut et bas),
 //                   lien (avec l'adresse touchée)
 //   page -> écran : mode ("corriger" ou "essayer"), choisi (actif : true ou false), qui entoure
-//                   ou n'entoure plus le dernier élément touché
+//                   ou n'entoure plus le dernier élément touché, finition ("ux" ou "ui"), qui
+//                   choisit le jeu de variables de commun.css (data-finition sur <html>)
 (function () {
   "use strict";
 
@@ -156,6 +157,16 @@
     if (donnee.type === "choisi") {
       if (donnee.actif === true) entourerLeDernier();
       else if (donnee.actif === false) retirerLEntourage();
+      return;
+    }
+    if (donnee.type === "finition") {
+      // UX : la maquette en gris ; UI : les couleurs du projet. Toute autre valeur est ignorée.
+      if (donnee.valeur !== "ux" && donnee.valeur !== "ui") return;
+      if (document.documentElement.getAttribute("data-finition") === donnee.valeur) return;
+      document.documentElement.setAttribute("data-finition", donnee.valeur);
+      // Les polices du projet peuvent changer la hauteur de l'écran : on la redit. Seulement
+      // quand la finition a vraiment changé, pour ne pas répondre sans fin à la page.
+      annoncerLaHauteur();
       return;
     }
     if (donnee.type !== "mode") return;

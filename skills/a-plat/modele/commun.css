@@ -1,26 +1,55 @@
 /* Le style commun des écrans d'À plat.
 
-   Par défaut tout est gris : un écran se lit comme un plan, sans rien qui distraie.
-   Pour passer à la charte du projet, changez seulement les six variables ci-dessous (couleurs,
-   police, arrondi). Les écrans, eux, ne se modifient pas : ils n'écrivent aucune couleur.
-   Les écrans gardent leurs couleurs : la page d'À plat, en mode sombre, ne les touche pas. */
+   Chaque écran est dessiné une seule fois, avec les classes de ce fichier, sans couleur à lui.
+   Deux jeux de variables, aux mêmes noms, lui donnent deux visages :
+   - UX (:root) : la maquette, un gris calme façon fiche produit, un seul bleu pour ce qui agit.
+     L'attention va à ce que dit l'écran, pas aux couleurs.
+   - UI (:root[data-finition="ui"]) : les couleurs, les polices et les arrondis du projet.
+   Le bouton « UX | UI » de la page passe d'un jeu à l'autre pour tous les écrans d'un coup.
+   Un écran ouvert seul s'affiche en UX. La page d'À plat, en mode sombre, ne touche pas aux écrans. */
+
+/* ---- UX : la maquette en gris ---- */
 :root {
-  --ecran-fond: #ffffff;
-  --ecran-texte: #1f1f1f;
-  --ecran-accent: #3d3d3d;
-  --ecran-trait: #8c8c8c;
+  --ecran-page: #f5f5f7;          /* le fond derrière les cartes (perle) */
+  --ecran-fond: #ffffff;          /* les cartes, l'en-tête, les champs */
+  --ecran-texte: #1d1d1f;         /* l'encre ; les gris de lecture en sont tirés (plus bas) */
+  --ecran-trait: #d2d2d7;         /* les filets et les bords */
+  --ecran-accent: #0066cc;        /* la seule couleur de ce qui agit : boutons, liens d'action */
+  --ecran-sur-accent: #ffffff;    /* le texte posé sur l'accent : foncé si l'accent est clair */
+  --ecran-mise-en-avant: #e8f0fa; /* l'aplat d'une carte mise en avant (.carte.forte) */
   --ecran-police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --ecran-arrondi: 8px;
-
-  /* Calculées d'après les six premières : à laisser telles quelles en général.
-     --ecran-sur-accent est la couleur du texte posé sur l'accent (boutons, pastilles) :
-     à changer si l'accent de la charte est clair. */
-  --ecran-doux: color-mix(in srgb, var(--ecran-texte) 70%, var(--ecran-fond));
-  --ecran-filet: color-mix(in srgb, var(--ecran-trait) 45%, var(--ecran-fond));
-  --ecran-creux: color-mix(in srgb, var(--ecran-trait) 22%, var(--ecran-fond));
-  --ecran-sur-accent: var(--ecran-fond);
-
+  --ecran-police-titre: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ecran-arrondi: 12px;          /* les cartes et les champs */
+  --ecran-arrondi-bouton: 999px;  /* les boutons et les choix : des pilules en UX */
   color-scheme: light;
+}
+
+/* ---- UI : les couleurs du projet ----
+   Claude y écrit les valeurs du projet, lues dans ses fichiers de style ou sa charte, jamais
+   inventées. Mêmes noms de variables que l'UX. Tant qu'il reprend les valeurs UX (comme ici,
+   dans le modèle), le contrôle avertit que l'UI n'a pas encore les couleurs du projet. */
+:root[data-finition="ui"] {
+  --ecran-page: #f5f5f7;
+  --ecran-fond: #ffffff;
+  --ecran-texte: #1d1d1f;
+  --ecran-trait: #d2d2d7;
+  --ecran-accent: #0066cc;
+  --ecran-sur-accent: #ffffff;
+  --ecran-mise-en-avant: #e8f0fa;
+  --ecran-police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ecran-police-titre: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ecran-arrondi: 12px;
+  --ecran-arrondi-bouton: 999px;
+}
+
+/* Calculées d'après les variables ci-dessus, pour l'UX comme pour l'UI : à laisser telles quelles.
+   --ecran-doux : le gris de lecture (descriptions, libellés) ;
+   --ecran-filet : le filet d'un pixel qui détache une carte ;
+   --ecran-creux : un aplat très léger (vignettes, pastilles discrètes). */
+:root {
+  --ecran-doux: color-mix(in srgb, var(--ecran-texte) 62%, var(--ecran-fond));
+  --ecran-filet: color-mix(in srgb, var(--ecran-trait) 70%, var(--ecran-fond));
+  --ecran-creux: color-mix(in srgb, var(--ecran-texte) 4%, var(--ecran-fond));
 }
 
 * { box-sizing: border-box; }
@@ -32,39 +61,55 @@ body {
   display: flex;
   flex-direction: column;
   margin: 0;
-  background: var(--ecran-fond);
+  background: var(--ecran-page);
   color: var(--ecran-texte);
-  font: 16px/1.45 var(--ecran-police);
+  font: 15px/1.45 var(--ecran-police);
+  letter-spacing: -0.01em;
 }
 
+/* Des titres serrés : plus ils sont grands, plus leurs lettres se rapprochent. */
 h1, h2, h3, p, ul, ol { margin: 0; padding: 0; }
-h1 { font-size: 22px; line-height: 1.25; }
-h2 { font-size: 18px; line-height: 1.3; }
-h3 { font-size: 16px; line-height: 1.3; }
+h1, h2, h3, .chiffre { font-family: var(--ecran-police-titre); font-weight: 600; }
+h1 { font-size: 28px; line-height: 1.15; letter-spacing: -0.035em; }
+h2 { font-size: 17px; line-height: 1.3; letter-spacing: -0.02em; }
+h3 { font-size: 15px; line-height: 1.3; letter-spacing: -0.02em; }
 ul, ol { list-style: none; }
 a { color: inherit; }
 img { max-width: 100%; }
 
-:focus-visible { outline: 3px solid var(--ecran-accent); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--ecran-accent); outline-offset: 2px; }
 
-/* ---- la structure d'un écran : un en-tête, la page, puis (parfois) la barre du bas ---- */
+/* ---- la structure d'un écran : un en-tête, la page, puis (parfois) la barre du bas ----
+   La ligne du haut ne déborde jamais : ce qui ne tient pas est coupé proprement. */
 .entete {
   display: flex;
   align-items: center;
   gap: 4px;
-  min-height: 56px;
+  min-height: 52px;
   padding: 4px 16px 4px 4px;
+  overflow: hidden;
+  background: var(--ecran-fond);
   border-bottom: 1px solid var(--ecran-filet);
+  white-space: nowrap;
 }
-.entete h1 { flex: 1; min-width: 0; font-size: 18px; overflow-wrap: anywhere; }
+.entete > * { min-width: 0; }
+.entete h1 {
+  flex: 1;
+  overflow: hidden;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+}
 .entete > h1:first-child { padding-left: 12px; }
 
 .retour {
   display: inline-flex;
+  flex: none;
   align-items: center;
-  min-height: 48px;
+  min-height: 44px;
   padding: 0 12px;
-  font-weight: 600;
+  color: var(--ecran-accent);
+  font-weight: 500;
   text-decoration: none;
 }
 
@@ -72,7 +117,7 @@ img { max-width: 100%; }
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   padding: 16px;
 }
 
@@ -81,35 +126,32 @@ img { max-width: 100%; }
   bottom: 0;
   display: flex;
   background: var(--ecran-fond);
-  border-top: 1px solid var(--ecran-trait);
+  border-top: 1px solid var(--ecran-filet);
 }
 .onglets a {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 56px;
-  border-top: 4px solid transparent;
+  min-height: 52px;
   color: var(--ecran-doux);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 500;
   text-decoration: none;
 }
-.onglets a[aria-current="page"] {
-  border-top-color: var(--ecran-accent);
-  color: var(--ecran-texte);
-}
+.onglets a[aria-current="page"] { color: var(--ecran-accent); font-weight: 600; }
 
 /* ---- les classes de base : un bouton, un champ, une carte, une vignette ---- */
+/* Un bouton plein, arrondi en pilule : l'action principale, un seul par écran. */
 .bouton {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 48px;
-  padding: 10px 16px;
-  border: 2px solid var(--ecran-accent);
-  border-radius: var(--ecran-arrondi);
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: var(--ecran-arrondi-bouton);
   background: var(--ecran-accent);
   color: var(--ecran-sur-accent);
   font: inherit;
@@ -119,17 +161,30 @@ img { max-width: 100%; }
   cursor: pointer;
 }
 .bouton.discret {
-  background: transparent;
+  background: var(--ecran-fond);
   color: var(--ecran-accent);
+  box-shadow: inset 0 0 0 1px var(--ecran-filet);
 }
+/* Un bouton à sa largeur, au lieu de toute la ligne. */
+.bouton.court { display: inline-flex; width: auto; }
 .bouton:active { opacity: 0.8; }
+
+/* Un lien d'action dans le texte ou au bout d'une ligne (« Tout voir › ») : bleu, sans soulignement. */
+.action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ecran-accent);
+  font-weight: 500;
+  text-decoration: none;
+}
 
 .champ {
   display: block;
   width: 100%;
-  min-height: 48px;
+  min-height: 44px;
   padding: 10px 12px;
-  border: 2px solid var(--ecran-trait);
+  border: 1px solid var(--ecran-trait);
   border-radius: var(--ecran-arrondi);
   background: var(--ecran-fond);
   color: var(--ecran-texte);
@@ -138,19 +193,22 @@ img { max-width: 100%; }
 textarea.champ { min-height: 104px; resize: vertical; }
 .champ::placeholder { color: var(--ecran-doux); opacity: 1; }
 
-.etiquette { display: block; margin-bottom: 6px; font-weight: 600; }
+.etiquette { display: block; margin-bottom: 6px; color: var(--ecran-doux); font-size: 12.5px; font-weight: 500; }
 
+/* Une carte : blanche, détachée du fond par un filet d'un pixel, sans ombre. */
 .carte {
   display: block;
   padding: 16px;
-  border: 1px solid var(--ecran-filet);
   border-radius: var(--ecran-arrondi);
-  background: var(--ecran-creux);
+  background: var(--ecran-fond);
+  box-shadow: 0 0 0 1px var(--ecran-filet);
   color: inherit;
   text-decoration: none;
 }
+/* Une carte mise en avant : la plus importante de l'écran, sur un aplat. */
+.carte.forte { background: var(--ecran-mise-en-avant); }
 /* Une carte qui se touche annonce où elle mène. */
-a.carte.ligne::after { content: "›"; margin-left: auto; padding-left: 4px; font-size: 24px; line-height: 1; color: var(--ecran-doux); }
+a.carte.ligne::after { content: "›"; margin-left: auto; padding-left: 4px; font-size: 22px; line-height: 1; color: var(--ecran-doux); }
 
 /* La place d'une image ou d'une photo : un aplat, avec son libellé. */
 .vignette {
@@ -161,28 +219,35 @@ a.carte.ligne::after { content: "›"; margin-left: auto; padding-left: 4px; fon
   width: 72px;
   height: 72px;
   padding: 4px;
-  border: 1px solid var(--ecran-filet);
   border-radius: var(--ecran-arrondi);
-  background: color-mix(in srgb, var(--ecran-trait) 35%, var(--ecran-fond));
-  color: var(--ecran-texte);
-  font-size: 13px;
+  background: var(--ecran-creux);
+  box-shadow: inset 0 0 0 1px var(--ecran-filet);
+  color: var(--ecran-doux);
+  font-size: 12.5px;
   line-height: 1.2;
   text-align: center;
 }
-.vignette.grande { width: 100%; height: auto; aspect-ratio: 16 / 10; font-size: 15px; }
+.vignette.grande { width: 100%; height: auto; aspect-ratio: 16 / 10; font-size: 14px; }
+
+/* ---- le chiffre clé : ce qu'on lit en premier sur un écran, en grand ---- */
+.chiffre { font-size: 32px; line-height: 1.1; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+.chiffre.moyen { font-size: 22px; letter-spacing: -0.02em; }
+/* Le petit libellé gris au-dessus d'un chiffre ou d'une section, sans capitales. */
+.surtitre { color: var(--ecran-doux); font-size: 12.5px; font-weight: 500; }
 
 /* ---- de quoi composer : lignes, piles, textes ---- */
-.ligne { display: flex; align-items: center; gap: 12px; }
+.ligne { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ligne > * { min-width: 0; }
 .pile { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.pile.large { gap: 16px; }
+.pile.large { gap: 14px; }
 .deux { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .pousse { margin-left: auto; }
 .doux { color: var(--ecran-doux); }
-.petit { font-size: 14px; }
-.gras { font-weight: 700; }
+.petit { font-size: 13.5px; }
+.gras { font-weight: 600; }
 .centre { text-align: center; }
 
-.liste { display: flex; flex-direction: column; gap: 12px; }
+.liste { display: flex; flex-direction: column; gap: 10px; }
 .puces { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .puce {
@@ -190,31 +255,29 @@ a.carte.ligne::after { content: "›"; margin-left: auto; padding-left: 4px; fon
   align-items: center;
   min-height: 32px;
   padding: 2px 14px;
-  border: 1px solid var(--ecran-trait);
   border-radius: 999px;
-  font-size: 14px;
+  background: var(--ecran-fond);
+  box-shadow: inset 0 0 0 1px var(--ecran-filet);
+  font-size: 13.5px;
 }
 .pastille {
   display: inline-block;
   align-self: flex-start;
   padding: 2px 10px;
-  border-radius: var(--ecran-arrondi);
-  background: var(--ecran-accent);
-  color: var(--ecran-sur-accent);
-  font-size: 13px;
-  font-weight: 700;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ecran-accent) 10%, var(--ecran-fond));
+  color: var(--ecran-accent);
+  font-size: 12px;
+  font-weight: 600;
 }
-.pastille.discrete {
-  background: transparent;
-  border: 1px solid var(--ecran-trait);
-  color: var(--ecran-texte);
-}
+.pastille.discrete { background: var(--ecran-creux); color: var(--ecran-doux); }
 
-/* Une remarque dans l'écran : un cadre en pointillés, sans fond, pour ne pas la prendre pour une carte. */
+/* Une remarque dans l'écran (ce qui change, ce qui reste à décider) : une teinte légère, pas une carte. */
 .bandeau {
   padding: 12px 14px;
-  border: 1px dashed var(--ecran-trait);
   border-radius: var(--ecran-arrondi);
+  background: color-mix(in srgb, var(--ecran-accent) 6%, var(--ecran-fond));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ecran-accent) 30%, var(--ecran-fond));
 }
 
 .faits { display: flex; flex-direction: column; }
@@ -222,11 +285,11 @@ a.carte.ligne::after { content: "›"; margin-left: auto; padding-left: 4px; fon
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px 0;
+  padding: 11px 0;
   border-bottom: 1px solid var(--ecran-filet);
 }
 .faits li:last-child { border-bottom: 0; }
-.faits li > :last-child { text-align: right; font-weight: 600; }
+.faits li > :last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .etapes { display: flex; flex-direction: column; gap: 14px; counter-reset: etape; }
 .etapes li { display: flex; align-items: flex-start; gap: 12px; counter-increment: etape; }
@@ -238,27 +301,33 @@ a.carte.ligne::after { content: "›"; margin-left: auto; padding-left: 4px; fon
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--ecran-trait);
   border-radius: 50%;
-  font-size: 14px;
-  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--ecran-trait);
+  font-size: 13.5px;
+  font-weight: 600;
 }
-.etapes li.fait::before { background: var(--ecran-accent); border-color: var(--ecran-accent); color: var(--ecran-sur-accent); }
+.etapes li.fait::before { background: var(--ecran-accent); box-shadow: none; color: var(--ecran-sur-accent); }
 
 .vide { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 16px; text-align: center; }
 .vide .vignette { width: 96px; height: 96px; border-radius: 50%; }
-.vide h2 { font-size: 24px; }
+.vide h2 { font-size: 22px; letter-spacing: -0.035em; }
 
-.segments { display: flex; gap: 8px; }
+.segments {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--ecran-arrondi-bouton);
+  background: color-mix(in srgb, var(--ecran-texte) 7%, var(--ecran-fond));
+}
 .segments a {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  border: 1px solid var(--ecran-trait);
-  border-radius: var(--ecran-arrondi);
-  font-weight: 600;
+  border-radius: var(--ecran-arrondi-bouton);
+  font-size: 13.5px;
+  font-weight: 500;
   text-decoration: none;
 }
-.segments a[aria-current="page"] { background: var(--ecran-accent); border-color: var(--ecran-accent); color: var(--ecran-sur-accent); }
+.segments a[aria-current="page"] { background: var(--ecran-fond); box-shadow: 0 0 0 1px var(--ecran-filet); font-weight: 600; }

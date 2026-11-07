@@ -7,8 +7,10 @@
   2. Remplacer X0 par le code de l'écran, deux fois : dans data-ecran et dans <title>.
   3. Ajouter l'écran à plan.js (code, titre, rangée, fichier). Sans cela, la page ne le montre pas.
   4. Garder l'écran sans couleur ni style à lui : tout passe par les classes de commun.css
-     (.bouton, .champ, .carte, .vignette et celles qui les entourent). Pour la charte du projet,
-     on change les variables en tête de commun.css, jamais les écrans.
+     (.bouton, .champ, .carte, .vignette et celles qui les entourent). Ses couleurs viennent des
+     deux blocs de variables en tête de commun.css : UX (la maquette en gris) et UI (les couleurs
+     du projet). Le bouton « UX | UI » de la page passe de l'un à l'autre ; un écran qui écrirait
+     une couleur à lui ne suivrait plus.
   5. Écrire de vrais textes, avec des exemples inventés mais crédibles. Ce que l'on ne sait pas
      s'écrit entre [crochets] : le contrôle (verifier.mjs) en donne la liste à la fin.
   6. Pour relier les écrans, un lien ou un formulaire vers le fichier de l'écran suivant :
@@ -23,13 +25,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="../commun.css"></head>
 <body>
-<!-- L'en-tête : un lien de retour (vers l'écran d'où l'on vient) et le titre de l'écran. -->
+<!-- L'en-tête : un lien de retour (vers l'écran d'où l'on vient) et le titre de l'écran.
+     Il ne déborde jamais : un titre trop long est coupé par des points de suspension. -->
 <header class="entete">
   <a class="retour" href="X0-type.html">‹ Retour</a>
   <h1>Titre de l'écran</h1>
 </header>
 
 <main class="page">
+  <!-- Le chiffre clé : ce qu'on lit en premier, en grand (.chiffre), avec son petit libellé
+       gris au-dessus (.surtitre). Une carte mise en avant (.carte.forte) le porte. -->
+  <div class="carte forte pile">
+    <span class="surtitre">Le chiffre clé</span>
+    <span class="chiffre">[montant]</span>
+    <span class="petit doux">Une précision sur ce chiffre</span>
+  </div>
+  <div class="deux">
+    <div class="carte pile"><span class="surtitre">Un autre chiffre</span><span class="chiffre moyen">[nombre]</span></div>
+    <div class="carte pile"><span class="surtitre">Et un autre</span><span class="chiffre moyen">[nombre]</span></div>
+  </div>
+
   <!-- Une carte : un bloc de contenu. Avec une .vignette, elle montre une image à gauche. -->
   <div class="carte ligne">
     <span class="vignette">Image</span>
@@ -39,15 +54,23 @@
     </span>
   </div>
 
+  <!-- Le titre d'une section et son lien d'action, en bleu (.action), au bout de la ligne. -->
+  <div class="ligne">
+    <h2>Une section</h2>
+    <a class="action pousse" href="X0-type.html">Tout voir ›</a>
+  </div>
+
   <!-- Un champ, avec son libellé : le libellé donne son nom à la correction. -->
   <div>
     <label class="etiquette" for="exemple">Libellé du champ</label>
     <input class="champ" id="exemple" type="text" placeholder="Un exemple de réponse">
   </div>
 
-  <!-- Un bouton : celui de l'action principale de l'écran, un seul par écran. -->
+  <!-- Un bouton : celui de l'action principale de l'écran, un seul par écran.
+       Un bouton secondaire est discret ; .court le met à sa largeur au lieu de toute la ligne. -->
   <a class="bouton" href="X0-type.html" data-nom="Bouton principal">Action principale</a>
   <a class="bouton discret" href="X0-type.html">Action secondaire</a>
+  <div class="ligne"><a class="bouton discret court pousse" href="X0-type.html">Personnaliser</a></div>
 </main>
 <script src="../a-plat/relais.js"></script></body>
 </html>

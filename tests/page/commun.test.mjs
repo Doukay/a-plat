@@ -30,52 +30,64 @@ function changer(dossier, variable, valeur) {
 const style = (page, selecteur, propriete) =>
   page.locator(selecteur).first().evaluate((el, p) => getComputedStyle(el)[p], propriete);
 
-test("par défaut, l'écran type est tout en gris : chaque couleur calculée a rouge = vert = bleu", async () => {
+test("en UX, l'écran type est en gris, avec un seul bleu pour ce qui agit", async () => {
   await avecEcranType(async ({ page }) => {
-    const hors_gris = await page.evaluate(() => {
-      const trouves = [];
-      const lire = (c) => (c.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+    const releve = await page.evaluate(() => {
+      const hors = [];
+      const bleus = new Set();
+      const lire = (c) => (c.match(/[\d.]+/g) || []).slice(0, 4).map(Number);
       for (const el of document.querySelectorAll("body, body *")) {
         const s = getComputedStyle(el);
         for (const p of ["color", "backgroundColor", "borderTopColor", "borderBottomColor", "outlineColor"]) {
           if (p.startsWith("border") && s[p.replace("Color", "Style")] === "none") continue;
-          const [r, g, b] = lire(s[p]);
-          if (r !== g || g !== b) trouves.push(`${el.tagName.toLowerCase()}.${el.className} ${p} ${s[p]}`);
+          const [r, g, b, a] = lire(s[p]);
+          if (a === 0) continue; // transparent
+          // Un gris de La carte, à peine froid, ou le bleu (et ses teintes) de ce qui agit.
+          if (Math.max(r, g, b) - Math.min(r, g, b) <= 8) continue;
+          if (b > r && b > g) { bleus.add(`${el.className || el.tagName.toLowerCase()}`); continue; }
+          hors.push(`${el.tagName.toLowerCase()}.${el.className} ${p} ${s[p]}`);
         }
       }
-      return trouves;
+      return { hors, bleus: [...bleus] };
     });
-    assert.deepEqual(hors_gris, []);
+    assert.deepEqual(releve.hors, [], "aucune autre couleur");
+    assert.ok(releve.bleus.some((c) => /\bbouton\b/.test(c)), "le bouton est bleu");
+    assert.ok(releve.bleus.some((c) => /\baction\b/.test(c)), "le lien d'action est bleu");
   });
 });
 
-test("changer --ecran-accent en tête de commun.css change la couleur du bouton, sans toucher à l'écran", async () => {
+test("changer --ecran-accent dans le bloc UX de commun.css change la couleur du bouton, sans toucher à l'écran", async () => {
   await avecEcranType(async ({ page, dossier, ouvrir }) => {
-    const avant = await style(page, ".bouton", "backgroundColor");
-    const [r, g, b] = avant.match(/[\d.]+/g).map(Number);
-    assert.ok(r === g && g === b, `le bouton est gris par défaut (${avant})`);
+    assert.equal(await style(page, ".bouton", "backgroundColor"), "rgb(0, 102, 204)", "le bouton est du bleu de La carte par défaut");
     changer(dossier, "--ecran-accent", "#c0392b");
     await ouvrir();
     assert.equal(await style(page, ".bouton", "backgroundColor"), "rgb(192, 57, 43)");
   });
 });
 
-test("chacune des six variables a un effet visible sur les classes de base", async () => {
+test("chacune des variables a un effet visible sur les classes de base", async () => {
   const essais = [
-    { variable: "--ecran-fond", valeur: "#fdf6e3", selecteur: "body", propriete: "backgroundColor", attendu: "rgb(253, 246, 227)" },
+    { variable: "--ecran-page", valeur: "#fdf6e3", selecteur: "body", propriete: "backgroundColor", attendu: "rgb(253, 246, 227)" },
+    { variable: "--ecran-fond", valeur: "#fdf6e3", selecteur: ".carte:not(.forte)", propriete: "backgroundColor", attendu: "rgb(253, 246, 227)" },
     { variable: "--ecran-texte", valeur: "#1d3557", selecteur: "body", propriete: "color", attendu: "rgb(29, 53, 87)" },
     { variable: "--ecran-accent", valeur: "#2a9d8f", selecteur: ".bouton", propriete: "backgroundColor", attendu: "rgb(42, 157, 143)" },
+    { variable: "--ecran-accent", valeur: "#2a9d8f", selecteur: ".action", propriete: "color", attendu: "rgb(42, 157, 143)" },
+    { variable: "--ecran-sur-accent", valeur: "#111111", selecteur: ".bouton", propriete: "color", attendu: "rgb(17, 17, 17)" },
     { variable: "--ecran-trait", valeur: "#e76f51", selecteur: ".champ", propriete: "borderTopColor", attendu: "rgb(231, 111, 81)" },
-    { variable: "--ecran-trait", valeur: "#e76f51", selecteur: ".carte", propriete: "borderTopColor", pasGris: true },
-    { variable: "--ecran-arrondi", valeur: "3px", selecteur: ".bouton", propriete: "borderTopLeftRadius", attendu: "3px" },
+    { variable: "--ecran-trait", valeur: "#e76f51", selecteur: ".carte", propriete: "boxShadow", pasGris: true },
+    { variable: "--ecran-mise-en-avant", valeur: "#fdf6e3", selecteur: ".carte.forte", propriete: "backgroundColor", attendu: "rgb(253, 246, 227)" },
     { variable: "--ecran-arrondi", valeur: "3px", selecteur: ".carte", propriete: "borderTopLeftRadius", attendu: "3px" },
+    { variable: "--ecran-arrondi", valeur: "3px", selecteur: ".champ", propriete: "borderTopLeftRadius", attendu: "3px" },
+    { variable: "--ecran-arrondi-bouton", valeur: "3px", selecteur: ".bouton", propriete: "borderTopLeftRadius", attendu: "3px" },
     { variable: "--ecran-police", valeur: "Georgia, serif", selecteur: "body", propriete: "fontFamily", attendu: "Georgia, serif" },
     { variable: "--ecran-police", valeur: "Georgia, serif", selecteur: ".bouton", propriete: "fontFamily", attendu: "Georgia, serif" },
-    { variable: "--ecran-police", valeur: "Georgia, serif", selecteur: ".champ", propriete: "fontFamily", attendu: "Georgia, serif" }
+    { variable: "--ecran-police", valeur: "Georgia, serif", selecteur: ".champ", propriete: "fontFamily", attendu: "Georgia, serif" },
+    { variable: "--ecran-police-titre", valeur: "Georgia, serif", selecteur: "h1", propriete: "fontFamily", attendu: "Georgia, serif" },
+    { variable: "--ecran-police-titre", valeur: "Georgia, serif", selecteur: ".chiffre", propriete: "fontFamily", attendu: "Georgia, serif" }
   ];
   await avecEcranType(async ({ page, dossier, ouvrir }) => {
     for (const essai of essais) {
-      // Un seul changement à la fois : on repart du gris livré.
+      // Un seul changement à la fois : on repart du modèle livré.
       cpSync(join(MODELE, "commun.css"), join(dossier, "commun.css"));
       await ouvrir();
       const avant = await style(page, essai.selecteur, essai.propriete);
@@ -89,6 +101,17 @@ test("chacune des six variables a un effet visible sur les classes de base", asy
         assert.ok(!(r === g && g === b), `${essai.selecteur} prend la couleur de ${essai.variable} (${apres})`);
       }
     }
+  });
+});
+
+test("le bloc UI s'applique quand l'écran porte data-finition=\"ui\", et seulement alors", async () => {
+  await avecEcranType(async ({ page, dossier, ouvrir }) => {
+    const chemin = join(dossier, "commun.css");
+    writeFileSync(chemin, readFileSync(chemin, "utf8").replace(/(:root\[data-finition="ui"\] \{[^}]*--ecran-accent: )#0066cc/, "$1#c0392b"));
+    await ouvrir();
+    assert.equal(await style(page, ".bouton", "backgroundColor"), "rgb(0, 102, 204)", "ouvert seul : l'UX");
+    await page.evaluate(() => document.documentElement.setAttribute("data-finition", "ui"));
+    assert.equal(await style(page, ".bouton", "backgroundColor"), "rgb(192, 57, 43)", "en UI : l'accent du projet");
   });
 });
 

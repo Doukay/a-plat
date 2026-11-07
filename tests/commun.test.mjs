@@ -12,7 +12,12 @@ const VERIFIER = fileURLToPath(new URL("../skills/a-plat/verifier.mjs", import.m
 const css = readFileSync(join(MODELE, "commun.css"), "utf8");
 const sansCommentaires = css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-const VARIABLES = ["--ecran-fond", "--ecran-texte", "--ecran-accent", "--ecran-trait", "--ecran-police", "--ecran-arrondi"];
+// Les six variables d'origine, puis celles ajoutées pour une UI crédible.
+const VARIABLES = [
+  "--ecran-fond", "--ecran-texte", "--ecran-accent", "--ecran-trait", "--ecran-police", "--ecran-arrondi",
+  "--ecran-page", "--ecran-police-titre", "--ecran-mise-en-avant", "--ecran-sur-accent", "--ecran-arrondi-bouton"
+];
+const BLOC_UI = ':root[data-finition="ui"]';
 const CLASSES = [".bouton", ".champ", ".carte", ".vignette"];
 
 // Les règles du fichier, sans les commentaires : [{ selecteur, corps }]. Pas d'@media ni d'@import ici.
@@ -66,21 +71,45 @@ test("commun.css ne charge rien depuis Internet : ni url(http, ni @import", () =
   assert.doesNotMatch(css, /https?:\/\//i);
 });
 
-test("par défaut, toutes les couleurs de commun.css sont grises (rouge = vert = bleu)", () => {
-  const couleurs = couleursDe(sansCommentaires);
-  assert.ok(couleurs.length >= 4, "le fichier doit écrire ses couleurs");
-  const pas_grises = couleurs.filter((c) => !c.grise).map((c) => c.texte);
-  assert.deepEqual(pas_grises, []);
-});
+// Les variables d'un bloc : { "--ecran-accent": "#0066cc", … }.
+const variablesDe = (corps) => Object.fromEntries([...corps.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1], m[2].replace(/\s+/g, " ").trim()]));
 
-test("les six variables sont définies une seule fois, sur :root, dans la première règle du fichier", () => {
+test("deux blocs de variables en tête : l'UX sur :root, puis l'UI sur :root[data-finition=\"ui\"], aux mêmes noms", () => {
   const toutes = regles(sansCommentaires);
-  assert.equal(toutes[0].selecteur, ":root", "la première règle du fichier est :root");
+  assert.equal(toutes[0].selecteur, ":root", "la première règle du fichier est l'UX, sur :root");
+  assert.equal(toutes[1].selecteur, BLOC_UI, "la deuxième est l'UI");
+  const ux = variablesDe(toutes[0].corps);
+  const ui = variablesDe(toutes[1].corps);
+  assert.deepEqual(Object.keys(ui).sort(), Object.keys(ux).sort(), "les mêmes noms dans les deux blocs");
+  assert.deepEqual(Object.keys(ux).sort(), [...VARIABLES].sort(), "les variables attendues, et seulement elles");
+  assert.ok(Object.keys(ux).length <= 11, "une dizaine de variables au plus");
   for (const variable of VARIABLES) {
     const motif = new RegExp(`${variable}\\s*:`, "g");
-    assert.equal((toutes[0].corps.match(motif) || []).length, 1, `${variable} est définie une fois en tête`);
-    assert.equal((sansCommentaires.match(motif) || []).length, 1, `${variable} n'est définie nulle part ailleurs`);
+    assert.equal((sansCommentaires.match(motif) || []).length, 2, `${variable} n'est définie que dans les deux blocs`);
   }
+});
+
+test("dans le modèle, le bloc UI reprend les valeurs UX, et dit que Claude y écrit celles du projet", () => {
+  const toutes = regles(sansCommentaires);
+  assert.deepEqual(variablesDe(toutes[1].corps), variablesDe(toutes[0].corps));
+  assert.match(css, /Claude y écrit les valeurs du projet/);
+});
+
+test("en UX, les couleurs sont des gris, sauf un seul bleu pour ce qui agit (l'accent et l'aplat mis en avant)", () => {
+  const ux = variablesDe(regles(sansCommentaires)[0].corps);
+  for (const [nom, valeur] of Object.entries(ux)) {
+    const couleurs = couleursDe(valeur);
+    if (couleurs.length === 0) continue;
+    if (nom === "--ecran-accent" || nom === "--ecran-mise-en-avant") {
+      const [r, g, b] = valeur.match(/[0-9a-f]{2}/gi).slice(0, 3).map((h) => parseInt(h, 16));
+      assert.ok(b > r && b > g, `${nom} est un bleu (${valeur})`);
+    } else {
+      // Les gris de La carte sont à peine froids (#f5f5f7, #1d1d1f) : 6 d'écart au plus entre canaux.
+      const [r, g, b] = valeur.match(/[0-9a-f]{2}/gi).slice(0, 3).map((h) => parseInt(h, 16));
+      assert.ok(Math.max(r, g, b) - Math.min(r, g, b) <= 6, `${nom} est un gris (${valeur})`);
+    }
+  }
+  assert.equal(ux["--ecran-accent"], "#0066cc", "le bleu de La carte");
 });
 
 test("les classes de base existent et lisent les variables", () => {
@@ -92,9 +121,9 @@ test("les classes de base existent et lisent les variables", () => {
   }
 });
 
-test("hors de la tête, aucune couleur n'est écrite en dur : tout passe par les variables", () => {
+test("hors des deux blocs, aucune couleur n'est écrite en dur : tout passe par les variables", () => {
   const toutes = regles(sansCommentaires);
-  const apres = toutes.slice(1).map((r) => r.corps).join("\n");
+  const apres = toutes.slice(2).map((r) => r.corps).join("\n");
   const en_dur = couleursDe(apres).map((c) => c.texte);
   assert.deepEqual(en_dur, []);
 });
