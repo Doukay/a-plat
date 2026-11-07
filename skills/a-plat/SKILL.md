@@ -85,7 +85,7 @@ Proposer les cinq réglages d'après ce que le projet contient, chacun avec sa r
 |---|---|---|
 | Format | téléphone, ordinateur, les deux | D'après les styles, les documents et ce que dit la personne. Avec les deux, une vue n'a sa version ordinateur que si sa disposition y change vraiment. |
 | Rangement | parcours, personne, module, moment, existant et nouveau | Parcours par défaut. Personne si plusieurs rôles ont des pages à eux. Existant et nouveau si l'essentiel est déjà construit. |
-| Finition | gris (UX seul), gris puis charte (bouton UX ⇄ UI, départ en UX), charte (bouton, départ en UI) | D'après l'avancement (`references/lire-un-projet.md`) : idée ou début, gris ; en cours, gris puis charte ; avancé ou en ligne, charte. |
+| Finition | `gris` (UX seule), `gris-puis-charte` (bouton UX ⇄ UI, départ en UX), `charte` (bouton, départ en UI) | D'après les styles trouvés, pas l'avancement (`references/lire-un-projet.md`) : aucun style à soi, `gris` ; des styles qui commencent, `gris-puis-charte` ; des variables, des jetons ou une charte écrite, `charte`, même pour une idée. |
 | Rythme | écran par écran, par lots, tout d'un coup | Écran par écran si la personne découvre l'outil. |
 | Relecture | oui, non | Oui par défaut. |
 

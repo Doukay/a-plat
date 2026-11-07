@@ -47,7 +47,7 @@ Le montrer dans la conversation aussi, sans renvoyer seulement à la page, et da
 ```markdown
 **État des lieux de <projet>** (lu dans le code, rien n'a été lancé)
 
-**Avancement :** <idée, début, en cours, ou avancé> : <constat> (<source>) ; <constat> (<source>).
+**Avancement :** <idée, début, en cours ou avancé>, parce que <constat> (<source>) et <constat> (<source>).
 
 <n> pages ou fonctions : <a> existent, <b> à compléter, <c> manquent, <d> prévues.
 <e> sont à essayer pour confirmer.
@@ -88,6 +88,14 @@ Comparer la nouvelle lecture avec `etatDesLieux` et les écrans, puis commencer 
 ```
 
 S'il n'y a rien de changé, le dire. Ne pas renuméroter, et garder notes et statuts. Une ligne dont l'état change garde sa place, et l'ancien état se note dans une note de type `source` de sa rangée, si la page a déjà une rangée. Une ligne dont la `raison` finit par « Laissé de côté par la personne le … » garde cette phrase et sa date : ne pas reposer la question, ne pas la retirer.
+
+**Une page d'avant le bouton UX | UI.** Le contrôle le signale par un avertissement : le `a-plat/moteur.js` du dossier ne connaît pas la finition. La page marche encore, sans le bouton. Pour passer au nouveau modèle, le proposer d'abord à la personne, car des fichiers de l'outil sont remplacés :
+
+1. Garder l'ancien `commun.css` sous un autre nom, par exemple `commun-ancien.css`.
+2. Retirer du dossier `index.html`, `a-plat/`, `ecran-type.html` et `commun.css`, et seulement eux : jamais `plan.js`, `ecrans/` ni `actuel/`.
+3. Relancer `copier.mjs` sur le dossier.
+4. Si les six variables de l'ancien `commun.css` avaient été changées d'après le projet, recopier leurs valeurs dans le bloc UI du nouveau fichier, et compléter les autres d'après les styles du projet. Puis retirer `commun-ancien.css`.
+5. Relancer le contrôle, et regarder les écrans en UX puis en UI.
 
 ## Corrections de la liste
 

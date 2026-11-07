@@ -104,7 +104,7 @@ Claude les propose d'après votre projet, avec une raison. Vous les changez à t
 |---|---|
 | Format | téléphone, ordinateur, ou les deux |
 | Rangement des écrans | par parcours, par personne, par module, par moment, ou existant et nouveau |
-| Finition | gris (maquette seule), gris puis charte (bouton UX \| UI, départ en gris), ou charte (bouton, départ aux couleurs du projet) |
+| Finition | `gris` (maquette seule), `gris-puis-charte` (bouton UX \| UI, départ en gris), ou `charte` (bouton, départ aux couleurs du projet), d'après les styles que votre projet a déjà |
 | Rythme | écran par écran, par lots, ou tout d'un coup |
 | Relecture par Claude avant de montrer | oui ou non |
 

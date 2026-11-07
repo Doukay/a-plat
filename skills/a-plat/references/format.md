@@ -78,6 +78,8 @@ Règles que le contrôle vérifie :
 - Un `fichier` (d'un écran ou d'un `actuel`) ne contient ni `..`, ni adresse complète, ni barre au début, ni barre oblique inverse : la page le refuserait. Deux écrans n'ont jamais le même `fichier`, et deux rangées jamais le même `id`.
 - Un `actuel.fichier` se cherche dans `actuel/`, qu'il commence par `actuel/` ou non.
 - `inchange`, s'il est là, vaut `true` ou `false`. Un écran `inchange: true` n'a pas d'actuel.
+- `reglages.finition`, s'il est là, vaut `gris`, `gris-puis-charte` ou `charte`. Avec les deux dernières, `commun.css` a son bloc UI, aux noms exacts de l'UX, et son bloc UX reste celui du modèle (voir « UX et UI »).
+- Un écran (`ecrans/`) n'écrit aucune couleur : ni code (`#c0392b`), ni `rgb()`, `hsl()`, `color()`, ni nom de couleur, dans un attribut `style` ou un `<style>`. `transparent`, `inherit`, `currentColor` et `var(…)` sont permis. L'existant (`actuel/`) n'est pas concerné.
 
 Pour le format `les-deux`, chaque version, quand elle existe (voir `references/ecrans.md`), est un écran à part, avec son code, sa largeur et sa hauteur.
 

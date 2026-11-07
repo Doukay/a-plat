@@ -241,17 +241,32 @@ test("le routeur, les gardes d'accès et le chargement des données se lisent co
   assert.ok(texte.trimEnd().split(/\r?\n/).length <= 104, "lire-un-projet.md ne doit pas s'allonger de redites");
 });
 
-test("la finition se propose d'après l'avancement du projet, jugé à la lecture et dit au début de l'état des lieux", () => {
+test("l'avancement se juge à la lecture et se dit au début de l'état des lieux ; la finition suit les styles trouvés", () => {
   const lecture = section(lire("references", "lire-un-projet.md"), "10.");
-  for (const niveau of [/\*\*idée\*\*/, /\*\*début\*\*/, /\*\*en cours\*\*/, /\*\*avancé ou en ligne\*\*/, /deux constats et leur source/]) {
-    assert.match(lecture, niveau);
-  }
+  // Un seul nom par niveau, partout.
+  for (const niveau of [/\*\*idée\*\*/, /\*\*début\*\*/, /\*\*en cours\*\*/, /\*\*avancé\*\*/]) assert.match(lecture, niveau);
+  assert.doesNotMatch(toutLeTexte(), /avancé ou en ligne/, "un seul nom par niveau");
+  // Une seule forme de ligne, dans la lecture comme dans le modèle de message.
+  const forme = /\*\*Avancement :\*\* [^,\n]+, parce que [^(\n]+\([^)\n]+\) et [^(\n]+\([^)\n]+\)\./;
+  assert.match(lecture, forme);
+  assert.match(lire("references", "etat-des-lieux.md"), /\*\*Avancement :\*\* <idée, début, en cours ou avancé>, parce que <constat> \(<source>\) et <constat> \(<source>\)\./);
+  // La finition : d'après les styles, avec les valeurs écrites telles quelles.
   const ligne = texteDuSkill.split(/\r?\n/).find((l) => l.startsWith("| Finition |")) ?? "";
-  assert.match(ligne, /idée ou début, gris ; en cours, gris puis charte ; avancé ou en ligne, charte/);
-  assert.match(lire("references", "etat-des-lieux.md"), /\*\*Avancement :\*\*/);
+  assert.match(ligne, /aucun style à soi, `gris` ; des styles qui commencent, `gris-puis-charte` ; des variables, des jetons ou une charte écrite, `charte`, même pour une idée/);
+  assert.match(lecture, /suit les styles trouvés, pas l'avancement/);
+  for (const texte of [texteDuSkill, lire("..", "..", "README.md")]) assert.doesNotMatch(texte, /gris puis charte/, "la valeur s'écrit gris-puis-charte");
   const ecrans = lire("references", "ecrans.md");
   for (const motif of [/styles du projet/, /jamais de couleur/, /\.chiffre/, /\.surtitre/]) assert.match(ecrans, motif);
-  assert.doesNotMatch(toutLeTexte(), /en ne changeant que `commun\.css`/, "plus de « passer à la charte » à l'ancienne");
+  // Plus de « passer à la charte » à l'ancienne, avec ou sans accents graves autour du nom du fichier.
+  assert.doesNotMatch(toutLeTexte(), /en ne changeant que `?commun\.css`?/);
+});
+
+test("reprendre des maquettes d'avant le bouton UX | UI se fait sans toucher à plan.js, ecrans/ ni actuel/", () => {
+  const reprise = lire("references", "etat-des-lieux.md").split(/\r?\n## /).find((s) => s.startsWith("Reprendre des maquettes")) ?? "";
+  assert.match(reprise, /d'avant le bouton UX \| UI/);
+  assert.match(reprise, /jamais `plan\.js`, `ecrans\/` ni `actuel\/`/);
+  assert.match(reprise, /copier\.mjs/);
+  assert.match(reprise, /bloc UI/);
 });
 
 test("une page n'est « Existe » que si chaque rôle annoncé y a toutes ses tâches", () => {

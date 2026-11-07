@@ -97,6 +97,6 @@ Finir par la liste : fichiers non ouverts et pourquoi (secrets, trop gros, binai
 
 ## 10. Juger l'avancement
 
-Quatre niveaux, d'après ce qui a été lu : **idée**, presque rien (une description, des notes, pas de page) ; **début**, quelques pages, pas de styles à soi ; **en cours**, des parcours entiers, des styles qui commencent (quelques couleurs, une police) ; **avancé ou en ligne**, la plupart des pages existent, des styles ou une charte dans le code (variables de couleurs, thème), un déploiement (adresse en ligne, configuration d'hébergement).
+Quatre niveaux, d'après ce qui a été lu : **idée**, presque rien (une description, des notes, pas de page) ; **début**, quelques pages ; **en cours**, des parcours entiers ; **avancé**, la plupart des pages existent, souvent avec un déploiement (adresse en ligne, configuration d'hébergement). Il se dit en une ligne au début du message d'état des lieux, sous cette forme : `**Avancement :** en cours, parce que trois parcours sur cinq ont leurs pages (src/pages/) et la page de paiement manque (src/routes.js).`
 
-L'avancement se dit en une ligne au début du message d'état des lieux, avec deux constats et leur source : « Projet en cours : trois parcours sur cinq ont leurs pages (src/pages/), les couleurs sont dans src/styles/theme.css. » Il sert à proposer la finition (voir l'étape 3 de `SKILL.md`), et les valeurs UI se lisent dans ces mêmes styles.
+La finition, elle, suit les styles trouvés, pas l'avancement (étape 3 de `SKILL.md`) : aucun style à soi, `gris` ; des styles qui commencent (quelques couleurs, une police), `gris-puis-charte` ; des variables, des jetons ou une charte écrite, `charte`, même pour une idée. Les valeurs UI se lisent dans ces mêmes styles.
