@@ -10,6 +10,8 @@ import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 
 const CHEMIN_DE_LA_LOGIQUE = fileURLToPath(new URL("./modele/a-plat/logique.js", import.meta.url));
+const CHEMIN_DU_COMMUN = fileURLToPath(new URL("./modele/commun.css", import.meta.url));
+const FINITIONS = ["gris", "gris-puis-charte", "charte"];
 
 const DELAI_DU_PLAN_EN_MS = 2000;
 const ELEMENTS_VIDES = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
@@ -220,6 +222,67 @@ function adressesDuStyle(css) {
   return adresses;
 }
 
+// ---------------------------------------------------------------- les couleurs dans un écran
+
+// Les noms de couleur du CSS. transparent, inherit, currentColor (et var(…)) restent permis.
+const NOMS_DE_COULEUR = new Set(("aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue " +
+  "blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue " +
+  "darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid " +
+  "darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink " +
+  "deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold " +
+  "goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki lavender lavenderblush " +
+  "lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey " +
+  "lightpink lightsalmon lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow lime " +
+  "limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen " +
+  "mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin " +
+  "navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise " +
+  "palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue " +
+  "saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray slategrey snow " +
+  "springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen").split(" "));
+
+// Retire d'un texte les appels var(…), avec ce qu'ils contiennent, parenthèses imbriquées comprises.
+function sansVariables(texte) {
+  let reste = texte;
+  for (;;) {
+    const debut = reste.search(/var\(/i);
+    if (debut === -1) return reste;
+    let profondeur = 0;
+    let fin = debut + 3;
+    for (; fin < reste.length; fin++) {
+      if (reste[fin] === "(") profondeur++;
+      else if (reste[fin] === ")" && --profondeur === 0) break;
+    }
+    reste = reste.slice(0, debut) + " " + reste.slice(fin + 1);
+  }
+}
+
+// Les couleurs écrites dans des déclarations CSS (« color: #c0392b; background: red »).
+// Commentaires, textes entre guillemets, url(…) et var(…) sont retirés d'abord.
+function couleursDesDeclarations(declarations) {
+  const propre = sansVariables(declarations
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/(["'])(?:\\.|(?!\1).)*\1/g, " ")
+    .replace(/url\([^)]*\)/gi, " "));
+  const trouvees = [];
+  for (const declaration of propre.split(";")) {
+    const deuxPoints = declaration.indexOf(":");
+    if (deuxPoints === -1) continue;
+    const valeur = declaration.slice(deuxPoints + 1);
+    for (const m of valeur.matchAll(/#[0-9a-f]{3,8}\b/gi)) trouvees.push(m[0]);
+    for (const m of valeur.matchAll(/\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/gi)) trouvees.push(m[0] + "…)");
+    for (const mot of valeur.match(/[a-z]+/gi) ?? []) if (NOMS_DE_COULEUR.has(mot.toLowerCase())) trouvees.push(mot);
+  }
+  return trouvees;
+}
+
+// Les couleurs d'une feuille <style> : seulement dans les déclarations, entre accolades
+// (un sélecteur #a1 n'est pas une couleur).
+function couleursDuStyle(css) {
+  const trouvees = [];
+  for (const m of css.replace(/\/\*[\s\S]*?\*\//g, " ").matchAll(/\{([^{}]*)\}/g)) trouvees.push(...couleursDesDeclarations(m[1]));
+  return trouvees;
+}
+
 // Liste ce que le HTML ferait venir d'Internet : [{ adresse, ou, police }]. police vaut vrai
 // là où une police en ligne peut être permise (un <link>, une feuille de style).
 function chargementsDInternet(analyse) {
@@ -269,6 +332,23 @@ function controlerEcran({ chemin, code, html, dossierDesLiens, policeEnLigne, es
       erreurs.push(`${chemin} : la balise <html> n'a pas de data-ecran (attendu : data-ecran="${code}").`);
     } else if (dit !== code) {
       erreurs.push(`${chemin} : data-ecran vaut « ${dit} » mais le plan donne le code « ${code} » à cet écran.`);
+    }
+  }
+
+  // Un écran n'écrit jamais de couleur : sinon, le bouton UX | UI ne peut plus rien pour lui.
+  // L'existant (actuel/), lui, garde le vrai style du projet.
+  if (!estActuel) {
+    const couleurs = [];
+    for (const balise of analyse.balises) {
+      if (typeof balise.attributs.style !== "string") continue;
+      for (const couleur of couleursDesDeclarations(balise.attributs.style)) couleurs.push(`${couleur} (style de <${balise.nom}>)`);
+    }
+    for (const css of analyse.styles) {
+      for (const couleur of couleursDuStyle(css)) couleurs.push(`${couleur} (<style>)`);
+    }
+    if (couleurs.length > 0) {
+      erreurs.push(`${chemin} : ${pluriel(couleurs.length, "couleur écrite", "couleurs écrites")} dans l'écran : ${couleurs.join(", ")}. ` +
+        "Un écran n'écrit jamais de couleur : elle passe par les classes de commun.css, sinon le bouton UX | UI ne peut rien pour lui.");
     }
   }
 
@@ -331,10 +411,11 @@ function estUnDossier(chemin) {
 
 // ---------------------------------------------------------------- commun.css : UX et UI
 
-// Les variables d'un bloc de règles : { "--ecran-accent": "#0066cc", … }, espaces resserrés.
+// Les variables d'un bloc de règles : { "--ecran-accent": "#0066cc", … }. Les valeurs se
+// comparent en minuscules et sans espaces : « #0066CC » et « #0066cc » sont la même valeur.
 function variablesDuBloc(corps) {
   const variables = {};
-  for (const m of corps.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) variables[m[1]] = m[2].replace(/\s+/g, " ").trim();
+  for (const m of corps.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) variables[m[1]] = m[2].replace(/\s+/g, "").toLowerCase();
   return variables;
 }
 
@@ -352,11 +433,33 @@ function memesVariables(a, b) {
   return [...noms].every((nom) => a[nom] === b[nom]);
 }
 
-// Avec un bouton « UX | UI » (finition "charte" ou "gris-puis-charte"), commun.css doit avoir
-// son bloc UI ; s'il reprend encore les valeurs UX, ce n'est qu'un avertissement.
+const AVERTISSEMENT_UI = "Avertissement : l'UI n'a pas encore les couleurs du projet. Le bloc :root[data-finition=\"ui\"] de commun.css est vide ou reprend les valeurs UX : y écrire celles des styles du projet.";
+
+// La finition et commun.css :
+// - reglages.finition, s'il est là, vaut gris, gris-puis-charte ou charte ;
+// - avec un bouton « UX | UI » (gris-puis-charte ou charte), commun.css a son bloc UI, aux noms
+//   exacts de l'UX, et son bloc UX reste celui du modèle (les couleurs du projet vont dans l'UI) ;
+//   un bloc UI vide ou identique à l'UX n'est qu'un avertissement ;
+// - un dossier dont la page date d'avant le bouton (son a-plat/moteur.js ne connaît pas la
+//   finition) n'est pas cassé : le bloc UI n'est pas contrôlé, un avertissement dit quoi faire.
 function controlerLaFinition(dossier, plan) {
+  const aucun = { erreurs: [], infos: [] };
   const reglage = plan.reglages && typeof plan.reglages === "object" ? plan.reglages.finition : undefined;
-  if (reglage !== "charte" && reglage !== "gris-puis-charte") return { erreurs: [], infos: [] };
+  if (reglage !== undefined && !FINITIONS.includes(reglage)) {
+    const vu = typeof reglage === "string" ? `« ${reglage} »` : JSON.stringify(reglage);
+    return { erreurs: [`La finition ${vu} n'est pas permise (reglages.finition : ${FINITIONS.join(", ")}).`], infos: [] };
+  }
+  if (reglage !== "charte" && reglage !== "gris-puis-charte") return aucun;
+
+  const moteur = join(dossier, "a-plat", "moteur.js");
+  if (estUnFichier(moteur) && !/type:\s*"finition"/.test(readFileSync(moteur, "utf8"))) {
+    return {
+      erreurs: [],
+      infos: ["Avertissement : la page de ce dossier date d'avant le bouton UX | UI (a-plat/moteur.js ne connaît pas la finition) : le bloc UI de commun.css n'est pas contrôlé. " +
+        "Pour passer au nouveau modèle, suivre « Reprendre des maquettes » dans references/etat-des-lieux.md."]
+    };
+  }
+
   const chemin = join(dossier, "commun.css");
   const blocs = blocsDeFinition(estUnFichier(chemin) ? readFileSync(chemin, "utf8") : "");
   if (!blocs.ui) {
@@ -365,10 +468,23 @@ function controlerLaFinition(dossier, plan) {
       infos: []
     };
   }
-  if (blocs.ux && memesVariables(blocs.ux, blocs.ui)) {
-    return { erreurs: [], infos: ["Avertissement : l'UI n'a pas encore les couleurs du projet. Le bloc :root[data-finition=\"ui\"] de commun.css reprend les valeurs UX : y écrire celles des styles du projet."] };
+  const modele = blocsDeFinition(readFileSync(CHEMIN_DU_COMMUN, "utf8")).ux;
+  const erreurs = [];
+  if (!blocs.ux || !memesVariables(blocs.ux, modele)) {
+    const changes = blocs.ux ? Object.keys(modele).filter((nom) => blocs.ux[nom] !== modele[nom]) : [];
+    erreurs.push("Le bloc UX (:root, en tête de commun.css) n'est plus celui du modèle" + (changes.length ? ` (${changes.join(", ")})` : "") +
+      " : il doit rester tel quel. Les couleurs du projet vont dans le bloc UI (:root[data-finition=\"ui\"]).");
   }
-  return { erreurs: [], infos: [] };
+  if (Object.keys(blocs.ui).length === 0) return { erreurs, infos: [AVERTISSEMENT_UI] };
+  const attendus = Object.keys(modele);
+  for (const nom of Object.keys(blocs.ui)) {
+    if (!attendus.includes(nom)) erreurs.push(`Le bloc UI de commun.css a une variable ${nom} que l'UX n'a pas : les noms sont ceux de l'UX (${attendus.join(", ")}).`);
+  }
+  for (const nom of attendus) {
+    if (!(nom in blocs.ui)) erreurs.push(`Le bloc UI de commun.css n'a pas la variable ${nom} : il reprend tous les noms de l'UX.`);
+  }
+  if (erreurs.length === 0 && memesVariables(blocs.ui, modele)) return { erreurs, infos: [AVERTISSEMENT_UI] };
+  return { erreurs, infos: [] };
 }
 
 function estUnFichier(chemin) {

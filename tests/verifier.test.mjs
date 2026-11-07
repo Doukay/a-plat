@@ -306,6 +306,101 @@ test("finition « gris » : pas de bouton, donc ni bloc UI exigé ni avertisseme
   assert.doesNotMatch(sortie, /data-finition|Avertissement/);
 });
 
+test("une finition inconnue est refusée, et le message cite les trois valeurs permises", () => {
+  for (const valeur of ['"gris puis charte"', '"couleurs"', "true"]) {
+    const dossier = preparer();
+    modifier(dossier, "plan.js", (t) => t.replace('finition: "gris"', `finition: ${valeur}`));
+    const { code, sortie } = lancer(dossier);
+    assert.equal(code, 1, sortie);
+    assert.match(sortie, /n'est pas permise \(reglages\.finition : gris, gris-puis-charte, charte\)/);
+  }
+});
+
+// Un dossier en finition « charte », avec le commun.css du modèle dont on change une partie.
+function avecUnCommun(changer) {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace('finition: "gris"', 'finition: "charte"'));
+  cpSync(COMMUN_DU_MODELE, join(dossier, "commun.css"));
+  modifier(dossier, "commun.css", changer);
+  return lancer(dossier);
+}
+const dansLeBlocUI = (remplacer) => (t) => t.replace(/(:root\[data-finition="ui"\] \{)([^}]*)\}/, (_, debut, corps) => debut + remplacer(corps) + "}");
+
+test("le bloc UX doit rester celui du modèle : les couleurs du projet vont dans le bloc UI", () => {
+  const { code, sortie } = avecUnCommun((t) => t.replace("--ecran-accent: #0066cc;", "--ecran-accent: #1f3b63;"));
+  assert.equal(code, 1, sortie);
+  assert.match(sortie, /Le bloc UX \(:root, en tête de commun\.css\) n'est plus celui du modèle \(--ecran-accent\)/);
+  assert.match(sortie, /les couleurs du projet vont dans le bloc UI/i);
+});
+
+test("les noms du bloc UI sont exactement ceux de l'UX : un nom inconnu ou absent est une erreur", () => {
+  const inconnu = avecUnCommun(dansLeBlocUI((corps) => corps.replace("--ecran-accent: #0066cc;", "--ecran-accent: #1f3b63; --ecran-couleur-du-logo: #c0392b;")));
+  assert.equal(inconnu.code, 1, inconnu.sortie);
+  assert.match(inconnu.sortie, /une variable --ecran-couleur-du-logo que l'UX n'a pas/);
+  const absent = avecUnCommun(dansLeBlocUI((corps) => corps.replace("--ecran-accent: #0066cc;", "").replace("--ecran-page: #f5f5f7;", "--ecran-page: #f4f4f0;")));
+  assert.equal(absent.code, 1, absent.sortie);
+  assert.match(absent.sortie, /n'a pas la variable --ecran-accent/);
+});
+
+test("un bloc UI vide, ou identique à l'UX en majuscules et en espaces, donne l'avertissement", () => {
+  const vide = avecUnCommun(dansLeBlocUI(() => "\n"));
+  assert.equal(vide.code, 0, vide.sortie);
+  assert.match(vide.sortie, /Avertissement : l'UI n'a pas encore les couleurs du projet/);
+  const memes = avecUnCommun(dansLeBlocUI((corps) => corps.replace("--ecran-accent: #0066cc;", "--ecran-accent:#0066CC ;").replace(/ui-sans-serif, system-ui/g, "ui-sans-serif,system-ui")));
+  assert.equal(memes.code, 0, memes.sortie);
+  assert.match(memes.sortie, /Avertissement : l'UI n'a pas encore les couleurs du projet/);
+});
+
+test("un dossier dont la page date d'avant le bouton UX | UI n'est pas cassé : un avertissement dit comment passer au nouveau modèle", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace('finition: "gris"', 'finition: "gris-puis-charte"'));
+  mkdirSync(join(dossier, "a-plat"), { recursive: true });
+  writeFileSync(join(dossier, "a-plat", "moteur.js"), "// moteur d'avant le bouton UX | UI\nwindow.APlatMoteur = {};\n");
+  writeFileSync(join(dossier, "commun.css"), ":root { --ecran-fond: #ffffff; --ecran-accent: #3d3d3d; }\n"); // l'ancien commun.css, sans bloc UI
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+  assert.match(sortie, /Avertissement : la page de ce dossier date d'avant le bouton UX \| UI/);
+  assert.match(sortie, /Reprendre des maquettes/);
+  assert.doesNotMatch(sortie, /est absent/);
+});
+
+// ---------------------------------------------------------------- aucune couleur dans un écran
+
+test("une couleur écrite dans un écran (style=\"\" ou <style>) est une erreur, sous toutes ses formes", () => {
+  const formes = ["#c0392b", "#fff", "rgb(10, 20, 30)", "rgba(0,0,0,.5)", "hsl(200 50% 50%)", "hsla(0,0%,0%,.2)", "color(srgb 1 0 0)", "tomato", "Black"];
+  for (const forme of formes) {
+    for (const ou of ["attribut", "style"]) {
+      const dossier = preparer();
+      modifier(dossier, "ecrans/A1-accueil.html", (t) => ou === "attribut"
+        ? t.replace("<body>", `<body><p style="color: ${forme}">x</p>`)
+        : t.replace("</head>", `<style>.x { border: 1px solid ${forme}; }</style></head>`));
+      const { code, sortie } = lancer(dossier);
+      assert.equal(code, 1, `${forme} en ${ou} : ${sortie}`);
+      assert.match(sortie, /ecrans\/A1-accueil\.html : 1 couleur écrite dans l'écran/);
+      assert.match(sortie, /Un écran n'écrit jamais de couleur/);
+    }
+  }
+});
+
+test("transparent, inherit, currentColor et var(…) passent, comme un sélecteur #a1 ou une couleur dans un texte", () => {
+  const dossier = preparer();
+  modifier(dossier, "ecrans/A1-accueil.html", (t) => t
+    .replace("</head>", '<style>#a1 { background: transparent; color: inherit; border-color: currentColor; outline-color: var(--ecran-accent, #c0392b); } .y::after { content: "red #fff"; }</style></head>')
+    .replace("<body>", '<body><p style="color: var(--ecran-texte); background: url(fond-red.png)">x</p>'));
+  const { code, sortie } = lancer(dossier);
+  assert.doesNotMatch(sortie, /couleur écrite/, sortie);
+  assert.equal(code, 0, sortie);
+});
+
+test("l'existant (actuel/) garde le vrai style du projet : ses couleurs ne sont pas contrôlées", () => {
+  const dossier = preparer();
+  writeFileSync(join(dossier, "actuel", "A1-accueil.html"), '<!doctype html><html lang="fr"><head><meta charset="utf-8"><style>body { background: #f4f4f0; color: navy; }</style></head><body><h1 style="color:#1f3b63">Accueil</h1><script src="../a-plat/relais.js"></script></body></html>');
+  modifier(dossier, "plan.js", (t) => t.replace(/(fichier: "A1-accueil\.html",[\s\S]*?)actuel: null/, '$1actuel: { fichier: "actuel/A1-accueil.html", origine: "redessine" }'));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+  assert.doesNotMatch(sortie, /couleur/);
+});
+
 test("une note qui cite un écran absent du plan : code 1, la note et le code sont cités", () => {
   // La page, elle, l'affiche sous le titre de la rangée (voir validerPlan, option pourLaPage).
   const dossier = preparer();
