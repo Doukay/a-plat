@@ -5,7 +5,7 @@ window.A_PLAT = {
   reglages: {
     format: "telephone",
     rangement: "parcours",
-    finition: "gris-puis-charte",
+    finition: "gris",
     rythme: "ecran",
     relecture: true,
     policeEnLigne: false

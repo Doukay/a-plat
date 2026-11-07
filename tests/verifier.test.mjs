@@ -261,6 +261,51 @@ test("un plan invalide (version 2) : code 1 et le champ est cité", () => {
   assert.match(sortie, /version/);
 });
 
+// ---------------------------------------------------------------- finition : UX et UI
+
+const COMMUN_DU_MODELE = fileURLToPath(new URL("../skills/a-plat/modele/commun.css", import.meta.url));
+
+for (const finition of ["charte", "gris-puis-charte"]) {
+  test(`finition « ${finition} » sans bloc UI dans commun.css : code 1, le bloc manquant est cité`, () => {
+    const dossier = preparer();
+    modifier(dossier, "plan.js", (t) => t.replace('finition: "gris"', `finition: "${finition}"`));
+    // commun.css absent, puis présent mais sans bloc UI : la même erreur.
+    for (const css of [null, ":root { --ecran-accent: #0066cc; }\n"]) {
+      if (css !== null) writeFileSync(join(dossier, "commun.css"), css);
+      const { code, sortie } = lancer(dossier);
+      assert.equal(code, 1, sortie);
+      assert.match(sortie, /:root\[data-finition="ui"\]/);
+      assert.match(sortie, new RegExp(`finition « ${finition} »`));
+    }
+  });
+}
+
+test("finition avec un bloc UI identique à l'UX (le modèle tel quel) : code 0 et un avertissement", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace('finition: "gris"', 'finition: "gris-puis-charte"'));
+  cpSync(COMMUN_DU_MODELE, join(dossier, "commun.css"));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+  assert.match(sortie, /Avertissement : l'UI n'a pas encore les couleurs du projet/);
+});
+
+test("finition avec un bloc UI aux couleurs du projet : code 0, sans avertissement", () => {
+  const dossier = preparer();
+  modifier(dossier, "plan.js", (t) => t.replace('finition: "gris"', 'finition: "charte"'));
+  cpSync(COMMUN_DU_MODELE, join(dossier, "commun.css"));
+  modifier(dossier, "commun.css", (t) => t.replace(/(:root\[data-finition="ui"\] \{[^}]*--ecran-accent: )#0066cc/, "$1#1f3b63"));
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+  assert.doesNotMatch(sortie, /Avertissement/);
+});
+
+test("finition « gris » : pas de bouton, donc ni bloc UI exigé ni avertissement", () => {
+  const dossier = preparer();
+  const { code, sortie } = lancer(dossier);
+  assert.equal(code, 0, sortie);
+  assert.doesNotMatch(sortie, /data-finition|Avertissement/);
+});
+
 test("une note qui cite un écran absent du plan : code 1, la note et le code sont cités", () => {
   // La page, elle, l'affiche sous le titre de la rangée (voir validerPlan, option pourLaPage).
   const dossier = preparer();

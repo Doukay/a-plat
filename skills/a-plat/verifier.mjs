@@ -329,6 +329,48 @@ function estUnDossier(chemin) {
   }
 }
 
+// ---------------------------------------------------------------- commun.css : UX et UI
+
+// Les variables d'un bloc de règles : { "--ecran-accent": "#0066cc", … }, espaces resserrés.
+function variablesDuBloc(corps) {
+  const variables = {};
+  for (const m of corps.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) variables[m[1]] = m[2].replace(/\s+/g, " ").trim();
+  return variables;
+}
+
+// Les deux jeux de variables de commun.css : { ux, ui }, chacun un objet ou null s'il manque.
+// L'UX est le premier bloc :root du fichier ; l'UI, le bloc :root[data-finition="ui"].
+function blocsDeFinition(css) {
+  const sansCommentaires = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const ux = sansCommentaires.match(/(?:^|[}\s]):root\s*\{([^}]*)\}/);
+  const ui = sansCommentaires.match(/:root\[data-finition\s*=\s*["']?ui["']?\]\s*\{([^}]*)\}/);
+  return { ux: ux ? variablesDuBloc(ux[1]) : null, ui: ui ? variablesDuBloc(ui[1]) : null };
+}
+
+function memesVariables(a, b) {
+  const noms = new Set([...Object.keys(a), ...Object.keys(b)]);
+  return [...noms].every((nom) => a[nom] === b[nom]);
+}
+
+// Avec un bouton « UX | UI » (finition "charte" ou "gris-puis-charte"), commun.css doit avoir
+// son bloc UI ; s'il reprend encore les valeurs UX, ce n'est qu'un avertissement.
+function controlerLaFinition(dossier, plan) {
+  const reglage = plan.reglages && typeof plan.reglages === "object" ? plan.reglages.finition : undefined;
+  if (reglage !== "charte" && reglage !== "gris-puis-charte") return { erreurs: [], infos: [] };
+  const chemin = join(dossier, "commun.css");
+  const blocs = blocsDeFinition(estUnFichier(chemin) ? readFileSync(chemin, "utf8") : "");
+  if (!blocs.ui) {
+    return {
+      erreurs: [`La finition « ${reglage} » demande un bloc :root[data-finition="ui"] dans commun.css, avec les couleurs du projet : il est absent. Le bouton « UX | UI » de la page n'aurait rien à montrer.`],
+      infos: []
+    };
+  }
+  if (blocs.ux && memesVariables(blocs.ux, blocs.ui)) {
+    return { erreurs: [], infos: ["Avertissement : l'UI n'a pas encore les couleurs du projet. Le bloc :root[data-finition=\"ui\"] de commun.css reprend les valeurs UX : y écrire celles des styles du projet."] };
+  }
+  return { erreurs: [], infos: [] };
+}
+
 function estUnFichier(chemin) {
   try {
     return statSync(chemin).isFile();
@@ -369,6 +411,9 @@ function controler(argument) {
 
   const erreurs = [...validerPlan(plan)];
   const infos = [];
+  const finition = controlerLaFinition(dossier, plan);
+  erreurs.push(...finition.erreurs);
+  infos.push(...finition.infos);
   const dossierDesEcrans = join(dossier, "ecrans");
   // Un fichier qui sortirait de son dossier n'est jamais lu : validerPlan l'a déjà signalé.
   const ecrans = (Array.isArray(plan.ecrans) ? plan.ecrans : [])
