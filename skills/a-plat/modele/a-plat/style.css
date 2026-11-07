@@ -435,6 +435,37 @@ body[data-mise="plein"] #vue {
 .rangee-compte { flex: none; color: var(--doux); font-size: 13px; font-weight: 500; white-space: nowrap; }
 .rangee-vide { margin: 0; color: var(--doux); }
 
+/* ---- replier une rangée de la vue d'ensemble : un bouton à chevron, avant la lettre ----
+   Replié, le corps (notes de la rangée et écrans) disparaît ; le titre reste un lien. */
+.rangee-plier {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px 0 -10px -12px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--doux);
+  font: inherit;
+  cursor: pointer;
+}
+.rangee-plier:hover { background: var(--trait); color: var(--texte); }
+/* Le chevron pointe vers le bas quand la rangée est dépliée, vers la droite quand elle est repliée. */
+.rangee-chevron {
+  display: block;
+  width: 0.5em;
+  height: 0.5em;
+  border-right: 0.14em solid currentColor;
+  border-bottom: 0.14em solid currentColor;
+  transform: translateY(-0.15em) rotate(45deg);
+}
+.rangee.repliee .rangee-chevron { transform: translateX(-0.1em) rotate(-45deg); }
+.rangee.repliee .rangee-corps { display: none; }
+
 /* ---- un écran en vignette : son nom au-dessus, un lien qui couvre le nom et l'image ---- */
 .vignette { flex: none; min-width: 0; }
 .vignette-haut { position: relative; }
@@ -542,13 +573,23 @@ body[data-mise="plein"] #vue {
   transform-origin: 0 0;
 }
 .planche .rangee { margin: 0 0 calc(100px + 48px * var(--inv)); }
+/* Une rangée repliée n'est plus qu'une ligne de titre : la planche se resserre. */
+.planche .rangee.repliee { margin-bottom: calc(28px * var(--inv)); }
 .planche .rangee-titre {
+  align-items: center;
   gap: calc(12px * var(--inv));
   margin: 0 0 calc(12px * var(--inv));
   font-size: calc(20px * var(--inv));
   line-height: 1.2;
   letter-spacing: -0.02em;
   white-space: nowrap;
+}
+/* Le bouton à chevron garde 44 px à l'écran, quel que soit le zoom. */
+.planche .rangee-plier {
+  width: calc(44px * var(--inv));
+  height: calc(44px * var(--inv));
+  margin: calc(-10px * var(--inv)) calc(-6px * var(--inv)) calc(-10px * var(--inv)) calc(-12px * var(--inv));
+  border-radius: calc(8px * var(--inv));
 }
 /* Un titre de rangée très long est coupé par des points de suspension : il garde une largeur
    à l'écran de 720 px au plus, quel que soit le zoom. */
@@ -700,11 +741,19 @@ body[data-mise="plein"] #vue {
 }
 .planche-aide { margin: 6px 0 0; color: var(--doux); font-size: 14px; }
 
-.planche-zoom {
+/* En bas à gauche : le zoom, puis « Tout replier » et « Tout déplier » juste à droite. */
+.planche-commandes {
   position: absolute;
   left: 16px;
   bottom: 16px;
   z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+}
+.planche-zoom, .planche-plis {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -713,7 +762,7 @@ body[data-mise="plein"] #vue {
   border-radius: 12px;
   box-shadow: 0 0 0 1px var(--trait);
 }
-.planche-zoom button {
+.planche-zoom button, .planche-plis button {
   min-width: 44px;
   height: 44px;
   padding: 0 12px;
@@ -726,7 +775,7 @@ body[data-mise="plein"] #vue {
   font-weight: 600;
   cursor: pointer;
 }
-.planche-zoom button:hover { background: var(--fond); }
+.planche-zoom button:hover, .planche-plis button:hover { background: var(--fond); }
 .planche-niveau {
   min-width: 52px;
   color: var(--doux);
@@ -745,10 +794,12 @@ body[data-mise="plein"] #vue {
 }
 .rangee-colonne .rangee-lien {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
   gap: 8px;
   min-height: 44px;
 }
+.rangee-colonne .rangee-plier { margin: 0 0 0 -12px; }
 .glisse {
   display: flex;
   gap: 12px;

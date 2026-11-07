@@ -645,6 +645,69 @@
     return titre;
   }
 
+  // ---- les rangées repliées de la vue d'ensemble, retenues par projet
+  //
+  // La liste des rangées repliées est gardée sous « a-plat:rangees-repliees:<projet> », la même
+  // pour la planche et la colonne du téléphone. lireStock et garderStock passent par un
+  // try/catch : sans stockage, tout commence déplié et le pliage dure le temps de la visite.
+
+  function cleDesReplis(plan) {
+    return "rangees-repliees:" + (estTexte(plan.projet) ? plan.projet : "");
+  }
+
+  // { "A": true } pour chaque rangée repliée.
+  function lireLesReplis(plan) {
+    var brut = lireStock(cleDesReplis(plan));
+    var repliees = {};
+    if (Array.isArray(brut)) {
+      brut.forEach(function (id) {
+        if (estTexte(id)) repliees[id] = true;
+      });
+    }
+    return repliees;
+  }
+
+  function garderLesReplis(plan, repliees) {
+    var ids = [];
+    for (var id in repliees) {
+      if (aLaCle(repliees, id) && repliees[id]) ids.push(id);
+    }
+    garderStock(cleDesReplis(plan), ids);
+  }
+
+  // Rend une section de rangée repliable : un bouton à chevron, avant la lettre, cache ou montre
+  // son corps (les notes de la rangée et les écrans). Le titre reste un lien vers la rangée.
+  // Renvoie { plier(replie) }, pour « Tout replier » et « Tout déplier ».
+  var numeroDeCorps = 0;
+  function rendrePliable(section, titre, corps, rangee, plan, repliees) {
+    numeroDeCorps += 1;
+    corps.id = "corps-de-rangee-" + numeroDeCorps;
+    var bouton = creer("button", "rangee-plier");
+    bouton.setAttribute("type", "button");
+    bouton.setAttribute("aria-controls", corps.id);
+    var chevron = creer("span", "rangee-chevron");
+    chevron.setAttribute("aria-hidden", "true");
+    bouton.appendChild(chevron);
+
+    function montrer(replie) {
+      if (replie) section.classList.add("repliee");
+      else section.classList.remove("repliee");
+      bouton.setAttribute("aria-expanded", replie ? "false" : "true");
+      bouton.setAttribute("aria-label", (replie ? "Déplier" : "Replier") + " la rangée " + rangee.id);
+    }
+    function plier(replie) {
+      repliees[rangee.id] = replie;
+      montrer(replie);
+    }
+    bouton.addEventListener("click", function () {
+      plier(!section.classList.contains("repliee"));
+      garderLesReplis(plan, repliees);
+    });
+    titre.insertBefore(bouton, titre.firstChild);
+    montrer(Boolean(repliees[rangee.id]));
+    return { plier: plier };
+  }
+
   // Un écran en vignette : son nom au-dessus (code, badges, titre), qui est un lien couvrant
   // aussi l'image, puis ses notes. options : suit (hauteur entière), notes, replier (details,
   // pour le téléphone), bouton (pour la planche : un bouton « 2 notes » que le style ne montre
@@ -753,13 +816,19 @@
 
   function dessinerLesRangeesEnColonne(conteneur, plan) {
     var index = notesParEcran(plan);
+    var repliees = lireLesReplis(plan);
     rangeesVisibles(plan).forEach(function (rangee) {
       var ecrans = ecransDeLaRangee(plan, rangee.id);
       var section = creer("section", "rangee rangee-colonne");
       section.setAttribute("data-rangee", rangee.id);
-      section.appendChild(titreDeRangee(rangee, ecrans.length));
+      var titre = titreDeRangee(rangee, ecrans.length);
+      section.appendChild(titre);
+      // Le corps : ce que le bouton à chevron replie.
+      var corps = creer("div", "rangee-corps");
+      section.appendChild(corps);
+      rendrePliable(section, titre, corps, rangee, plan, repliees);
       var generales = notesRepliees(notesGenerales(rangee, plan), "Notes de toute la rangée " + rangee.id, "notes-generales");
-      if (generales) section.appendChild(generales);
+      if (generales) corps.appendChild(generales);
       if (ecrans.length > 0) {
         var glisse = creer("div", "glisse");
         glisse.setAttribute("tabindex", "0");
@@ -771,7 +840,7 @@
             notes: notesDeLEcran(index, ecran.code), replier: true
           }));
         });
-        section.appendChild(glisse);
+        corps.appendChild(glisse);
       }
       conteneur.appendChild(section);
     });
@@ -786,19 +855,27 @@
 
     var fenetre = creer("div", "planche-fenetre");
     var feuille = creer("div", "planche");
+    var repliees = lireLesReplis(plan);
+    var pliables = [];
     visibles.forEach(function (rangee) {
       var ecrans = ecransDeLaRangee(plan, rangee.id);
       var section = creer("section", "rangee");
       section.setAttribute("data-rangee", rangee.id);
-      section.appendChild(titreDeRangee(rangee, ecrans.length));
+      var titre = titreDeRangee(rangee, ecrans.length);
+      section.appendChild(titre);
+      // Le corps : ce que le bouton à chevron replie. Replié, il ne prend plus de place, et les
+      // rangées suivantes remontent ; « Tout voir » ne le compte plus.
+      var corps = creer("div", "rangee-corps");
+      section.appendChild(corps);
+      pliables.push(rendrePliable(section, titre, corps, rangee, plan, repliees));
       var generales = dessinerNotes(notesGenerales(rangee, plan), "Notes de toute la rangée " + rangee.id, "notes-generales");
-      if (generales) section.appendChild(generales);
+      if (generales) corps.appendChild(generales);
       if (ecrans.length > 0) {
         var ligne = creer("div", "rangee-ecrans");
         ecrans.forEach(function (ecran) {
           ligne.appendChild(dessinerVignette(ecran, 1, { suit: true, notes: notesDeLEcran(index, ecran.code), bouton: true }));
         });
-        section.appendChild(ligne);
+        corps.appendChild(ligne);
       }
       feuille.appendChild(section);
     });
@@ -811,27 +888,37 @@
       pluriel(plan.ecrans.length, "écran", "écrans") + " en " + pluriel(visibles.length, "rangée", "rangées") +
       ". La molette déplace la planche, Ctrl + molette ou le pincement zooment. Touchez un écran pour l'ouvrir, un titre de rangée pour la voir en grand."));
 
-    var commandes = creer("div", "planche-zoom");
-    commandes.setAttribute("role", "group");
-    commandes.setAttribute("aria-label", "Zoom de la planche");
-    function bouton(texte, nom) {
-      var element = creer("button", "", texte);
-      element.setAttribute("type", "button");
+    // En bas à gauche : les commandes du zoom, puis, juste à droite, celles des rangées.
+    var commandes = creer("div", "planche-commandes");
+    function groupe(classe, nom) {
+      var element = creer("div", classe);
+      element.setAttribute("role", "group");
       element.setAttribute("aria-label", nom);
       commandes.appendChild(element);
       return element;
     }
-    var moins = bouton("−", "Réduire le zoom");
+    function bouton(dans, texte, nom) {
+      var element = creer("button", "", texte);
+      element.setAttribute("type", "button");
+      element.setAttribute("aria-label", nom);
+      dans.appendChild(element);
+      return element;
+    }
+    var zoom = groupe("planche-zoom", "Zoom de la planche");
+    var moins = bouton(zoom, "−", "Réduire le zoom");
     var niveau = creer("span", "planche-niveau");
     niveau.setAttribute("title", "Niveau du zoom");
     niveau.setAttribute("aria-live", "polite");
-    commandes.appendChild(niveau);
-    var plus = bouton("+", "Agrandir le zoom");
-    var toutVoir = bouton("Tout voir", "Tout voir");
-    var reel = bouton("100 %", "100 %, taille réelle");
+    zoom.appendChild(niveau);
+    var plus = bouton(zoom, "+", "Agrandir le zoom");
+    var toutVoir = bouton(zoom, "Tout voir", "Tout voir");
+    var reel = bouton(zoom, "100 %", "100 %, taille réelle");
+    var plis = groupe("planche-plis", "Rangées");
+    var toutReplier = bouton(plis, "Tout replier", "Tout replier");
+    var toutDeplier = bouton(plis, "Tout déplier", "Tout déplier");
 
-    // Le titre, puis les commandes du zoom, puis la planche : au clavier, on atteint le zoom
-    // sans passer d'abord par tous les écrans. À l'écran, chacun garde sa place (voir le style).
+    // Le titre, puis les commandes, puis la planche : au clavier, on atteint le zoom sans passer
+    // d'abord par tous les écrans. À l'écran, chacun garde sa place (voir le style).
     conteneur.appendChild(entete);
     conteneur.appendChild(commandes);
     conteneur.appendChild(fenetre);
@@ -841,6 +928,14 @@
     plus.addEventListener("click", function () { planche.zoomer(planche.zoom() * PAS_DU_ZOOM); });
     toutVoir.addEventListener("click", planche.toutVoir);
     reel.addEventListener("click", function () { planche.zoomer(1); });
+    function toutPlier(replie) {
+      pliables.forEach(function (pliable) {
+        pliable.plier(replie);
+      });
+      garderLesReplis(plan, repliees);
+    }
+    toutReplier.addEventListener("click", function () { toutPlier(true); });
+    toutDeplier.addEventListener("click", function () { toutPlier(false); });
   }
 
   // Le déplacement et le zoom de la planche. La feuille est posée par une seule transformation
@@ -856,7 +951,9 @@
     var vignettes = [];
     var elements = feuille.querySelectorAll(".vignette");
     for (var i = 0; i < elements.length; i++) {
-      vignettes.push({ element: elements[i], largeur: elements[i].offsetWidth || LARGEUR_PAR_DEFAUT, etroite: null, minuscule: null });
+      // La largeur écrite par dessinerVignette : celle d'une rangée repliée ne se mesure pas.
+      var largeur = parseFloat(elements[i].style.width) || LARGEUR_PAR_DEFAUT;
+      vignettes.push({ element: elements[i], largeur: largeur, etroite: null, minuscule: null });
     }
 
     function marquer(element, classe, oui) {

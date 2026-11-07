@@ -918,3 +918,139 @@ test("le résultat choisi dans la recherche se voit nettement, en clair comme en
     });
   }
 });
+
+// ---------------------------------------------------------------- rangées repliables
+
+const plier = (page, id) => page.locator(`#vue .rangee[data-rangee="${id}"] .rangee-plier`);
+const STOCK_DES_REPLIS = "a-plat:rangees-repliees:Essai";
+const repliesGardees = (page) => page.evaluate((cle) => JSON.parse(localStorage.getItem(cle) || "null"), STOCK_DES_REPLIS);
+
+test("sur la planche, replier une rangée cache ses écrans, fait remonter la suivante, et aria-expanded suit", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page, erreurs }) => {
+    const bouton = plier(page, "A");
+    assert.equal(await bouton.getAttribute("aria-expanded"), "true");
+    assert.equal(await bouton.getAttribute("aria-label"), "Replier la rangée A");
+    const corps = await bouton.getAttribute("aria-controls");
+    assert.equal(await page.locator(`#${corps}`).count(), 1, "aria-controls désigne le corps de la rangée");
+    // Le bouton est avant la lettre, et garde 44 px à l'écran.
+    const avantLaLettre = await page.locator('.planche .rangee[data-rangee="A"] .rangee-titre').evaluate((titre) =>
+      titre.firstElementChild.classList.contains("rangee-plier") && titre.querySelector(".rangee-id") !== null);
+    assert.ok(avantLaLettre);
+    const taille = await bouton.boundingBox();
+    assert.ok(Math.abs(taille.width - 44) < 1 && Math.abs(taille.height - 44) < 1, `à 30 % : ${taille.width} x ${taille.height}`);
+    const yB = (await page.locator('.planche .rangee[data-rangee="B"]').boundingBox()).y;
+    await bouton.click();
+    assert.equal(await page.evaluate(() => location.hash), "#ensemble", "replier n'ouvre pas la rangée");
+    assert.equal(await bouton.getAttribute("aria-expanded"), "false");
+    assert.equal(await bouton.getAttribute("aria-label"), "Déplier la rangée A");
+    assert.equal(await page.locator('.planche .vignette[data-code="A1"]').isVisible(), false, "les écrans sont cachés");
+    assert.equal(await page.locator('.planche .rangee[data-rangee="A"] .notes-generales').isVisible(), false);
+    const lien = page.locator('.planche .rangee[data-rangee="A"] .rangee-titre a');
+    assert.equal(await lien.isVisible(), true, "le titre reste là");
+    assert.equal(await lien.getAttribute("href"), "#rangee/A");
+    assert.equal(espaces(await page.locator('.planche .rangee[data-rangee="A"] .rangee-compte').innerText()), "3 écrans");
+    assert.ok((await page.locator('.planche .rangee[data-rangee="B"]').boundingBox()).y < yB - 100, "la rangée B remonte");
+    await bouton.click();
+    assert.equal(await bouton.getAttribute("aria-expanded"), "true");
+    assert.equal(await page.locator('.planche .vignette[data-code="A1"]').isVisible(), true);
+    // À un autre zoom, le bouton garde sa taille à l'écran.
+    for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Réduire le zoom" }).click();
+    const loin = await bouton.boundingBox();
+    assert.ok(Math.abs(loin.width - 44) < 1, `à ${await niveau(page)} : ${loin.width}`);
+    assert.deepEqual(erreurs, []);
+  });
+});
+
+test("« Tout replier » et « Tout déplier » sont en bas à gauche, à droite du zoom, et plient toute la planche", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    const groupe = page.getByRole("group", { name: "Rangées" });
+    const zoom = await page.getByRole("group", { name: "Zoom de la planche" }).boundingBox();
+    const plis = await groupe.boundingBox();
+    assert.ok(plis.x >= zoom.x + zoom.width && Math.abs(plis.y + plis.height - (zoom.y + zoom.height)) < 1, "juste à droite du zoom");
+    for (const nom of ["Tout replier", "Tout déplier"]) assert.ok((await groupe.getByRole("button", { name: nom }).boundingBox()).height >= 44);
+    const etats = () => page.locator(".planche .rangee-plier").evaluateAll((els) => els.map((el) => el.getAttribute("aria-expanded")));
+    await groupe.getByRole("button", { name: "Tout replier" }).click();
+    assert.deepEqual(await etats(), ["false", "false", "false"]);
+    assert.equal(await page.locator(".planche .vignette").evaluateAll((els) => els.filter((el) => el.offsetParent !== null).length), 0);
+    assert.deepEqual(await repliesGardees(page), ["A", "B", "C"]);
+    await groupe.getByRole("button", { name: "Tout déplier" }).click();
+    assert.deepEqual(await etats(), ["true", "true", "true"]);
+    assert.deepEqual(await repliesGardees(page), []);
+  });
+});
+
+test("le pliage est retenu par projet : au retour d'un écran, après une recherche, et après un rechargement", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    await plier(page, "A").click();
+    assert.deepEqual(await repliesGardees(page), ["A"], "gardé sous une clé qui contient le nom du projet");
+    // Ouvrir un écran de la rangée repliée par la recherche : l'écran s'affiche comme d'habitude.
+    await page.locator("#recherche").fill("a2");
+    await page.locator("#recherche").press("Enter");
+    await page.waitForFunction(() => document.body.dataset.vue === "ecran");
+    assert.equal(await page.locator("#vue .ecran-code").innerText(), "A2");
+    await page.goBack();
+    await page.waitForFunction(() => document.body.dataset.vue === "ensemble");
+    assert.equal(await plier(page, "A").getAttribute("aria-expanded"), "false", "au retour, la rangée est toujours repliée");
+    assert.equal(await plier(page, "B").getAttribute("aria-expanded"), "true");
+    assert.deepEqual(await repliesGardees(page), ["A"], "la recherche n'a rien changé au pliage");
+    await page.reload();
+    await page.waitForFunction(() => document.querySelector(".planche .rangee-plier") !== null);
+    assert.equal(await plier(page, "A").getAttribute("aria-expanded"), "false", "après un rechargement aussi");
+    assert.equal(await page.locator('.planche .vignette[data-code="A1"]').isVisible(), false);
+  });
+});
+
+test("sans stockage (localStorage lève une erreur), tout commence déplié et le pliage marche sans erreur", async () => {
+  const refus = () => {
+    Object.defineProperty(window, "localStorage", { configurable: true, get() { throw new DOMException("refusé", "SecurityError"); } });
+  };
+  for (const largeur of [1440, 390]) {
+    await avecPage(FIXTURE, { adresse: "ensemble", largeur, hauteur: 900, avant: refus }, async ({ page, erreurs, console: messages }) => {
+      assert.deepEqual(await page.locator("#vue .rangee-plier").evaluateAll((els) => els.map((el) => el.getAttribute("aria-expanded"))), ["true", "true", "true"]);
+      await plier(page, "B").click();
+      assert.equal(await plier(page, "B").getAttribute("aria-expanded"), "false");
+      assert.equal(await page.locator('#vue .vignette[data-code="B1"]').isVisible(), false);
+      assert.deepEqual(erreurs, []);
+      assert.deepEqual(messages, []);
+    });
+  }
+});
+
+test("au téléphone, une section se replie par un bouton de 44 px, et la planche retrouve le même pliage", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 390, hauteur: 844 }, async ({ page }) => {
+    const bouton = plier(page, "A");
+    const taille = await bouton.boundingBox();
+    assert.ok(taille.width >= 44 && taille.height >= 44, `bouton : ${taille.width} x ${taille.height}`);
+    assert.equal(await bouton.getAttribute("aria-label"), "Replier la rangée A");
+    const yB = (await page.locator('#vue .rangee[data-rangee="B"]').boundingBox()).y;
+    await bouton.click();
+    assert.equal(await bouton.getAttribute("aria-expanded"), "false");
+    assert.equal(await page.locator('#vue .rangee[data-rangee="A"] .glisse').isVisible(), false);
+    assert.equal(await page.locator('#vue .rangee[data-rangee="A"] details.notes-generales').isVisible(), false);
+    assert.ok((await page.locator('#vue .rangee[data-rangee="B"]').boundingBox()).y < yB - 100, "la section B remonte");
+    assert.equal(await page.locator('#vue .rangee[data-rangee="A"] .rangee-titre a').isVisible(), true);
+    assert.ok(await pasDeDefilementDeCote(page));
+    // La même mémoire sert sur la planche.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.waitForFunction(() => document.querySelector(".planche") !== null);
+    assert.equal(await plier(page, "A").getAttribute("aria-expanded"), "false");
+  });
+});
+
+test("« Tout voir » ne tient compte que des rangées dépliées", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    await page.getByRole("button", { name: "Tout voir" }).click();
+    const toutDeplie = (await posePlanche(page)).z;
+    await plier(page, "B").click();
+    await plier(page, "C").click();
+    await page.getByRole("button", { name: "Tout voir" }).click();
+    const unSeule = (await posePlanche(page)).z;
+    assert.ok(unSeule > toutDeplie, `avec une seule rangée dépliée, le zoom grandit : ${toutDeplie} puis ${unSeule}`);
+    const fenetre = await page.locator(".planche-fenetre").boundingBox();
+    const planche = await page.locator(".planche").boundingBox();
+    assert.ok(planche.y + planche.height <= fenetre.y + fenetre.height + 1 && planche.x + planche.width <= fenetre.x + fenetre.width + 1,
+      "la rangée dépliée et les titres repliés tiennent dans la fenêtre");
+    // Les écrans de B, repliée, ne comptent pas : seule la largeur de A compte.
+    assert.equal(await page.locator('.planche .vignette[data-code="B2"]').isVisible(), false);
+  });
+});
