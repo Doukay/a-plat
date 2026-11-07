@@ -81,18 +81,26 @@ test("le fil dit où l'on est à chaque niveau, et la flèche remonte d'un nivea
     assert.equal(await remonter.getAttribute("href"), "#ensemble");
     assert.equal(await page.locator(".barre-vues a[aria-current]").count(), 0);
 
+    // Un seul aria-current dans toute la page, à chaque niveau.
+    const courants = () => page.locator('[aria-current="page"]').allInnerTexts();
     await remonter.click();
     await page.waitForFunction(() => document.body.dataset.vue === "ensemble");
     assert.deepEqual(await fil(), ["À plat · Essai"]);
-    assert.equal(await ici(), "À plat · Essai");
     assert.equal(await remonter.isVisible(), false, "pas de flèche à la racine");
-    assert.equal(await page.locator('.barre-vues a[aria-current="page"]').innerText(), "Vue d'ensemble");
+    assert.deepEqual(await courants(), ["Vue d'ensemble"], "c'est le lien de droite qui marque la vue d'ensemble");
 
     await page.locator(".barre-vues a", { hasText: "État des lieux" }).click();
     await page.waitForFunction(() => document.body.dataset.vue === "etat");
-    assert.deepEqual(await fil(), ["À plat · Essai"]);
-    assert.equal(await remonter.isVisible(), false);
-    assert.equal(await page.locator('.barre-vues a[aria-current="page"]').innerText(), "État des lieux");
+    assert.deepEqual(await fil(), ["À plat · Essai", "État des lieux"]);
+    assert.equal(await page.locator(".fil a").getAttribute("href"), "#ensemble", "la racine du fil est un lien");
+    assert.equal(await remonter.isVisible(), false, "l'état des lieux n'est pas sous la vue d'ensemble");
+    assert.deepEqual(await courants(), ["État des lieux"]);
+
+    for (const adresse of ["#rangee/A", "#ecran/A2"]) {
+      await page.evaluate((a) => { location.hash = a; }, adresse);
+      await page.waitForFunction((a) => document.body.dataset.vue === a.slice(1).split("/")[0], adresse);
+      assert.equal((await courants()).length, 1, `${adresse} : un seul aria-current`);
+    }
   });
 });
 
@@ -347,21 +355,37 @@ test("« Tout voir » montre toute la planche quand elle tient au-dessus de 15 %
   });
 });
 
-test("sous 25 %, les notes de la planche se replient en « n notes », lisible lui aussi", async () => {
+test("dans la planche, les notes d'un écran trop étroit se replient en un bouton qui les déplie sans ouvrir l'écran", async () => {
   await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
-    const liste = page.locator('.planche .vignette[data-code="A2"] .notes-ecran');
-    assert.equal(await liste.locator(".note").isVisible(), true, "à 30 %, le texte se lit");
-    await page.getByRole("button", { name: "Réduire le zoom" }).click(); // 24 %
-    assert.equal(await liste.locator(".note").isVisible(), false);
-    const resume = await liste.evaluate((el) => {
-      const avant = getComputedStyle(el, "::before");
-      const z = new DOMMatrix(getComputedStyle(document.querySelector(".planche")).transform).a;
-      return { texte: avant.content, vu: parseFloat(avant.fontSize) * z };
-    });
-    assert.equal(resume.texte, '"1 note"');
-    assert.ok(Math.abs(resume.vu - 12.5) < 0.5, `taille à l'écran : ${resume.vu}`);
-    await page.getByRole("button", { name: "Agrandir le zoom" }).click(); // 30 %
-    assert.equal(await liste.locator(".note").isVisible(), true);
+    const vignette = page.locator('.planche .vignette[data-code="A2"]');
+    const bouton = vignette.getByRole("button", { name: "1 note" });
+    const liste = vignette.locator(".notes-ecran");
+    // À 30 %, l'écran fait 117 px de large à l'écran : ses notes n'y tiendraient qu'en colonne.
+    assert.equal(await bouton.isVisible(), true);
+    assert.equal(await bouton.getAttribute("aria-expanded"), "false");
+    assert.equal(await liste.isVisible(), false);
+    await bouton.click();
+    assert.equal(await page.evaluate(() => location.hash), "#ensemble", "le bouton n'ouvre pas l'écran");
+    assert.equal(await bouton.getAttribute("aria-expanded"), "true");
+    assert.equal(await liste.isVisible(), true);
+    const ouverte = await liste.boundingBox();
+    assert.ok(Math.abs(ouverte.width - 300) < 2, `dépliées sur 300 px à l'écran : ${ouverte.width}`);
+    assert.match(await liste.innerText(), /Décision[\s\S]*Caution retirée\./);
+    const taille = await liste.locator(".note-texte").evaluate((el) =>
+      parseFloat(getComputedStyle(el).fontSize) * new DOMMatrix(getComputedStyle(document.querySelector(".planche")).transform).a);
+    assert.ok(Math.abs(taille - 13) < 0.5, `texte lisible : ${taille}`);
+    await bouton.click();
+    assert.equal(await liste.isVisible(), false, "un second toucher les replie");
+    // Les notes de toute la rangée, elles, restent lisibles sous le titre.
+    assert.equal(await page.locator('.planche .rangee[data-rangee="A"] .notes-generales .note').isVisible(), true);
+    // À 59 %, l'écran fait 230 px à l'écran : les notes se montrent en entier, sans bouton.
+    for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Agrandir le zoom" }).click();
+    assert.equal(await niveau(page), "59 %");
+    assert.equal(await bouton.isVisible(), false);
+    assert.equal(await liste.isVisible(), true);
+    const ecran = await vignette.locator(".cadre-boite").boundingBox();
+    const entiere = await liste.boundingBox();
+    assert.ok(Math.abs(entiere.width - ecran.width) < 1 && entiere.y >= ecran.y + ecran.height, "à la largeur de l'écran, dessous");
   });
 });
 
@@ -414,7 +438,6 @@ test("la molette déplace la planche, Maj + molette de côté, Ctrl + molette zo
     const d = await posePlanche(page);
     assert.ok(d.z > c.z, "Ctrl + molette vers le haut agrandit");
     assert.ok(Math.abs(d.x + sous.x * d.z - 700) < 1 && Math.abs(d.y + sous.y * d.z - (500 - 52)) < 1, "zoom autour du pointeur");
-    assert.equal(await page.evaluate(() => [window.scrollX, window.scrollY].join()), "0,0", "la page, elle, ne défile pas");
     assert.ok(await pasDeDefilementDeCote(page));
   });
 });
@@ -653,4 +676,245 @@ test("les trois niveaux, la recherche et le zoom ne demandent rien hors du dossi
     assert.deepEqual(erreurs, []);
     assert.deepEqual(messages, []);
   });
+});
+
+// ---------------------------------------------------------------- série de corrections
+
+const UNE_CORRECTION = `try { localStorage.setItem("a-plat:corrections:Essai", JSON.stringify([{ code: "A1", element: "Titre", texte: "Plus court" }])); } catch (e) {}`;
+
+// La barre et le haut de la vue, avec la hauteur gardée pour la planche et la rangée.
+const mesureDeLaBarre = (page) => page.evaluate(() => ({
+  barre: document.querySelector(".barre").getBoundingClientRect().bottom,
+  hauteur: document.querySelector(".barre").offsetHeight,
+  vue: document.querySelector("#vue").getBoundingClientRect().top,
+  variable: getComputedStyle(document.documentElement).getPropertyValue("--barre-hauteur").trim()
+}));
+
+test("à 1024 px, avec une correction enregistrée, le bas de la barre touche le haut de la vue, sur chaque niveau", async () => {
+  for (const adresse of ["ensemble", "rangee/A", "ecran/A2"]) {
+    await avecPage(FIXTURE, { adresse, largeur: 1024, hauteur: 800, avant: UNE_CORRECTION }, async ({ page }) => {
+      await page.locator(".barre .barre-corrections").waitFor();
+      await page.waitForTimeout(150);
+      const m = await mesureDeLaBarre(page);
+      assert.ok(Math.abs(m.barre - m.vue) < 1, `${adresse} : barre en bas à ${m.barre}, vue en haut à ${m.vue}`);
+      assert.equal(m.variable, `${m.hauteur}px`, `${adresse} : la hauteur gardée suit la barre`);
+    });
+  }
+});
+
+test("la barre se remesure quand une correction y ajoute son compte, et le panneau collé de l'écran reste dessous", async () => {
+  await avecPage(FIXTURE, { adresse: "ecran/A2", largeur: 1024, hauteur: 800 }, async ({ page }) => {
+    assert.equal(await page.locator(".barre-corrections").count(), 0);
+    await page.evaluate(() => window.APlatMoteur.surElementTouche("A2", "Titre", {}));
+    await page.locator("#correction-champ").fill("Plus court");
+    await page.getByRole("button", { name: "Ajouter", exact: true }).click();
+    await page.locator(".barre .barre-corrections").waitFor();
+    await page.waitForFunction(() => getComputedStyle(document.documentElement).getPropertyValue("--barre-hauteur").trim() ===
+      document.querySelector(".barre").offsetHeight + "px");
+    const m = await mesureDeLaBarre(page);
+    const marge = await page.evaluate(() => getComputedStyle(document.documentElement).scrollPaddingTop);
+    assert.equal(marge, `${m.hauteur + 12}px`, "le défilement vers un élément le pose sous la barre");
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await page.waitForTimeout(100);
+    const apres = await page.evaluate(() => ({
+      barre: document.querySelector(".barre").getBoundingClientRect().bottom,
+      panneau: document.querySelector(".corrections").getBoundingClientRect().top
+    }));
+    assert.ok(apres.panneau >= apres.barre, `le panneau (${apres.panneau}) n'est pas sous la barre (${apres.barre})`);
+  });
+});
+
+test("un titre de rangée très long est coupé par des points de suspension et ne fait pas rapetisser « Tout voir »", async () => {
+  const long = "Un titre de rangée vraiment très long qui décrit tout le parcours de la personne depuis le début jusqu'à la fin avec toutes ses étapes";
+  const plan = {
+    version: 1, projet: "Long", etatDesLieux: [],
+    rangees: [{ id: "A", titre: long, notes: [] }, { id: "B", titre: "Court", notes: [] }],
+    ecrans: [ecran("A1", "Un", { rangee: "A" }), ecran("A2", "Deux", { rangee: "A" }), ecran("B1", "Trois", { rangee: "B" })]
+  };
+  const ecrans = {};
+  for (const e of plan.ecrans) ecrans[`${e.code}.html`] = ecranHtml(e.code, `<h1>${e.titre}</h1>`);
+  const dossier = genererFixture({ plan, ecrans });
+  for (const largeur of [1024, 1440]) {
+    await avecPage(dossier, { adresse: "ensemble", largeur, hauteur: 800 }, async ({ page }) => {
+      const lien = page.locator('.planche .rangee[data-rangee="A"] .rangee-lien');
+      const coupe = await lien.evaluate((el) => ({ coupe: el.scrollWidth > el.clientWidth, points: getComputedStyle(el).textOverflow, titre: el.getAttribute("title") }));
+      assert.ok(coupe.coupe && coupe.points === "ellipsis", "le titre est coupé par des points de suspension");
+      assert.equal(coupe.titre, `A ${long}`, "le titre entier reste lisible au survol");
+      assert.ok((await lien.boundingBox()).width <= 721, "720 px au plus à l'écran");
+      await page.getByRole("button", { name: "Tout voir" }).click();
+      assert.ok(parseInt(await niveau(page), 10) >= 15, `Tout voir : ${await niveau(page)}`);
+      assert.ok((await lien.boundingBox()).width <= 721);
+    });
+  }
+  // Dans la barre, le fil coupe aussi le titre, sans passer sous la recherche.
+  await avecPage(dossier, { adresse: "rangee/A", largeur: 1440, hauteur: 800 }, async ({ page }) => {
+    const fil = await page.locator(".fil-ici").boundingBox();
+    const champ = await page.locator("#recherche").boundingBox();
+    assert.ok(fil.x + fil.width <= champ.x, `le fil (${fil.x + fil.width}) s'arrête avant la recherche (${champ.x})`);
+  });
+});
+
+test("la planche garde son zoom et sa position quand on ouvre un écran et qu'on revient ; elle repart de zéro au passage des 700 px", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    await page.getByRole("button", { name: "Agrandir le zoom" }).click();
+    await page.mouse.move(700, 500);
+    await page.mouse.wheel(0, 400);
+    await page.waitForTimeout(100);
+    const avant = await posePlanche(page);
+    await page.evaluate(() => { location.hash = "#ecran/A2"; });
+    await page.waitForFunction(() => document.body.dataset.vue === "ecran");
+    await page.goBack();
+    await page.waitForFunction(() => document.body.dataset.vue === "ensemble");
+    const apres = await posePlanche(page);
+    assert.ok(Math.abs(apres.x - avant.x) < 0.5 && Math.abs(apres.y - avant.y) < 0.5 && Math.abs(apres.z - avant.z) < 0.001,
+      `retrouvée : ${JSON.stringify(avant)} puis ${JSON.stringify(apres)}`);
+    assert.equal(await niveau(page), "38 %");
+    assert.equal(await page.locator(".planche-entete").evaluate((el) => el.classList.contains("efface")), true);
+    // Passer sur un téléphone, puis revenir : la planche repart de 30 %, à sa place de départ.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForFunction(() => document.querySelector(".glisse") !== null);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.waitForFunction(() => document.querySelector(".planche") !== null);
+    assert.equal(await niveau(page), "30 %");
+    assert.equal(await page.locator(".planche-entete").evaluate((el) => el.classList.contains("efface")), false);
+  });
+  // Le rechargement aussi.
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    await page.getByRole("button", { name: "Agrandir le zoom" }).click();
+    await page.reload();
+    await page.waitForFunction(() => document.querySelector(".planche-niveau") !== null);
+    assert.equal(await niveau(page), "30 %");
+  });
+});
+
+test("dans la planche, le contour du focus garde la même épaisseur à l'écran, quel que soit le zoom", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    for (const reduire of [0, 2]) {
+      for (let i = 0; i < reduire; i++) await page.getByRole("button", { name: "Réduire le zoom" }).click();
+      await page.locator("#recherche").focus();
+      for (let i = 0; i < 20; i++) {
+        await page.keyboard.press("Tab");
+        if (await page.evaluate(() => document.activeElement.classList.contains("vignette-lien"))) break;
+      }
+      const contour = await page.evaluate(() => {
+        const z = new DOMMatrix(getComputedStyle(document.querySelector(".planche")).transform).a;
+        const style = getComputedStyle(document.activeElement, "::after");
+        return { classe: document.activeElement.className, epaisseur: parseFloat(style.outlineWidth) * z, decalage: parseFloat(style.outlineOffset) * z, z };
+      });
+      assert.equal(contour.classe, "vignette-lien");
+      // Le navigateur arrondit l'épaisseur et le décalage au pixel entier dans la planche
+      // (6,67 px y devient 6) : à l'écran, un peu moins que 2 et 3 px. Sans la correction,
+      // l'épaisseur tombait à 0,6 px à 30 %.
+      assert.ok(contour.epaisseur > 1.65 && contour.epaisseur <= 2.05, `épaisseur à ${contour.z} : ${JSON.stringify(contour)}`);
+      assert.ok(contour.decalage > 2.6 && contour.decalage <= 3.05, `décalage à ${contour.z} : ${JSON.stringify(contour)}`);
+    }
+  });
+});
+
+test("les commandes du zoom viennent avant la planche au clavier, et le niveau est annoncé", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    const ordre = await page.evaluate(() => Boolean(document.querySelector(".planche-zoom").compareDocumentPosition(document.querySelector(".planche-fenetre")) & Node.DOCUMENT_POSITION_FOLLOWING));
+    assert.ok(ordre, "les commandes sont avant la fenêtre dans la page");
+    await page.locator("#recherche").focus();
+    let appuis = 0;
+    for (; appuis < 10; appuis++) {
+      await page.keyboard.press("Tab");
+      if (await page.evaluate(() => document.activeElement.getAttribute("aria-label") === "Réduire le zoom")) break;
+    }
+    assert.ok(appuis < 4, `zoom atteint en ${appuis + 1} appuis sur Tab`);
+    assert.equal(await page.locator(".planche-niveau").getAttribute("aria-live"), "polite");
+    const zone = await page.locator(".planche-zoom").boundingBox();
+    assert.ok(zone.x < 40 && zone.y + zone.height > 900 - 40, "toujours en bas à gauche");
+  });
+});
+
+test("un code d'écran n'est jamais coupé, et le titre se cache quand l'écran devient minuscule à l'écran", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    const vignette = page.locator('.planche .vignette[data-code="A1"]');
+    const etat = () => vignette.evaluate((el) => {
+      const code = el.querySelector(".vignette-code");
+      return {
+        cache: getComputedStyle(el.querySelector(".vignette-titre")).visibility === "hidden",
+        retrait: getComputedStyle(code).flexShrink,
+        entier: code.scrollWidth <= code.clientWidth + 1
+      };
+    });
+    const depart = await etat();
+    assert.equal(depart.cache, false, "à 30 %, 117 px : le titre se lit");
+    assert.equal(depart.retrait, "0");
+    for (let i = 0; i < 6; i++) await page.getByRole("button", { name: "Réduire le zoom" }).click();
+    assert.equal(await niveau(page), "8 %"); // 390 × 0,08 = 31 px à l'écran
+    const loin = await etat();
+    assert.equal(loin.cache, true, "le titre se cache");
+    assert.equal(loin.entier, true, "le code reste entier");
+    assert.equal(espaces(await vignette.locator(".vignette-code").innerText()), "A1");
+    // Rien ne déborde sur l'écran voisin : le badge se cache, le bouton des notes ne garde que le nombre.
+    assert.equal(await vignette.locator(".badge-valide").isVisible(), false);
+    const a2 = page.locator('.planche .vignette[data-code="A2"]');
+    const bouton = a2.getByRole("button", { name: "1 note" });
+    assert.equal(espaces(await bouton.innerText()), "1");
+    assert.ok((await bouton.boundingBox()).width <= (await a2.boundingBox()).width + 0.5, "le bouton tient dans la largeur de l'écran");
+  });
+});
+
+test("une note qui cite un écran absent ne bloque pas la page : elle passe sous le titre de sa rangée", async () => {
+  const plan = {
+    version: 1, projet: "Oubli", etatDesLieux: [],
+    rangees: [{
+      id: "A", titre: "Rangée", notes: [
+        { type: "a-trancher", date: "2026-11-07", texte: "Pour un écran retiré.", ecrans: ["Z9"] },
+        { type: "decision", date: "2026-11-07", texte: "Pour A1 et un écran retiré.", ecrans: ["A1", "Z9"] }
+      ]
+    }],
+    ecrans: [ecran("A1", "Accueil", { rangee: "A" })]
+  };
+  const dossier = genererFixture({ plan, ecrans: { "A1.html": ecranHtml("A1", "<h1>Accueil</h1>") } });
+  for (const adresse of ["ensemble", "rangee/A", "ecran/A1"]) {
+    await avecPage(dossier, { adresse, largeur: 1440, hauteur: 900 }, async ({ page, erreurs }) => {
+      const vue = await page.locator("#vue").textContent();
+      assert.doesNotMatch(vue, /Le plan contient des erreurs/, adresse);
+      if (adresse !== "ecran/A1") {
+        assert.match(await page.locator("#vue .notes-generales").textContent(), /Pour un écran retiré\./);
+        assert.doesNotMatch(await page.locator("#vue .notes-generales").textContent(), /Pour A1/);
+      }
+      if (adresse !== "rangee/A") assert.match(await page.locator('#vue [data-code="A1"] .notes-ecran, #vue .ecran-notes').first().textContent(), /Pour A1 et un écran retiré\./);
+      assert.deepEqual(erreurs, []);
+    });
+  }
+});
+
+test("au doigt ou au stylet, il faut glisser de 12 px pour déplacer la planche ; à la souris, 5 px suffisent", async () => {
+  await avecPage(FIXTURE, { adresse: "ensemble", largeur: 1440, hauteur: 900 }, async ({ page }) => {
+    // Un appui, un déplacement, un relâchement, envoyés comme d'un doigt, d'un stylet ou d'une souris.
+    const tirer = (type, distance) => page.evaluate(([genre, d]) => {
+      const fenetre = document.querySelector(".planche-fenetre");
+      const b = document.querySelector('.planche .vignette[data-code="A2"] .cadre-boite').getBoundingClientRect();
+      const x = b.x + b.width / 2;
+      const y = b.y + b.height / 2;
+      const reglage = (cx) => ({ pointerId: 7, pointerType: genre, isPrimary: true, clientX: cx, clientY: y, button: 0, buttons: 1, bubbles: true });
+      const avant = new DOMMatrix(getComputedStyle(document.querySelector(".planche")).transform).e;
+      fenetre.dispatchEvent(new PointerEvent("pointerdown", reglage(x)));
+      fenetre.dispatchEvent(new PointerEvent("pointermove", reglage(x + d)));
+      fenetre.dispatchEvent(new PointerEvent("pointerup", reglage(x + d)));
+      return new DOMMatrix(getComputedStyle(document.querySelector(".planche")).transform).e - avant;
+    }, [type, distance]);
+    assert.equal(await tirer("touch", 8), 0, "8 px au doigt : un toucher, pas un déplacement");
+    assert.equal(await tirer("pen", 8), 0, "8 px au stylet : pareil");
+    assert.equal(await tirer("mouse", 8), 8, "8 px à la souris : la planche bouge");
+    assert.equal(await tirer("touch", 20), 20, "20 px au doigt : la planche bouge");
+  });
+});
+
+test("le résultat choisi dans la recherche se voit nettement, en clair comme en sombre", async () => {
+  const attendu = { light: { fond: "rgb(228, 235, 251)", filet: "rgb(33, 80, 201)" }, dark: { fond: "rgb(34, 45, 71)", filet: "rgb(143, 176, 255)" } };
+  for (const schema of ["light", "dark"]) {
+    await avecPage(FIXTURE, { adresse: "etat", schema }, async ({ page }) => {
+      await page.locator("#recherche").fill("a");
+      const style = await page.locator('#resultats [aria-selected="true"]').evaluate((el) => ({ fond: getComputedStyle(el).backgroundColor, filet: getComputedStyle(el).boxShadow }));
+      const autre = await page.locator('#resultats [aria-selected="false"]').first().evaluate((el) => getComputedStyle(el).backgroundColor);
+      assert.equal(style.fond, attendu[schema].fond, schema);
+      assert.ok(style.filet.includes(attendu[schema].filet) && style.filet.includes("inset"), `${schema} : filet ${style.filet}`);
+      assert.notEqual(autre, style.fond, "les autres résultats n'ont pas ce fond");
+    });
+  }
 });

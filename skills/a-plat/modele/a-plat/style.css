@@ -196,7 +196,12 @@ a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex="0"]:foc
   border-radius: 8px;
   cursor: pointer;
 }
-.resultat:hover, .resultat.actif { background: var(--fond); }
+.resultat:hover { background: var(--fond); }
+/* Le résultat choisi au clavier : celui qu'Entrée ouvrira, bien visible. */
+.resultat.actif {
+  background: var(--crayon-pale);
+  box-shadow: inset 3px 0 0 var(--crayon);
+}
 .resultat-code { flex: none; min-width: 36px; }
 .resultat-titre { min-width: 0; overflow-wrap: anywhere; }
 .resultat-vide { padding: 9px 10px; color: var(--doux); }
@@ -515,8 +520,9 @@ body[data-mise="plein"] #vue {
 
 /* ---- la planche : toutes les rangées, chaque écran à sa vraie taille, zoom et déplacement ----
    --inv vaut 1 / zoom (au moins 1) : multiplier une taille par --inv la garde constante à
-   l'écran, quel que soit le zoom. Sous 25 % (classe notes-pliees), chaque liste de notes se
-   replie en « 2 notes », lisible lui aussi : le texte entier pousserait les rangées trop loin. */
+   l'écran, quel que soit le zoom. Le moteur marque chaque écran selon la largeur qu'il a à
+   l'écran : sous 220 px (notes-etroites), ses notes se replient derrière un bouton « 2 notes » ;
+   sous 40 px (sans-titre), son titre se cache et seul son code reste. */
 .planche-fenetre {
   position: absolute;
   inset: 0;
@@ -544,7 +550,15 @@ body[data-mise="plein"] #vue {
   letter-spacing: -0.02em;
   white-space: nowrap;
 }
-.planche .rangee-lien { font-weight: 600; }
+/* Un titre de rangée très long est coupé par des points de suspension : il garde une largeur
+   à l'écran de 720 px au plus, quel que soit le zoom. */
+.planche .rangee-lien {
+  display: block;
+  max-width: calc(720px * var(--inv));
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
 .planche .rangee-id {
   min-width: 1.4em;
   padding: 0 0.35em;
@@ -561,19 +575,60 @@ body[data-mise="plein"] #vue {
 }
 .planche .note-type { font-size: 0.92em; }
 .planche .note-date { font-size: 0.88em; }
+/* Les notes de toute la rangée : une bande de cartes qui passe à la ligne après quatre. */
 .planche .notes-generales {
   flex-direction: row;
+  flex-wrap: wrap;
+  max-width: calc(1260px * var(--inv));
   margin: 0 0 calc(18px * var(--inv));
 }
 .planche .notes-generales .note { flex: none; width: calc(300px * var(--inv)); }
 .planche .notes-ecran { margin-top: calc(10px * var(--inv)); }
-.planche.notes-pliees .notes > .note { display: none; }
-.planche.notes-pliees .notes::before {
-  content: attr(data-resume);
-  color: var(--doux);
+
+/* Les notes d'un écran trop étroit à l'écran : repliées derrière le bouton « 2 notes ».
+   Dépliées, elles s'ouvrent par-dessus la planche, sur 300 px de large à l'écran. */
+.notes-bouton { display: none; }
+.planche .vignette { position: relative; }
+.planche .vignette.notes-etroites .notes-bouton {
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(36px * var(--inv));
+  margin-top: calc(8px * var(--inv));
+  padding: 0 calc(12px * var(--inv));
+  border: calc(1px * var(--inv)) solid var(--trait);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
   font-size: calc(12.5px * var(--inv));
   font-weight: 600;
   white-space: nowrap;
+  cursor: pointer;
+}
+/* Un écran minuscule à l'écran (moins de 40 px) : le bouton ne garde que le nombre, et les
+   badges se cachent avec le titre, pour que rien ne déborde sur l'écran voisin. */
+.planche .vignette.sans-titre .notes-mot,
+.planche .vignette.sans-titre .badge-valide,
+.planche .vignette.sans-titre .badge-inchange { display: none; }
+.planche .vignette.sans-titre.notes-etroites .notes-bouton { padding: 0 calc(6px * var(--inv)); }
+.notes-mot { white-space: pre; }
+.planche .vignette.notes-etroites .notes-bouton[aria-expanded="true"] {
+  border-color: var(--crayon);
+  color: var(--crayon);
+}
+.planche .vignette.notes-etroites .notes-ecran { display: none; }
+.planche .vignette.notes-etroites.notes-ouvertes .notes-ecran {
+  display: flex;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 3;
+  width: calc(300px * var(--inv));
+  margin-top: calc(6px * var(--inv));
+  padding: calc(8px * var(--inv));
+  background: var(--fond);
+  border-radius: calc(12px * var(--inv));
+  box-shadow: 0 0 0 calc(1px * var(--inv)) var(--trait), 0 calc(12px * var(--inv)) calc(32px * var(--inv)) calc(-12px * var(--inv)) rgba(0, 0, 0, 0.35);
 }
 .planche .rangee-ecrans {
   display: flex;
@@ -589,13 +644,24 @@ body[data-mise="plein"] #vue {
   line-height: 1.35;
 }
 .planche .vignette-lien::after { border-radius: calc(8px * var(--inv)); }
+/* Le contour du focus garde la même épaisseur à l'écran, quel que soit le zoom. */
+.planche .vignette-lien:focus-visible::after {
+  outline-width: calc(2px * var(--inv));
+  outline-offset: calc(3px * var(--inv));
+}
+.planche a:focus-visible, .planche button:focus-visible {
+  outline-width: calc(2px * var(--inv));
+  outline-offset: calc(2px * var(--inv));
+}
 .planche .vignette-ligne {
   flex-wrap: nowrap;
   gap: 0 0.5em;
   overflow: hidden;
   white-space: nowrap;
 }
-.planche .vignette-code { font-size: 1em; }
+/* Le code ne se coupe jamais ; le titre se cache quand l'écran est minuscule à l'écran. */
+.planche .vignette-code { flex: none; font-size: 1em; }
+.planche .vignette.sans-titre .vignette-titre { visibility: hidden; }
 .planche .vignette-titre {
   display: block;
   overflow: hidden;

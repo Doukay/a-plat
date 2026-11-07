@@ -87,7 +87,7 @@
     if (window.A_PLAT === undefined) {
       return { statut: window.APlatPlanAbsent ? "absent" : "casse" };
     }
-    var erreurs = window.APlatLogique.validerPlan(window.A_PLAT);
+    var erreurs = window.APlatLogique.validerPlan(window.A_PLAT, { pourLaPage: true });
     if (erreurs.length > 0) return { statut: "refuse", erreurs: erreurs };
     return { statut: "bon", plan: window.A_PLAT };
   }
@@ -545,13 +545,18 @@
     return (Array.isArray(rangee.notes) ? rangee.notes : []).filter(estObjet);
   }
 
-  function codesDeLaNote(note) {
-    return (Array.isArray(note.ecrans) ? note.ecrans : []).filter(estTexte);
+  // Les codes qu'une note cite et qui existent dans le plan. Un code d'écran retiré du plan
+  // est ignoré : la page tolère cet oubli (le contrôle, lui, le signale), et une note qui ne
+  // cite plus aucun écran présent vaut pour toute sa rangée.
+  function codesDeLaNote(note, plan) {
+    return (Array.isArray(note.ecrans) ? note.ecrans : []).filter(function (code) {
+      return estTexte(code) && positionDeLEcran(plan, code) !== -1;
+    });
   }
 
-  function notesGenerales(rangee) {
+  function notesGenerales(rangee, plan) {
     return notesDeLaRangee(rangee).filter(function (note) {
-      return codesDeLaNote(note).length === 0;
+      return codesDeLaNote(note, plan).length === 0;
     });
   }
 
@@ -561,7 +566,7 @@
     plan.rangees.forEach(function (rangee) {
       if (!estObjet(rangee)) return;
       notesDeLaRangee(rangee).forEach(function (note) {
-        codesDeLaNote(note).forEach(function (code) {
+        codesDeLaNote(note, plan).forEach(function (code) {
           if (!aLaCle(index, code)) index[code] = [];
           if (index[code].indexOf(note) === -1) index[code].push(note);
         });
@@ -577,7 +582,7 @@
   // Les rangées qui ont quelque chose à montrer : un écran, ou une note de toute la rangée.
   function rangeesVisibles(plan) {
     return plan.rangees.filter(function (rangee) {
-      return estObjet(rangee) && (ecransDeLaRangee(plan, rangee.id).length > 0 || notesGenerales(rangee).length > 0);
+      return estObjet(rangee) && (ecransDeLaRangee(plan, rangee.id).length > 0 || notesGenerales(rangee, plan).length > 0);
     });
   }
 
@@ -603,8 +608,6 @@
     if (notes.length === 0) return null;
     var liste = creer("ul", "notes" + (classe ? " " + classe : ""));
     liste.setAttribute("aria-label", etiquette);
-    // Ce que la planche montre à la place des notes quand elle est très réduite.
-    liste.setAttribute("data-resume", pluriel(notes.length, "note", "notes"));
     notes.forEach(function (note) {
       liste.appendChild(dessinerNote(note));
     });
@@ -631,6 +634,7 @@
     var titre = creer("h3", "rangee-titre");
     var lien = creer("a", "rangee-lien");
     lien.setAttribute("href", lienDeLaRangee(rangee.id));
+    lien.setAttribute("title", nomDeRangee(rangee)); // le titre entier, s'il est coupé sur la planche
     lien.appendChild(creer("span", "rangee-id", rangee.id));
     if (estTexte(rangee.titre)) {
       lien.appendChild(document.createTextNode(" "));
@@ -642,7 +646,9 @@
   }
 
   // Un écran en vignette : son nom au-dessus (code, badges, titre), qui est un lien couvrant
-  // aussi l'image, puis ses notes. options : suit (hauteur entière), notes, replier (details).
+  // aussi l'image, puis ses notes. options : suit (hauteur entière), notes, replier (details,
+  // pour le téléphone), bouton (pour la planche : un bouton « 2 notes » que le style ne montre
+  // que lorsque l'écran est trop étroit à l'écran pour y lire ses notes ; il les déplie).
   function dessinerVignette(ecran, echelle, options) {
     var largeur = dimension(ecran.largeur, LARGEUR_PAR_DEFAUT);
     var element = creer("div", "vignette");
@@ -666,8 +672,33 @@
     var notes = options.notes || [];
     var etiquette = "Notes de l'écran " + ecran.code;
     var bloc = options.replier ? notesRepliees(notes, etiquette) : dessinerNotes(notes, etiquette, "notes-ecran");
+    if (bloc && options.bouton) element.appendChild(boutonDesNotes(element, bloc, notes.length));
     if (bloc) element.appendChild(bloc);
     return element;
+  }
+
+  // Le bouton « 2 notes » d'un écran de la planche. Il est hors du lien de l'écran : le
+  // toucher déplie les notes sans ouvrir l'écran.
+  var numeroDeListe = 0;
+  function boutonDesNotes(vignette, liste, nombre) {
+    numeroDeListe += 1;
+    liste.id = "notes-de-vignette-" + numeroDeListe;
+    // Le nombre, puis le mot, que le style cache quand l'écran est minuscule : le nom du
+    // bouton, lui, reste « 2 notes ».
+    var bouton = creer("button", "notes-bouton");
+    bouton.appendChild(creer("span", "notes-nombre", String(nombre)));
+    bouton.appendChild(creer("span", "notes-mot", nombre > 1 ? " notes" : " note"));
+    bouton.setAttribute("aria-label", pluriel(nombre, "note", "notes"));
+    bouton.setAttribute("type", "button");
+    bouton.setAttribute("aria-expanded", "false");
+    bouton.setAttribute("aria-controls", liste.id);
+    bouton.addEventListener("click", function () {
+      var ouvert = !vignette.classList.contains("notes-ouvertes");
+      if (ouvert) vignette.classList.add("notes-ouvertes");
+      else vignette.classList.remove("notes-ouvertes");
+      bouton.setAttribute("aria-expanded", ouvert ? "true" : "false");
+    });
+    return bouton;
   }
 
   // ---- la vue d'ensemble : la planche (ordinateur et tablette), la colonne (téléphone)
@@ -678,10 +709,17 @@
   var ZOOM_MINIMAL = 0.04;
   var ZOOM_MAXIMAL = 2;
   var PAS_DU_ZOOM = 1.25;
-  var ZOOM_DES_NOTES = 0.25;         // en dessous, les notes se replient en « 2 notes »
   var ZOOM_TOUT_VOIR_MINIMAL = 0.15; // « Tout voir » ne descend pas plus bas, sauf pour la largeur
-  var SEUIL_DU_TIRER = 5;            // pixels à parcourir avant qu'un appui devienne un déplacement
+  var NOTES_LISIBLES = 220;          // largeur à l'écran (px) sous laquelle les notes d'un écran se replient
+  var TITRE_LISIBLE = 40;            // largeur à l'écran (px) sous laquelle le titre d'un écran se cache
+  var SEUIL_DU_TIRER = 5;            // pixels à parcourir à la souris avant qu'un appui devienne un déplacement
+  var SEUIL_DU_TIRER_AU_DOIGT = 12;  // la même chose au doigt ou au stylet, qui tremblent davantage
   var MARGE_DE_LA_PLANCHE = 24;
+
+  // Le zoom et la position de la planche, gardés d'une vue à l'autre : revenir d'un écran
+  // retrouve la planche telle qu'on l'a laissée. Remis à zéro au passage des 700 px, et au
+  // rechargement de la page.
+  var vueDeLaPlanche = null;
 
   var largeurEtroite = typeof window.matchMedia === "function" ? window.matchMedia(TELEPHONE) : null;
 
@@ -720,7 +758,7 @@
       var section = creer("section", "rangee rangee-colonne");
       section.setAttribute("data-rangee", rangee.id);
       section.appendChild(titreDeRangee(rangee, ecrans.length));
-      var generales = notesRepliees(notesGenerales(rangee), "Notes de toute la rangée " + rangee.id, "notes-generales");
+      var generales = notesRepliees(notesGenerales(rangee, plan), "Notes de toute la rangée " + rangee.id, "notes-generales");
       if (generales) section.appendChild(generales);
       if (ecrans.length > 0) {
         var glisse = creer("div", "glisse");
@@ -753,12 +791,12 @@
       var section = creer("section", "rangee");
       section.setAttribute("data-rangee", rangee.id);
       section.appendChild(titreDeRangee(rangee, ecrans.length));
-      var generales = dessinerNotes(notesGenerales(rangee), "Notes de toute la rangée " + rangee.id, "notes-generales");
+      var generales = dessinerNotes(notesGenerales(rangee, plan), "Notes de toute la rangée " + rangee.id, "notes-generales");
       if (generales) section.appendChild(generales);
       if (ecrans.length > 0) {
         var ligne = creer("div", "rangee-ecrans");
         ecrans.forEach(function (ecran) {
-          ligne.appendChild(dessinerVignette(ecran, 1, { suit: true, notes: notesDeLEcran(index, ecran.code) }));
+          ligne.appendChild(dessinerVignette(ecran, 1, { suit: true, notes: notesDeLEcran(index, ecran.code), bouton: true }));
         });
         section.appendChild(ligne);
       }
@@ -786,14 +824,17 @@
     var moins = bouton("−", "Réduire le zoom");
     var niveau = creer("span", "planche-niveau");
     niveau.setAttribute("title", "Niveau du zoom");
+    niveau.setAttribute("aria-live", "polite");
     commandes.appendChild(niveau);
     var plus = bouton("+", "Agrandir le zoom");
     var toutVoir = bouton("Tout voir", "Tout voir");
     var reel = bouton("100 %", "100 %, taille réelle");
 
-    conteneur.appendChild(fenetre);
+    // Le titre, puis les commandes du zoom, puis la planche : au clavier, on atteint le zoom
+    // sans passer d'abord par tous les écrans. À l'écran, chacun garde sa place (voir le style).
     conteneur.appendChild(entete);
     conteneur.appendChild(commandes);
+    conteneur.appendChild(fenetre);
 
     var planche = brancherLaPlanche(fenetre, feuille, entete, niveau);
     moins.addEventListener("click", function () { planche.zoomer(planche.zoom() / PAS_DU_ZOOM); });
@@ -805,16 +846,36 @@
   // Le déplacement et le zoom de la planche. La feuille est posée par une seule transformation
   // (translate puis scale) ; --inv vaut 1 / zoom (au moins 1) et garde les titres lisibles.
   function brancherLaPlanche(fenetre, feuille, entete, niveau) {
-    var z = ZOOM_DE_DEPART;
-    var x = MARGE_DE_LA_PLANCHE;
-    var y = entete.offsetTop + entete.offsetHeight + 28;
-    var depart = { x: x, y: y };
+    var depart = { x: MARGE_DE_LA_PLANCHE, y: entete.offsetTop + entete.offsetHeight + 28 };
+    var z = vueDeLaPlanche ? vueDeLaPlanche.z : ZOOM_DE_DEPART;
+    var x = vueDeLaPlanche ? vueDeLaPlanche.x : depart.x;
+    var y = vueDeLaPlanche ? vueDeLaPlanche.y : depart.y;
 
-    // Ce qui suit le zoom dans la feuille : --inv, et les notes repliées sous 25 %.
+    // Chaque écran, avec sa largeur dans la planche : selon la largeur qu'il a à l'écran, ses
+    // notes se replient (bouton « 2 notes ») et son titre se cache.
+    var vignettes = [];
+    var elements = feuille.querySelectorAll(".vignette");
+    for (var i = 0; i < elements.length; i++) {
+      vignettes.push({ element: elements[i], largeur: elements[i].offsetWidth || LARGEUR_PAR_DEFAUT, etroite: null, minuscule: null });
+    }
+
+    function marquer(element, classe, oui) {
+      if (oui) element.classList.add(classe);
+      else element.classList.remove(classe);
+    }
+
+    // Ce qui suit le zoom dans la feuille : --inv, et l'état de chaque écran.
     function appliquerLeZoom(zoom) {
       feuille.style.setProperty("--inv", String(Math.max(1, 1 / zoom)));
-      if (zoom < ZOOM_DES_NOTES) feuille.classList.add("notes-pliees");
-      else feuille.classList.remove("notes-pliees");
+      vignettes.forEach(function (vignette) {
+        var aLEcran = vignette.largeur * zoom;
+        var etroite = aLEcran < NOTES_LISIBLES;
+        var minuscule = aLEcran < TITRE_LISIBLE;
+        if (etroite !== vignette.etroite) marquer(vignette.element, "notes-etroites", etroite);
+        if (minuscule !== vignette.minuscule) marquer(vignette.element, "sans-titre", minuscule);
+        vignette.etroite = etroite;
+        vignette.minuscule = minuscule;
+      });
     }
 
     function poser() {
@@ -824,6 +885,7 @@
       var aBouge = Math.abs(x - depart.x) > 2 || Math.abs(y - depart.y) > 2;
       if (aBouge) entete.classList.add("efface");
       else entete.classList.remove("efface");
+      vueDeLaPlanche = { z: z, x: x, y: y };
     }
 
     // Change le zoom en gardant immobile le point (cx, cy) de la fenêtre, le centre par défaut.
@@ -839,10 +901,15 @@
       poser();
     }
 
-    // Mesure la feuille, dans ses propres pixels, telle qu'elle serait à ce zoom.
+    // Mesure la feuille, dans ses propres pixels, telle qu'elle serait à ce zoom. En largeur, on
+    // ne compte que les écrans : un titre de rangée très long ne doit pas faire tout rapetisser
+    // (il est coupé par des points de suspension, voir le style).
     function mesurer(zoom) {
       appliquerLeZoom(zoom);
-      return { largeur: feuille.offsetWidth, hauteur: feuille.offsetHeight };
+      var largeur = 1;
+      var lignes = feuille.querySelectorAll(".rangee-ecrans");
+      for (var j = 0; j < lignes.length; j++) largeur = Math.max(largeur, lignes[j].offsetWidth);
+      return { largeur: largeur, hauteur: feuille.offsetHeight };
     }
 
     // Tout voir. Les titres et les noms gardent leur taille à l'écran, donc la taille de la
@@ -921,7 +988,11 @@
     function commencerLeGeste() {
       var actifs = pointeursActifs();
       if (actifs.length === 1) {
-        geste = { deux: false, px: actifs[0].x, py: actifs[0].y, x: x, y: y, bouge: aTire };
+        var auDoigt = actifs[0].type === "touch" || actifs[0].type === "pen";
+        geste = {
+          deux: false, px: actifs[0].x, py: actifs[0].y, x: x, y: y, bouge: aTire,
+          seuil: auDoigt ? SEUIL_DU_TIRER_AU_DOIGT : SEUIL_DU_TIRER
+        };
       } else if (actifs.length >= 2) {
         var boite = fenetre.getBoundingClientRect();
         geste = {
@@ -938,13 +1009,14 @@
     fenetre.addEventListener("pointerdown", function (evenement) {
       if (evenement.pointerType === "mouse" && evenement.button !== 0) return;
       if (pointeursActifs().length === 0) aTire = false;
-      pointeurs[evenement.pointerId] = { x: evenement.clientX, y: evenement.clientY };
+      pointeurs[evenement.pointerId] = { x: evenement.clientX, y: evenement.clientY, type: evenement.pointerType };
       commencerLeGeste();
     });
 
     fenetre.addEventListener("pointermove", function (evenement) {
       if (!aLaCle(pointeurs, evenement.pointerId) || !geste) return;
-      pointeurs[evenement.pointerId] = { x: evenement.clientX, y: evenement.clientY };
+      pointeurs[evenement.pointerId].x = evenement.clientX;
+      pointeurs[evenement.pointerId].y = evenement.clientY;
       if (geste.deux) {
         var actifs = pointeursActifs();
         if (actifs.length < 2) return;
@@ -962,7 +1034,7 @@
       }
       var dx = evenement.clientX - geste.px;
       var dy = evenement.clientY - geste.py;
-      if (!geste.bouge && Math.abs(dx) + Math.abs(dy) > SEUIL_DU_TIRER) {
+      if (!geste.bouge && Math.abs(dx) + Math.abs(dy) > geste.seuil) {
         geste.bouge = true;
         aTire = true;
         fenetre.classList.add("tire");
@@ -1054,7 +1126,7 @@
     tete.appendChild(titre);
     tete.appendChild(creer("p", "consigne", compteDesEcrans(ecrans.length) +
       (ecrans.length > 0 ? ". Touchez un écran pour l'ouvrir seul, avec l'existant et les corrections." : ".")));
-    var generales = dessinerNotes(notesGenerales(rangee), "Notes de toute la rangée " + rangee.id, "notes-generales");
+    var generales = dessinerNotes(notesGenerales(rangee, plan), "Notes de toute la rangée " + rangee.id, "notes-generales");
     if (generales) tete.appendChild(generales);
     vue.appendChild(tete);
 
@@ -1331,7 +1403,10 @@
     var projet = nomDuProjet(lecture);
     var pas = [{ texte: projet ? "À plat · " + projet : "À plat", lien: "#ensemble" }];
 
-    if (plan && lue.vue === "rangee") {
+    // L'état des lieux n'est pas au-dessous de la vue d'ensemble : le fil le nomme, sans flèche.
+    if (lue.vue === "etat") {
+      pas.push({ texte: "État des lieux", lien: "#etat" });
+    } else if (plan && lue.vue === "rangee") {
       var rangee = rangeeParId(plan, lue.reste);
       pas.push(rangee ? { texte: nomDeRangee(rangee), lien: lienDeLaRangee(rangee.id) } : { texte: lue.reste || "Rangée", lien: null });
     } else if (plan && lue.vue === "ecran") {
@@ -1346,12 +1421,15 @@
       }
     }
 
+    // Un seul aria-current dans la barre : sur l'état des lieux et la vue d'ensemble, c'est le
+    // lien de droite qui le porte ; sur une rangée ou un écran, le dernier pas du fil.
+    var marquerIci = lue.vue === "rangee" || lue.vue === "ecran";
     liste.textContent = "";
     pas.forEach(function (etape, i) {
       var element = creer("li", "fil-pas");
       if (i === pas.length - 1) {
         var ici = creer("span", "fil-ici", etape.texte);
-        ici.setAttribute("aria-current", "page");
+        if (marquerIci) ici.setAttribute("aria-current", "page");
         element.appendChild(ici);
       } else {
         var lien = creer("a", "", etape.texte);
@@ -1362,7 +1440,7 @@
     });
 
     if (!remonter) return;
-    if (pas.length > 1) {
+    if (pas.length > 1 && lue.vue !== "etat") {
       var parent = pas[pas.length - 2];
       remonter.hidden = false;
       remonter.setAttribute("href", parent.lien);
@@ -1626,6 +1704,18 @@
     } catch (erreur) {
       // un navigateur sans CustomEvent : la vue reste affichée, sans corrections
     }
+    // corrections.js vient peut-être d'ajouter « Corrections : N » à la barre, qui a pu passer
+    // sur deux lignes : on la remesure (voir aussi surveillerLaBarre).
+    mesurerLaBarre();
+  }
+
+  // La barre change de hauteur sans que la page soit redessinée : une correction ajoutée ou
+  // retirée, une fenêtre élargie. Un ResizeObserver la remesure à chaque fois ; sans lui, la
+  // mesure suit le redimensionnement de la fenêtre et chaque dessin de la vue.
+  function surveillerLaBarre() {
+    var barre = document.querySelector(".barre");
+    if (!barre || typeof window.ResizeObserver !== "function") return;
+    new window.ResizeObserver(mesurerLaBarre).observe(barre);
   }
 
   // La planche et la rangée se dessinent différemment sur un téléphone : passer d'un côté à
@@ -1636,6 +1726,7 @@
   }
 
   function surChangementDeFormat() {
+    vueDeLaPlanche = null; // la planche repart de son zoom de départ
     if (vueQuiSuitLaLargeur()) afficher(window.location.hash);
   }
   if (largeurEtroite) {
@@ -1670,6 +1761,7 @@
   };
 
   brancherLaRecherche();
+  surveillerLaBarre();
   window.addEventListener("hashchange", function () {
     afficher(window.location.hash);
   });

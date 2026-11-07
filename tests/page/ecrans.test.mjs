@@ -95,7 +95,9 @@ test("les notes de toute la rangée sont sous son titre, avant les écrans ; cel
       assert.ok(ordre.titrePuisNotes && ordre.notesPuisEcrans);
       assert.doesNotMatch(ordre.dernier, /notes/);
       if (largeur === 1320) {
-        // Sur la planche, les notes de l'écran sont dessous, à sa largeur, sans recouvrir aucun écran.
+        // Sur la planche, à 100 % (assez large pour les lire), les notes de l'écran sont dessous,
+        // à sa largeur, sans recouvrir aucun écran. Plus petit, elles se replient (niveaux.test.mjs).
+        await page.getByRole("button", { name: "100 %, taille réelle" }).click();
         const ecran = await rangee.locator('.vignette[data-code="A2"] .cadre-boite').boundingBox();
         const notes = await rangee.locator('.vignette[data-code="A2"] .notes-ecran').boundingBox();
         assert.ok(notes.y >= ecran.y + ecran.height - 1, "les notes sont sous l'écran");
