@@ -209,17 +209,40 @@
     return element;
   }
 
+  // L'avancement en quatre étapes, remplies jusqu'à celle du projet, puis sa raison.
+  var ETAPES_D_AVANCEMENT = ["idée", "début", "en cours", "avancé"];
+  function barreDAvancement(nom, raison) {
+    var rang = ETAPES_D_AVANCEMENT.indexOf(nom);
+    var bloc = creer("section", "avancement");
+    var titre = creer("p", "avancement-titre");
+    titre.appendChild(creer("strong", "", "Avancement : "));
+    titre.appendChild(document.createTextNode(nom));
+    bloc.appendChild(titre);
+    var barre = creer("ol", "avancement-barre");
+    barre.setAttribute("role", "progressbar");
+    barre.setAttribute("aria-label", "Avancement du projet");
+    barre.setAttribute("aria-valuemin", "1");
+    barre.setAttribute("aria-valuemax", String(ETAPES_D_AVANCEMENT.length));
+    barre.setAttribute("aria-valuenow", String(rang + 1));
+    barre.setAttribute("aria-valuetext", nom + ", étape " + (rang + 1) + " sur " + ETAPES_D_AVANCEMENT.length);
+    ETAPES_D_AVANCEMENT.forEach(function (etape, i) {
+      var classe = "avancement-etape" + (i <= rang ? " faite" : "") + (i === rang ? " actuelle" : "");
+      var element = creer("li", classe);
+      element.appendChild(creer("span", "avancement-trait"));
+      element.appendChild(creer("span", "avancement-mot", etape.charAt(0).toUpperCase() + etape.slice(1)));
+      barre.appendChild(element);
+    });
+    bloc.appendChild(barre);
+    bloc.appendChild(creer("p", "avancement-raison", raison.charAt(0).toUpperCase() + raison.slice(1)));
+    return bloc;
+  }
+
   function dessinerEtatDesLieux(conteneur, plan) {
     conteneur.appendChild(titreDeVue("État des lieux"));
     var lignes = plan.etatDesLieux;
 
     var avancement = window.APlatLogique.nomDeLAvancement(plan);
-    if (avancement) {
-      var ligneDAvancement = creer("p", "avancement");
-      ligneDAvancement.appendChild(creer("strong", "", "Avancement : "));
-      ligneDAvancement.appendChild(document.createTextNode(avancement + ", " + plan.avancement.raison));
-      conteneur.appendChild(ligneDAvancement);
-    }
+    if (avancement) conteneur.appendChild(barreDAvancement(avancement, plan.avancement.raison));
 
     if (lignes.length === 0) {
       conteneur.appendChild(message("Aucune page n'est encore listée", [

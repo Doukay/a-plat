@@ -1117,7 +1117,31 @@ body[data-mise="plein"] #vue {
 }
 
 /* ---- l'avancement du projet, en tête de l'état des lieux ---- */
-.avancement { margin: 0 0 12px; max-width: 70ch; }
+.avancement { max-width: 560px; margin: 0 0 20px; }
+.avancement-titre { margin: 0 0 8px; }
+.avancement-barre {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.avancement-trait {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--trait);
+}
+.avancement-etape.faite .avancement-trait { background: var(--crayon); }
+.avancement-mot {
+  display: block;
+  margin-top: 6px;
+  color: var(--doux);
+  font-size: 13px;
+}
+.avancement-etape.actuelle .avancement-mot { color: var(--texte); font-weight: 700; }
+.avancement-raison { margin: 10px 0 0; color: var(--doux); }
 
 /* ---- l'existant introuvable : une phrase à la place de l'image ---- */
 .actuel-manque {

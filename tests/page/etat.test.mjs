@@ -72,8 +72,19 @@ test("l'avancement du plan s'affiche en tête de l'état des lieux, et rien sans
   await avecPage("complet", {}, async ({ page }) => {
     const ligne = page.locator("#vue .avancement");
     assert.equal(await ligne.count(), 1);
-    assert.equal((await ligne.innerText()).replace(/\s+/g, " ").trim(),
-      "Avancement : en cours, parce que le prêt a ses pages (src/pret.js) et la fiche n'est pas finie (src/fiche.js).");
+    assert.equal((await ligne.locator(".avancement-titre").innerText()).trim(), "Avancement : en cours");
+    assert.equal((await ligne.locator(".avancement-raison").innerText()).trim(),
+      "Parce que le prêt a ses pages (src/pret.js) et la fiche n'est pas finie (src/fiche.js).");
+    // La barre : quatre étapes, remplies jusqu'à « En cours », lue comme une progression.
+    const barre = page.getByRole("progressbar", { name: "Avancement du projet" });
+    assert.equal(await barre.getAttribute("aria-valuenow"), "3");
+    assert.equal(await barre.getAttribute("aria-valuetext"), "en cours, étape 3 sur 4");
+    assert.deepEqual((await barre.locator(".avancement-mot").allInnerTexts()).map((t) => t.trim()), ["Idée", "Début", "En cours", "Avancé"]);
+    assert.equal(await barre.locator(".avancement-etape.faite").count(), 3);
+    assert.equal((await barre.locator(".avancement-etape.actuelle").innerText()).trim(), "En cours");
+    const couleurs = await barre.locator(".avancement-trait").evaluateAll((els) => els.map((el) => getComputedStyle(el).backgroundColor));
+    assert.equal(couleurs[0], couleurs[2], "les étapes faites ont la même couleur");
+    assert.notEqual(couleurs[2], couleurs[3], "l'étape à venir se distingue");
     const avant = await ligne.evaluate((el) => el.compareDocumentPosition(document.querySelector("li.ligne")) & Node.DOCUMENT_POSITION_FOLLOWING);
     assert.ok(avant, "avant la liste des pages");
   });
