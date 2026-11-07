@@ -577,11 +577,13 @@
   //
   // commun.css porte deux jeux de variables aux mêmes noms ; l'écran prend celui de l'UI quand
   // relais.js pose data-finition="ui" sur sa racine. Le bouton « UX | UI » de la barre n'existe
-  // que si reglages.finition vaut "charte" (départ en UI) ou "gris-puis-charte" (départ en UX).
+  // que si reglages.finition vaut "charte" ou "fidele" (départ en UI), ou "gris-puis-charte"
+  // (départ en UX). Avec "fidele", l'écran charge le vrai style du projet et projet/gris.css.
   // Le choix de la personne est gardé par projet. L'actuel (capture ou redessin) n'est jamais
   // touché : il garde le vrai style du projet.
 
-  var DEPART_DE_LA_FINITION = { "charte": "ui", "gris-puis-charte": "ux" };
+  // « fidele » : les écrans ont le vrai style du projet (projet/), et partent en UI comme « charte ».
+  var DEPART_DE_LA_FINITION = { "charte": "ui", "gris-puis-charte": "ux", "fidele": "ui" };
   var LIBELLES_DE_FINITION = { ux: "UX · maquette en gris", ui: "UI · couleurs du projet" };
   var finition = "ux";
 

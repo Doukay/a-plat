@@ -306,13 +306,13 @@ test("finition « gris » : pas de bouton, donc ni bloc UI exigé ni avertisseme
   assert.doesNotMatch(sortie, /data-finition|Avertissement/);
 });
 
-test("une finition inconnue est refusée, et le message cite les trois valeurs permises", () => {
-  for (const valeur of ['"gris puis charte"', '"couleurs"', "true"]) {
+test("une finition inconnue est refusée, et le message cite les quatre valeurs permises", () => {
+  for (const valeur of ['"gris puis charte"', '"couleurs"', '"fidèle"', "true"]) {
     const dossier = preparer();
     modifier(dossier, "plan.js", (t) => t.replace('finition: "gris"', `finition: ${valeur}`));
     const { code, sortie } = lancer(dossier);
     assert.equal(code, 1, sortie);
-    assert.match(sortie, /n'est pas permise \(reglages\.finition : gris, gris-puis-charte, charte\)/);
+    assert.match(sortie, /n'est pas permise \(reglages\.finition : gris, gris-puis-charte, charte, fidele\)/);
   }
 });
 

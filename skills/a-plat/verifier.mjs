@@ -11,7 +11,7 @@ import vm from "node:vm";
 
 const CHEMIN_DE_LA_LOGIQUE = fileURLToPath(new URL("./modele/a-plat/logique.js", import.meta.url));
 const CHEMIN_DU_COMMUN = fileURLToPath(new URL("./modele/commun.css", import.meta.url));
-const FINITIONS = ["gris", "gris-puis-charte", "charte"];
+const FINITIONS = ["gris", "gris-puis-charte", "charte", "fidele"];
 
 const DELAI_DU_PLAN_EN_MS = 2000;
 const ELEMENTS_VIDES = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
@@ -211,7 +211,10 @@ const LIENS_A_TOUCHER = new Set(["a", "area"]);
 // Les adresses qu'une feuille de style fait charger : url(…), et les textes entre guillemets
 // qui commencent par une adresse (@import "…", image-set("…")). Les commentaires sont retirés.
 function adressesDuStyle(css) {
-  const sansCommentaire = css.replace(/\/\*[\s\S]*?\*\//g, " ");
+  // Un SVG intégré en data: contient des adresses (xmlns='http://www.w3.org/2000/svg') qui ne se
+  // chargent pas : il ne compte que comme « data:… ».
+  const sansCommentaire = css.replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/url\(\s*"data:[^"]*"\s*\)|url\(\s*'data:[^']*'\s*\)|url\(\s*data:[^)]*\)/gi, "url(data:)");
   const adresses = [];
   for (const m of sansCommentaire.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*))\s*\)/gi)) {
     adresses.push((m[1] ?? m[2] ?? m[3] ?? "").trim());
@@ -348,7 +351,7 @@ function controlerEcran({ chemin, code, html, dossierDesLiens, policeEnLigne, es
     }
     if (couleurs.length > 0) {
       erreurs.push(`${chemin} : ${pluriel(couleurs.length, "couleur écrite", "couleurs écrites")} dans l'écran : ${couleurs.join(", ")}. ` +
-        "Un écran n'écrit jamais de couleur : elle passe par les classes de commun.css, sinon le bouton UX | UI ne peut rien pour lui.");
+        "Un écran n'écrit jamais de couleur : elle passe par les classes de commun.css (ou celles du projet, en finition fidele), sinon le bouton UX | UI ne peut rien pour lui.");
     }
   }
 
@@ -449,6 +452,7 @@ function controlerLaFinition(dossier, plan) {
     const vu = typeof reglage === "string" ? `« ${reglage} »` : JSON.stringify(reglage);
     return { erreurs: [`La finition ${vu} n'est pas permise (reglages.finition : ${FINITIONS.join(", ")}).`], infos: [] };
   }
+  if (reglage === "fidele") return controlerLeFidele(dossier, plan);
   if (reglage !== "charte" && reglage !== "gris-puis-charte") return aucun;
 
   const moteur = join(dossier, "a-plat", "moteur.js");
@@ -493,6 +497,69 @@ function estUnFichier(chemin) {
   } catch (erreur) {
     return false;
   }
+}
+
+const CHARGE_LE_PROJET = /<link\b[^>]*href\s*=\s*["']?\.\.\/projet\/projet\.css/i;
+const CHARGE_LE_GRIS = /<link\b[^>]*href\s*=\s*["']?\.\.\/projet\/gris\.css/i;
+
+// La finition « fidele » : les écrans chargent le vrai style du projet, construit par
+// style-du-projet.mjs dans projet/, et gris.css pour l'UX ; un actuel ne charge jamais gris.css.
+// Le bloc UI de commun.css ne sert pas ici.
+function controlerLeFidele(dossier, plan) {
+  const erreurs = [];
+  const infos = [];
+  const moteur = join(dossier, "a-plat", "moteur.js");
+  if (estUnFichier(moteur) && !/"fidele"/.test(readFileSync(moteur, "utf8"))) {
+    infos.push("Avertissement : la page de ce dossier ne connaît pas la finition fidèle (a-plat/moteur.js) : le bouton UX | UI n'apparaît pas. " +
+      "Pour passer au nouveau modèle, suivre « Reprendre des maquettes » dans references/etat-des-lieux.md.");
+  }
+  const style = join(dossier, "projet", "projet.css");
+  for (const nom of ["projet.css", "gris.css"]) {
+    if (!estUnFichier(join(dossier, "projet", nom))) {
+      erreurs.push(`La finition « fidele » demande projet/${nom} : lancer style-du-projet.mjs (voir references/fidele.md).`);
+    }
+  }
+  if (estUnFichier(style)) {
+    const css = readFileSync(style, "utf8");
+    const enLigne = adressesDuStyle(css).filter((a) => /^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(a) && !/^file:/i.test(a));
+    if (enLigne.length > 0) erreurs.push(`projet/projet.css charge depuis Internet : ${enLigne.join(", ")}. Relancer style-du-projet.mjs, qui retire ces adresses.`);
+  }
+  // Seul un style construit par Tailwind dépend des classes des écrans : une feuille recopiée
+  // n'a pas à être reconstruite quand un écran change.
+  const construitParTailwind = estUnFichier(style) && /^\/\* Construit par style-du-projet\.mjs[^\n]*Tailwind/.test(readFileSync(style, "utf8"));
+  const dateDuStyle = construitParTailwind ? statSync(style).mtimeMs : 0;
+  const plusRecents = [];
+  const sansLeStyle = [];
+  for (const ecran of Array.isArray(plan.ecrans) ? plan.ecrans : []) {
+    if (!ecran || typeof ecran.fichier !== "string") continue;
+    const chemin = join(dossier, "ecrans", ecran.fichier);
+    if (estUnFichier(chemin)) {
+      const html = readFileSync(chemin, "utf8");
+      if (!CHARGE_LE_PROJET.test(html) || !CHARGE_LE_GRIS.test(html)) {
+        sansLeStyle.push(ecran.code);
+      } else if (dateDuStyle && statSync(chemin).mtimeMs > dateDuStyle) {
+        plusRecents.push(ecran.code);
+      }
+    }
+    const actuel = ecran.actuel && typeof ecran.actuel.fichier === "string" && /\.html?$/i.test(ecran.actuel.fichier) ? ecran.actuel.fichier : null;
+    if (!actuel) continue;
+    const cheminActuel = join(dossier, actuel.indexOf("actuel/") === 0 ? actuel : `actuel/${actuel}`);
+    if (!estUnFichier(cheminActuel)) continue;
+    const htmlActuel = readFileSync(cheminActuel, "utf8");
+    if (CHARGE_LE_GRIS.test(htmlActuel)) {
+      erreurs.push(`L'existant de ${ecran.code} charge projet/gris.css : un actuel garde toujours le vrai style du projet, il ne charge que projet.css.`);
+    }
+    if (CHARGE_LE_PROJET.test(htmlActuel) && dateDuStyle && statSync(cheminActuel).mtimeMs > dateDuStyle) plusRecents.push(`${ecran.code} (existant)`);
+  }
+  if (sansLeStyle.length > 0) {
+    const cites = sansLeStyle.length > 20 ? `${sansLeStyle.slice(0, 20).join(", ")} et ${sansLeStyle.length - 20} autres` : sansLeStyle.join(", ");
+    infos.push(`Avertissement : ${pluriel(sansLeStyle.length, "écran n'a", "écrans n'ont")} pas le vrai style du projet (${cites}) : ` +
+      "un écran fidèle charge ../projet/projet.css et ../projet/gris.css, sinon il ne ressemble pas à l'appli.");
+  }
+  if (plusRecents.length > 0) {
+    infos.push(`Avertissement : ${pluriel(plusRecents.length, "écran a changé", "écrans ont changé")} après la construction du style (${plusRecents.join(", ")}) : relancer style-du-projet.mjs, sinon leurs nouvelles classes n'ont pas de style.`);
+  }
+  return { erreurs, infos };
 }
 
 // Ce qui ne casse pas la page mais se perdrait : l'avancement jugé à l'état des lieux et

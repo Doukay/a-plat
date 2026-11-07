@@ -82,6 +82,7 @@ Chaque écran est dessiné une seule fois. `commun.css` lui donne deux visages, 
 - `gris` : pas de bouton, tout reste en UX. L'attention va à ce que dit l'écran, pas aux couleurs.
 - `gris-puis-charte` : le bouton, avec un départ en UX. Écrire le bloc UI avant le premier écran ; la personne bascule quand elle veut.
 - `charte` : le bouton, avec un départ en UI.
+- `fidele` : le bouton, avec un départ en UI, mais les écrans ne passent pas par `commun.css` : ils sont écrits avec le balisage et les classes du projet, et chargent son vrai style. Tout est dans `references/fidele.md` ; le reste de cette section ne vaut que pour les autres finitions.
 - Les valeurs UI se lisent dans les styles du projet (fichiers de style, variables, thème, charte), avant le premier écran. Une valeur qui n'y est pas se demande ; ne jamais l'inventer.
 - Un écran n'écrit jamais de couleur ni d'attribut `style` : sinon, le bouton ne peut plus rien pour lui. Un bouton à sa largeur, c'est `.bouton.court` ; un lien d'action, `.action`.
 - Ce qu'on lit en premier sur un écran (le chiffre clé : un solde, un total, un nombre) est en grand, avec `.chiffre` (ou `.chiffre.moyen`), précédé de son petit libellé gris `.surtitre`. La carte la plus importante peut être mise en avant avec `.carte.forte`.

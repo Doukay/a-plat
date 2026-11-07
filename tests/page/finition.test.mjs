@@ -58,7 +58,8 @@ const PAR_FINITION = {
   gris: fixture("gris"),
   sansReglage: fixture(undefined),
   charte: fixture("charte"),
-  grisPuisCharte: fixture("gris-puis-charte")
+  grisPuisCharte: fixture("gris-puis-charte"),
+  fidele: fixture("fidele")
 };
 
 const groupe = (page) => page.getByRole("group", { name: "Finition des écrans" });
@@ -102,6 +103,60 @@ test("la position de départ suit le réglage : « charte » en UI, « gris-puis
   await avecPage(PAR_FINITION.grisPuisCharte, { adresse: "ensemble" }, async ({ page }) => {
     assert.equal(await enfonce(page), "UX");
     assert.match(await page.title(), /UX · maquette en gris/);
+  });
+});
+
+// Le gris.css qu'écrit style-du-projet.mjs, lu dans le script lui-même pour rester le même.
+const GRIS = /const GRIS = `([\s\S]*?)`;/.exec(readFileSync(fileURLToPath(new URL("../../skills/a-plat/style-du-projet.mjs", import.meta.url)), "utf8"))[1];
+
+test("fidèle : en UX l'écran est en gris et en police du système, en UI en couleurs ; l'actuel garde toujours ses couleurs", async () => {
+  const tete = '<link rel="stylesheet" href="../projet/projet.css"><link rel="stylesheet" href="../projet/gris.css">';
+  const plan = {
+    version: 1, projet: "Fidèle", etatDesLieux: [], reglages: { finition: "fidele" },
+    rangees: [{ id: "A", titre: "Rangée A", notes: [] }],
+    ecrans: [ecran("A1", "Accueil", { rangee: "A", actuel: { fichier: "actuel/A1.html", origine: "redessine" } })]
+  };
+  const actuel = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../projet/projet.css"></head>' +
+    '<body><p class="soleil">Avant</p><script src="../a-plat/relais.js"></script></body></html>';
+  const dossier = genererFixture({
+    plan,
+    ecrans: { "A1.html": ecranHtml("A1", '<p class="soleil">Après</p>', { tete }) },
+    autres: {
+      "projet/projet.css": "body { font-family: 'Projet', serif; } .soleil { background: #ffd27a; }\n",
+      "projet/gris.css": GRIS,
+      "actuel/A1.html": actuel
+    }
+  });
+  await avecPage(dossier, { adresse: "ecran/A1", largeur: 1320 }, async ({ page, erreurs }) => {
+    const mesurer = (c) => c.evaluate(() => ({
+      filtre: getComputedStyle(document.documentElement).filter,
+      police: getComputedStyle(document.querySelector(".soleil")).fontFamily
+    }));
+    const proposition = await cadre(page, ".volet-proposition iframe");
+    await proposition.waitForFunction(() => document.documentElement.getAttribute("data-finition") === "ui");
+    assert.deepEqual(await mesurer(proposition), { filtre: "none", police: "Projet, serif" }, "UI : le vrai style");
+    const existant = await cadre(page, ".volet-actuel iframe");
+    assert.equal((await mesurer(existant)).filtre, "none");
+    await groupe(page).getByRole("button", { name: "UX", exact: true }).click();
+    await proposition.waitForFunction(() => document.documentElement.getAttribute("data-finition") === "ux");
+    const ux = await mesurer(proposition);
+    assert.equal(ux.filtre, "grayscale(1)", "UX : en gris");
+    assert.match(ux.police, /system-ui/, "UX : la police du système");
+    assert.deepEqual(await mesurer(existant), { filtre: "none", police: "Projet, serif" }, "l'actuel ne change pas");
+    assert.deepEqual(erreurs, []);
+  });
+});
+
+test("la finition « fidele » a le bouton, part en UI, et l'UX se choisit comme ailleurs", async () => {
+  await avecPage(PAR_FINITION.fidele, { adresse: "ensemble" }, async ({ page, erreurs }) => {
+    assert.equal(await groupe(page).count(), 1);
+    assert.equal(await enfonce(page), "UI");
+    const a1 = await cadre(page, '.planche iframe[data-code="A1"]');
+    assert.equal((await finitionDe(a1, "ui")).accent, UI);
+    await groupe(page).getByRole("button", { name: "UX", exact: true }).click();
+    assert.equal(await enfonce(page), "UX");
+    assert.equal((await finitionDe(a1, "ux")).accent, UX);
+    assert.deepEqual(erreurs, []);
   });
 });
 

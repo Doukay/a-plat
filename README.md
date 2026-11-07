@@ -104,7 +104,7 @@ Claude les propose d'après votre projet, avec une raison. Vous les changez à t
 |---|---|
 | Format | téléphone, ordinateur, ou les deux |
 | Rangement des écrans | par parcours, par personne, par module, par moment, ou existant et nouveau |
-| Finition | `gris` (maquette seule), `gris-puis-charte` (bouton UX \| UI, départ en gris), ou `charte` (bouton, départ aux couleurs du projet), d'après les styles que votre projet a déjà |
+| Finition | `gris` (maquette seule), `gris-puis-charte` (bouton UX \| UI, départ en gris), `charte` (bouton, départ aux couleurs du projet), ou `fidele` (bouton, l'UI écrite avec le vrai style de votre projet : plus proche de l'appli, plus long à dessiner, et demande votre accord pour construire son style), d'après les styles que votre projet a déjà |
 | Rythme | écran par écran, par lots, ou tout d'un coup |
 | Relecture par Claude avant de montrer | oui ou non |
 
@@ -131,12 +131,13 @@ Si le dossier arrive sur le serveur par une copie régulière, une correction ne
 
 ## Node (facultatif)
 
-Node, version 18 ou plus, sert à deux petits scripts du plugin :
+Node, version 18 ou plus, sert aux petits scripts du plugin :
 
 - `copier.mjs` copie la page dans le dossier de maquettes, sans jamais écraser un fichier qui existe ;
-- `verifier.mjs` contrôle les maquettes sans rien afficher : chaque écran du plan a son fichier, et l'inverse ; les liens entre écrans mènent quelque part ; les codes sont uniques ; le HTML est bien fermé ; rien ne vient d'Internet ; il liste aussi les [crochets] restants.
+- `verifier.mjs` contrôle les maquettes sans rien afficher : chaque écran du plan a son fichier, et l'inverse ; les liens entre écrans mènent quelque part ; les codes sont uniques ; le HTML est bien fermé ; rien ne vient d'Internet ; il liste aussi les [crochets] restants ;
+- pour la finition `fidele` seulement, et avec votre accord : `style-du-projet.mjs` construit le style de votre projet (Tailwind 4 déjà installé, ou feuilles CSS simples) dans `maquettes/projet/`, et `icones.mjs` donne le dessin exact des icônes Lucide. Ils exécutent des paquets installés dans votre projet, mais n'écrivent que dans le dossier de maquettes.
 
-Sans Node, tout marche quand même. Claude écrit alors lui-même les fichiers de la page, fait les mêmes contrôles à la main, et vous le dit. Ouvrir les maquettes ne demande jamais Node : un navigateur suffit.
+Sans Node, tout marche quand même, sauf la finition `fidele`. Claude écrit alors lui-même les fichiers de la page, fait les mêmes contrôles à la main, et vous le dit. Ouvrir les maquettes ne demande jamais Node : un navigateur suffit.
 
 ## Limites connues
 

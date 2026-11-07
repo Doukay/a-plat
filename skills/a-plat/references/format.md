@@ -29,7 +29,7 @@ window.A_PLAT = {
   reglages: {
     format: "telephone",           // telephone | ordinateur | les-deux
     rangement: "parcours",         // parcours | personne | module | moment | existant-nouveau
-    finition: "gris-puis-charte",  // gris | charte | gris-puis-charte : le bouton « UX | UI » (voir « UX et UI »)
+    finition: "gris-puis-charte",  // gris | charte | gris-puis-charte | fidele : le bouton « UX | UI » (voir « UX et UI »)
     rythme: "ecran",               // ecran | lots | tout
     relecture: true,               // true : Claude relit chaque écran avant de le montrer
     policeEnLigne: false           // true seulement si la personne demande une police en ligne pour sa charte
@@ -84,7 +84,7 @@ Règles que le contrôle vérifie :
 - Un `actuel.fichier` se cherche dans `actuel/`, qu'il commence par `actuel/` ou non.
 - `inchange`, s'il est là, vaut `true` ou `false`. Un écran `inchange: true` n'a pas d'actuel. S'il appartient à une page `a-completer` et qu'aucune note `a-coder` ou `a-trancher` ne le cite dans `ecrans`, le contrôle avertit : le manque doit se lire sous l'écran.
 - `avancement`, s'il est là, a un `niveau` parmi `idee`, `debut`, `en-cours`, `avance`, et une `raison`. Absent alors que l'état des lieux a des pages, le contrôle avertit.
-- `reglages.finition`, s'il est là, vaut `gris`, `gris-puis-charte` ou `charte`. Avec les deux dernières, `commun.css` a son bloc UI, aux noms exacts de l'UX, et son bloc UX reste celui du modèle (voir « UX et UI »).
+- `reglages.finition`, s'il est là, vaut `gris`, `gris-puis-charte`, `charte` ou `fidele` (contrôles de `fidele` dans `references/fidele.md`). Avec `gris-puis-charte` et `charte`, `commun.css` a son bloc UI, aux noms exacts de l'UX, et son bloc UX reste celui du modèle (voir « UX et UI »).
 - Un écran (`ecrans/`) n'écrit aucune couleur : ni code (`#c0392b`), ni `rgb()`, `hsl()`, `color()`, ni nom de couleur, dans un attribut `style` ou un `<style>`. `transparent`, `inherit`, `currentColor` et `var(…)` sont permis. L'existant (`actuel/`) n'est pas concerné.
 
 Pour le format `les-deux`, chaque version, quand elle existe (voir `references/ecrans.md`), est un écran à part, avec son code, sa largeur et sa hauteur.
@@ -154,8 +154,9 @@ Chaque écran est dessiné une seule fois. Ses couleurs viennent de deux blocs d
 | `gris` (ou rien) | absent : tout reste en UX | UX |
 | `gris-puis-charte` | présent | UX |
 | `charte` | présent | UI |
+| `fidele` | présent | UI, avec le vrai style du projet (`projet/`, voir `references/fidele.md`) |
 
-Ensuite, la page retient le choix de la personne pour ce projet. L'actuel (capture ou redessin) garde toujours le vrai style du projet. Avec `charte` ou `gris-puis-charte`, le contrôle exige le bloc UI. S'il reprend encore les valeurs UX, le contrôle avertit : « l'UI n'a pas encore les couleurs du projet ».
+Ensuite, la page retient le choix de la personne pour ce projet. L'actuel (capture ou redessin) garde toujours le vrai style du projet. Avec `fidele`, les écrans ne passent pas par `commun.css` : le contrôle exige `projet/projet.css` et `projet/gris.css` à la place du bloc UI (règles dans `references/fidele.md`). Avec `charte` ou `gris-puis-charte`, le contrôle exige le bloc UI. S'il reprend encore les valeurs UX, le contrôle avertit : « l'UI n'a pas encore les couleurs du projet ».
 
 ## `policeEnLigne`
 
