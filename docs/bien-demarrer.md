@@ -19,7 +19,7 @@ claude plugin marketplace add Doukay/a-plat
 claude plugin install a-plat@a-plat
 ```
 
-La première ajoute ce dépôt comme source de plugins. La seconde installe À plat pour tous tes projets. Depuis une copie du dépôt sur ta machine, la première devient `claude plugin marketplace add /chemin/vers/a-plat`.
+La première ajoute ce dépôt comme source de plugins. La seconde installe À plat pour tous tes projets. Depuis une copie du dépôt sur ta machine, la première devient `claude plugin marketplace add /chemin/vers/a-plat` ; le plugin est alors lu directement dans ce dossier : un changement y compte à la session suivante (ou après `/reload-plugins`), sans commande de mise à jour.
 
 **Ouvre ensuite une nouvelle session.** Les plugins se chargent au démarrage d'une session.
 
