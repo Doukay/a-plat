@@ -7,20 +7,20 @@ import { avecPage } from "./aide.mjs";
 
 const MODELE = fileURLToPath(new URL("../../skills/a-plat/modele", import.meta.url));
 
-// Prépare un dossier de maquettes jetable : ecran-type.html copié dans ecrans/, puis ouvert seul
+// Prépare un dossier a-plat/ jetable : ecran-type.html copié dans sources/ecrans/, puis ouvert seul
 // (sans la page d'À plat), comme on ouvre un écran d'un double-clic.
 async function avecEcranType(travail, { avant } = {}) {
   await avecPage("complet", { avant }, async ({ page, dossier }) => {
-    cpSync(join(MODELE, "ecran-type.html"), join(dossier, "ecrans/X0-type.html"));
-    const ouvrir = async () => page.goto(pathToFileURL(join(dossier, "ecrans/X0-type.html")).href);
+    cpSync(join(MODELE, "ecran-type.html"), join(dossier, "sources", "ecrans", "X0-type.html"));
+    const ouvrir = async () => page.goto(pathToFileURL(join(dossier, "sources", "ecrans", "X0-type.html")).href);
     await ouvrir();
     await travail({ page, dossier, ouvrir });
   });
 }
 
-// Change la valeur d'une variable dans la tête de commun.css, sans toucher au reste.
+// Change la valeur d'une variable dans le bloc UX, en tête de .cache/commun.css, sans toucher au reste.
 function changer(dossier, variable, valeur) {
-  const chemin = join(dossier, "commun.css");
+  const chemin = join(dossier, ".cache", "commun.css");
   const avant = readFileSync(chemin, "utf8");
   const motif = new RegExp(`(${variable}\\s*:\\s*)[^;]+;`);
   assert.match(avant, motif, `${variable} est dans commun.css`);
@@ -100,7 +100,7 @@ test("chacune des variables a un effet visible sur les classes de base", async (
   await avecEcranType(async ({ page, dossier, ouvrir }) => {
     for (const essai of essais) {
       // Un seul changement à la fois : on repart du modèle livré.
-      cpSync(join(MODELE, "commun.css"), join(dossier, "commun.css"));
+      cpSync(join(MODELE, "commun.css"), join(dossier, ".cache", "commun.css"));
       await ouvrir();
       const avant = await style(page, essai.selecteur, essai.propriete);
       changer(dossier, essai.variable, essai.valeur);
@@ -118,8 +118,11 @@ test("chacune des variables a un effet visible sur les classes de base", async (
 
 test("le bloc UI s'applique quand l'écran porte data-finition=\"ui\", et seulement alors", async () => {
   await avecEcranType(async ({ page, dossier, ouvrir }) => {
-    const chemin = join(dossier, "commun.css");
-    writeFileSync(chemin, readFileSync(chemin, "utf8").replace(/(:root\[data-finition="ui"\] \{[^}]*--ecran-accent: )#0066cc/, "$1#c0392b"));
+    // Le bloc UI est dans la charte du projet, sources/charte.css, chargée après commun.css.
+    const chemin = join(dossier, "sources", "charte.css");
+    const motif = /(:root\[data-finition="ui"\] \{[^}]*--ecran-accent: )#0066cc/;
+    assert.match(readFileSync(chemin, "utf8"), motif, "la charte de départ a son bloc UI");
+    writeFileSync(chemin, readFileSync(chemin, "utf8").replace(motif, "$1#c0392b"));
     await ouvrir();
     assert.equal(await style(page, ".bouton", "backgroundColor"), "rgb(0, 102, 204)", "ouvert seul : l'UX");
     await page.evaluate(() => document.documentElement.setAttribute("data-finition", "ui"));

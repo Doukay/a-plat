@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Contrôle d'un dossier de maquettes, sans rien afficher à l'écran.
+// Contrôle du dossier a-plat/ d'un projet (sources/ et la page), sans rien afficher à l'écran.
 // Usage : node verifier.mjs <dossier>
-// Code de sortie : 0 tout va bien, 1 au moins une erreur, 2 le dossier, plan.js ou logique.js manque.
+// Code de sortie : 0 tout va bien, 1 au moins une erreur, 2 le dossier, sources/plan.js ou logique.js manque.
 // Ne demande que Node (18 ou plus), aucune bibliothèque.
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -357,7 +357,18 @@ function controlerEcran({ chemin, code, html, dossierDesLiens, policeEnLigne, es
 
   const appelleLeRelais = analyse.balises.some((b) => b.nom === "script" && APPEL_DE_RELAIS.test(b.attributs.src ?? ""));
   if (!appelleLeRelais) {
-    erreurs.push(`${chemin} : le script relais.js n'est pas appelé (ajouter <script src="../a-plat/relais.js"></script> avant </body>).`);
+    erreurs.push(`${chemin} : le script relais.js n'est pas appelé (ajouter <script src="../../.cache/relais.js"></script> avant </body>).`);
+  }
+  // Les liens d'un ancien dossier de maquettes (plan.js à la racine) ne mènent plus à rien ici.
+  // Seuls les liens qui chargent quelque chose (feuille, script, image) : un lien <a> vers une autre
+  // page de l'existant n'est pas un lien de l'outil.
+  const anciens = analyse.balises
+    .filter((b) => b.nom !== "a")
+    .map((b) => b.attributs.href ?? b.attributs.src ?? "")
+    .filter((adresse) => /^\.\.\/(commun\.css|a-plat\/|projet\/)/.test(String(adresse).trim()));
+  if (anciens.length > 0) {
+    erreurs.push(`${chemin} : ${pluriel(anciens.length, "lien d'un ancien dossier", "liens d'un ancien dossier")} (${[...new Set(anciens)].join(", ")}) : ` +
+      "aujourd'hui ../../.cache/commun.css, ../charte.css, ../../.cache/relais.js et ../../.cache/projet/ (reprendre.mjs les met à jour).");
   }
 
   for (const { adresse, ou, police } of chargementsDInternet(analyse)) {
@@ -436,56 +447,96 @@ function memesVariables(a, b) {
   return [...noms].every((nom) => a[nom] === b[nom]);
 }
 
-const AVERTISSEMENT_UI = "Avertissement : l'UI n'a pas encore les couleurs du projet. Le bloc :root[data-finition=\"ui\"] de commun.css est vide ou reprend les valeurs UX : y écrire celles des styles du projet.";
+const AVERTISSEMENT_UI = "Avertissement : l'UI n'a pas encore les couleurs du projet. Le bloc :root[data-finition=\"ui\"] de sources/charte.css est vide ou reprend les valeurs UX : y écrire celles des styles du projet.";
 
-// La finition et commun.css :
-// - reglages.finition, s'il est là, vaut gris, gris-puis-charte ou charte ;
-// - avec un bouton « UX | UI » (gris-puis-charte ou charte), commun.css a son bloc UI, aux noms
-//   exacts de l'UX, et son bloc UX reste celui du modèle (les couleurs du projet vont dans l'UI) ;
-//   un bloc UI vide ou identique à l'UX n'est qu'un avertissement ;
-// - un dossier dont la page date d'avant le bouton (son a-plat/moteur.js ne connaît pas la
-//   finition) n'est pas cassé : le bloc UI n'est pas contrôlé, un avertissement dit quoi faire.
+// La charte (sources/charte.css), le seul style que Claude écrit : un bloc UI, et des classes
+// écrites avec les variables. Elle ne redéfinit jamais l'UX (:root), qui est dans .cache/commun.css.
+// Un écran charge le style de l'outil (../../.cache/commun.css) et, si la finition a un bloc UI,
+// la charte (../charte.css) : sans eux, il n'a pas son style, ou le bouton UX | UI ne fait rien.
+// Un écran de la finition fidèle charge le style du projet à la place (contrôlé ailleurs).
+const CHARGE_LE_COMMUN = /<link\b[^>]*href\s*=\s*["']?\.\.\/\.\.\/\.cache\/commun\.css/i;
+const CHARGE_LA_CHARTE = /<link\b[^>]*href\s*=\s*["']?\.\.\/charte\.css/i;
+function liensDuStyle(html, chemin, plan) {
+  const finition = plan.reglages && typeof plan.reglages === "object" ? plan.reglages.finition : undefined;
+  if (finition === "fidele") return [];
+  const erreurs = [];
+  if (!CHARGE_LE_COMMUN.test(html)) {
+    erreurs.push(`${chemin} : le style de l'outil n'est pas chargé (ajouter <link rel="stylesheet" href="../../.cache/commun.css"> dans <head>).`);
+  }
+  if ((finition === "charte" || finition === "gris-puis-charte") && !CHARGE_LA_CHARTE.test(html)) {
+    erreurs.push(`${chemin} : la charte n'est pas chargée (ajouter <link rel="stylesheet" href="../charte.css"> après commun.css) : sans elle, le bouton UX | UI ne change rien à cet écran.`);
+  }
+  return erreurs;
+}
+
+function controlerLaCharte(dossier, policeEnLigne) {
+  const chemin = join(dossier, "sources", "charte.css");
+  if (!estUnFichier(chemin)) return { erreurs: [], blocs: { ux: null, ui: null } };
+  const css = readFileSync(chemin, "utf8");
+  const erreurs = [];
+  // Comme un écran : rien d'Internet, sauf une police en ligne demandée (reglages.policeEnLigne).
+  const enLigne = adressesDuStyle(css)
+    .filter((a) => /^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(a) && !/^file:/i.test(a))
+    .filter((a) => !(policeEnLigne && POLICES_EN_LIGNE.test(a)));
+  if (enLigne.length > 0) {
+    erreurs.push(`sources/charte.css charge depuis Internet : ${enLigne.join(", ")}. Les écrans ne chargent rien d'Internet, sauf une police en ligne si reglages.policeEnLigne vaut true.`);
+  }
+  const blocs = blocsDeFinition(css);
+  if (blocs.ux) {
+    erreurs.push("sources/charte.css redéfinit le bloc UX (:root) : il reste celui de l'outil. Les couleurs du projet vont dans le bloc UI (:root[data-finition=\"ui\"]).");
+  }
+  const horsUI = css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/:root\[data-finition\s*=\s*["']?ui["']?\]\s*\{[^}]*\}/g, "");
+  const couleurs = couleursDuStyle(horsUI);
+  if (couleurs.length > 0) {
+    erreurs.push(`sources/charte.css écrit ${pluriel(couleurs.length, "couleur", "couleurs")} hors du bloc UI : ${couleurs.join(", ")}. Une classe du projet s'écrit avec les variables, sinon le bouton UX | UI ne peut rien pour elle.`);
+  }
+  return { erreurs, blocs };
+}
+
+// La finition et la charte :
+// - reglages.finition, s'il est là, vaut gris, gris-puis-charte, charte ou fidele ;
+// - avec un bouton « UX | UI » (gris-puis-charte ou charte), sources/charte.css a son bloc UI,
+//   aux noms exacts de l'UX ; un bloc UI vide ou identique à l'UX n'est qu'un avertissement ;
+// - une page de .cache/ d'avant le bouton (moteur.js ne connaît pas la finition) n'est pas
+//   cassée : le bloc UI n'est pas contrôlé, un avertissement dit de refaire la page.
 function controlerLaFinition(dossier, plan) {
-  const aucun = { erreurs: [], infos: [] };
   const reglage = plan.reglages && typeof plan.reglages === "object" ? plan.reglages.finition : undefined;
   if (reglage !== undefined && !FINITIONS.includes(reglage)) {
     const vu = typeof reglage === "string" ? `« ${reglage} »` : JSON.stringify(reglage);
     return { erreurs: [`La finition ${vu} n'est pas permise (reglages.finition : ${FINITIONS.join(", ")}).`], infos: [] };
   }
-  if (reglage === "fidele") return controlerLeFidele(dossier, plan);
-  if (reglage !== "charte" && reglage !== "gris-puis-charte") return aucun;
+  const charte = controlerLaCharte(dossier, Boolean(plan.reglages && plan.reglages.policeEnLigne === true));
+  if (reglage === "fidele") {
+    const fidele = controlerLeFidele(dossier, plan);
+    return { erreurs: [...charte.erreurs, ...fidele.erreurs], infos: fidele.infos };
+  }
+  if (reglage !== "charte" && reglage !== "gris-puis-charte") return { erreurs: charte.erreurs, infos: [] };
 
-  const moteur = join(dossier, "a-plat", "moteur.js");
+  const moteur = join(dossier, ".cache", "moteur.js");
   if (estUnFichier(moteur) && !/type:\s*"finition"/.test(readFileSync(moteur, "utf8"))) {
     return {
-      erreurs: [],
-      infos: ["Avertissement : la page de ce dossier date d'avant le bouton UX | UI (a-plat/moteur.js ne connaît pas la finition) : le bloc UI de commun.css n'est pas contrôlé. " +
-        "Pour passer au nouveau modèle, suivre « Reprendre des maquettes » dans references/etat-des-lieux.md."]
+      erreurs: charte.erreurs,
+      infos: ["Avertissement : la page de ce dossier date d'avant le bouton UX | UI (.cache/moteur.js ne connaît pas la finition) : le bloc UI n'est pas contrôlé. " +
+        "Relancer copier.mjs sur ce dossier : il refait la page sans toucher à sources/."]
     };
   }
 
-  const chemin = join(dossier, "commun.css");
-  const blocs = blocsDeFinition(estUnFichier(chemin) ? readFileSync(chemin, "utf8") : "");
+  const blocs = charte.blocs;
   if (!blocs.ui) {
     return {
-      erreurs: [`La finition « ${reglage} » demande un bloc :root[data-finition="ui"] dans commun.css, avec les couleurs du projet : il est absent. Le bouton « UX | UI » de la page n'aurait rien à montrer.`],
+      erreurs: [...charte.erreurs, `La finition « ${reglage} » demande un bloc :root[data-finition="ui"] dans sources/charte.css, avec les couleurs du projet : il est absent (copier.mjs écrit la charte de départ). Le bouton « UX | UI » de la page n'aurait rien à montrer.`],
       infos: []
     };
   }
   const modele = blocsDeFinition(readFileSync(CHEMIN_DU_COMMUN, "utf8")).ux;
-  const erreurs = [];
-  if (!blocs.ux || !memesVariables(blocs.ux, modele)) {
-    const changes = blocs.ux ? Object.keys(modele).filter((nom) => blocs.ux[nom] !== modele[nom]) : [];
-    erreurs.push("Le bloc UX (:root, en tête de commun.css) n'est plus celui du modèle" + (changes.length ? ` (${changes.join(", ")})` : "") +
-      " : il doit rester tel quel. Les couleurs du projet vont dans le bloc UI (:root[data-finition=\"ui\"]).");
-  }
+  const erreurs = [...charte.erreurs];
   if (Object.keys(blocs.ui).length === 0) return { erreurs, infos: [AVERTISSEMENT_UI] };
   const attendus = Object.keys(modele);
   for (const nom of Object.keys(blocs.ui)) {
-    if (!attendus.includes(nom)) erreurs.push(`Le bloc UI de commun.css a une variable ${nom} que l'UX n'a pas : les noms sont ceux de l'UX (${attendus.join(", ")}).`);
+    if (!attendus.includes(nom)) erreurs.push(`Le bloc UI de sources/charte.css a une variable ${nom} que l'UX n'a pas : les noms sont ceux de l'UX (${attendus.join(", ")}).`);
   }
   for (const nom of attendus) {
-    if (!(nom in blocs.ui)) erreurs.push(`Le bloc UI de commun.css n'a pas la variable ${nom} : il reprend tous les noms de l'UX.`);
+    if (!(nom in blocs.ui)) erreurs.push(`Le bloc UI de sources/charte.css n'a pas la variable ${nom} : il reprend tous les noms de l'UX.`);
   }
   if (erreurs.length === 0 && memesVariables(blocs.ui, modele)) return { erreurs, infos: [AVERTISSEMENT_UI] };
   return { erreurs, infos: [] };
@@ -499,30 +550,30 @@ function estUnFichier(chemin) {
   }
 }
 
-const CHARGE_LE_PROJET = /<link\b[^>]*href\s*=\s*["']?\.\.\/projet\/projet\.css/i;
-const CHARGE_LE_GRIS = /<link\b[^>]*href\s*=\s*["']?\.\.\/projet\/gris\.css/i;
+const CHARGE_LE_PROJET = /<link\b[^>]*href\s*=\s*["']?\.\.\/\.\.\/\.cache\/projet\/projet\.css/i;
+const CHARGE_LE_GRIS = /<link\b[^>]*href\s*=\s*["']?\.\.\/\.\.\/\.cache\/projet\/gris\.css/i;
 
 // La finition « fidele » : les écrans chargent le vrai style du projet, construit par
-// style-du-projet.mjs dans projet/, et gris.css pour l'UX ; un actuel ne charge jamais gris.css.
-// Le bloc UI de commun.css ne sert pas ici.
+// style-du-projet.mjs dans .cache/projet/, et gris.css pour l'UX ; un actuel ne charge jamais gris.css.
+// Le bloc UI de la charte ne sert pas ici.
 function controlerLeFidele(dossier, plan) {
   const erreurs = [];
   const infos = [];
-  const moteur = join(dossier, "a-plat", "moteur.js");
+  const moteur = join(dossier, ".cache", "moteur.js");
   if (estUnFichier(moteur) && !/"fidele"/.test(readFileSync(moteur, "utf8"))) {
-    infos.push("Avertissement : la page de ce dossier ne connaît pas la finition fidèle (a-plat/moteur.js) : le bouton UX | UI n'apparaît pas. " +
-      "Pour passer au nouveau modèle, suivre « Reprendre des maquettes » dans references/etat-des-lieux.md.");
+    infos.push("Avertissement : la page de ce dossier ne connaît pas la finition fidèle (.cache/moteur.js) : le bouton UX | UI n'apparaît pas. " +
+      "Relancer copier.mjs sur ce dossier : il refait la page sans toucher à sources/.");
   }
-  const style = join(dossier, "projet", "projet.css");
+  const style = join(dossier, ".cache", "projet", "projet.css");
   for (const nom of ["projet.css", "gris.css"]) {
-    if (!estUnFichier(join(dossier, "projet", nom))) {
-      erreurs.push(`La finition « fidele » demande projet/${nom} : lancer style-du-projet.mjs (voir references/fidele.md).`);
+    if (!estUnFichier(join(dossier, ".cache", "projet", nom))) {
+      erreurs.push(`La finition « fidele » demande .cache/projet/${nom} : lancer style-du-projet.mjs (voir references/fidele.md).`);
     }
   }
   if (estUnFichier(style)) {
     const css = readFileSync(style, "utf8");
     const enLigne = adressesDuStyle(css).filter((a) => /^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(a) && !/^file:/i.test(a));
-    if (enLigne.length > 0) erreurs.push(`projet/projet.css charge depuis Internet : ${enLigne.join(", ")}. Relancer style-du-projet.mjs, qui retire ces adresses.`);
+    if (enLigne.length > 0) erreurs.push(`.cache/projet/projet.css charge depuis Internet : ${enLigne.join(", ")}. Relancer style-du-projet.mjs, qui retire ces adresses.`);
   }
   // Seul un style construit par Tailwind dépend des classes des écrans : une feuille recopiée
   // n'a pas à être reconstruite quand un écran change.
@@ -532,7 +583,7 @@ function controlerLeFidele(dossier, plan) {
   const sansLeStyle = [];
   for (const ecran of Array.isArray(plan.ecrans) ? plan.ecrans : []) {
     if (!ecran || typeof ecran.fichier !== "string") continue;
-    const chemin = join(dossier, "ecrans", ecran.fichier);
+    const chemin = join(dossier, "sources", "ecrans", ecran.fichier);
     if (estUnFichier(chemin)) {
       const html = readFileSync(chemin, "utf8");
       if (!CHARGE_LE_PROJET.test(html) || !CHARGE_LE_GRIS.test(html)) {
@@ -543,18 +594,18 @@ function controlerLeFidele(dossier, plan) {
     }
     const actuel = ecran.actuel && typeof ecran.actuel.fichier === "string" && /\.html?$/i.test(ecran.actuel.fichier) ? ecran.actuel.fichier : null;
     if (!actuel) continue;
-    const cheminActuel = join(dossier, actuel.indexOf("actuel/") === 0 ? actuel : `actuel/${actuel}`);
+    const cheminActuel = join(dossier, "sources", actuel.indexOf("actuel/") === 0 ? actuel : `actuel/${actuel}`);
     if (!estUnFichier(cheminActuel)) continue;
     const htmlActuel = readFileSync(cheminActuel, "utf8");
     if (CHARGE_LE_GRIS.test(htmlActuel)) {
-      erreurs.push(`L'existant de ${ecran.code} charge projet/gris.css : un actuel garde toujours le vrai style du projet, il ne charge que projet.css.`);
+      erreurs.push(`L'existant de ${ecran.code} charge .cache/projet/gris.css : un actuel garde toujours le vrai style du projet, il ne charge que projet.css.`);
     }
     if (CHARGE_LE_PROJET.test(htmlActuel) && dateDuStyle && statSync(cheminActuel).mtimeMs > dateDuStyle) plusRecents.push(`${ecran.code} (existant)`);
   }
   if (sansLeStyle.length > 0) {
     const cites = sansLeStyle.length > 20 ? `${sansLeStyle.slice(0, 20).join(", ")} et ${sansLeStyle.length - 20} autres` : sansLeStyle.join(", ");
     infos.push(`Avertissement : ${pluriel(sansLeStyle.length, "écran n'a", "écrans n'ont")} pas le vrai style du projet (${cites}) : ` +
-      "un écran fidèle charge ../projet/projet.css et ../projet/gris.css, sinon il ne ressemble pas à l'appli.");
+      "un écran fidèle charge ../../.cache/projet/projet.css et ../../.cache/projet/gris.css, sinon il ne ressemble pas à l'appli.");
   }
   if (plusRecents.length > 0) {
     infos.push(`Avertissement : ${pluriel(plusRecents.length, "écran a changé", "écrans ont changé")} après la construction du style (${plusRecents.join(", ")}) : relancer style-du-projet.mjs, sinon leurs nouvelles classes n'ont pas de style.`);
@@ -564,18 +615,18 @@ function controlerLeFidele(dossier, plan) {
 
 // Ce qui ne casse pas la page mais se perdrait : l'avancement jugé à l'état des lieux et
 // jamais écrit, et l'écran inchangé d'une page à compléter sans note qui dise son manque.
-// Un dossier dont la page date d'avant l'avancement (son a-plat/moteur.js ne le connaît pas)
-// ne le montre pas, ni « Inchangé à l'écran » : un avertissement dit comment mettre la page à jour.
+// Une page de .cache/ d'avant l'avancement (moteur.js ne le connaît pas) ne le montre pas, ni
+// « Inchangé à l'écran » : un avertissement dit de refaire la page.
 function avertissementsDuPlan(dossier, plan, inchangesACompleter) {
   const avertissements = [];
-  const moteur = join(dossier, "a-plat", "moteur.js");
+  const moteur = join(dossier, ".cache", "moteur.js");
   if (estUnFichier(moteur) && !/nomDeLAvancement/.test(readFileSync(moteur, "utf8"))) {
-    avertissements.push("Avertissement : la page de ce dossier date d'avant l'avancement (a-plat/moteur.js ne le connaît pas) : elle ne montre ni l'avancement ni « Inchangé à l'écran ». " +
-      "Pour passer au nouveau modèle, suivre « Reprendre des maquettes » dans references/etat-des-lieux.md.");
+    avertissements.push("Avertissement : la page de ce dossier date d'avant l'avancement (.cache/moteur.js ne le connaît pas) : elle ne montre ni l'avancement ni « Inchangé à l'écran ». " +
+      "Relancer copier.mjs sur ce dossier : il refait la page sans toucher à sources/.");
   }
   const lignes = Array.isArray(plan.etatDesLieux) ? plan.etatDesLieux : [];
   if (lignes.length > 0 && plan.avancement === undefined) {
-    avertissements.push("Avertissement : l'avancement n'est pas écrit dans plan.js (avancement: { niveau, raison }) : la page ne peut pas le montrer.");
+    avertissements.push("Avertissement : l'avancement n'est pas écrit dans sources/plan.js (avancement: { niveau, raison }) : la page ne peut pas le montrer.");
   }
   if (typeof inchangesACompleter !== "function") return avertissements;
   const cites = new Set();
@@ -596,7 +647,7 @@ function avertissementsDuPlan(dossier, plan, inchangesACompleter) {
 
 function controler(argument) {
   if (!argument) {
-    return { code: 2, lignes: ["Il manque le dossier des maquettes. Usage : node verifier.mjs <dossier>"] };
+    return { code: 2, lignes: ["Il manque le dossier d'À plat. Usage : node verifier.mjs <dossier>, en général <racine du projet>/a-plat"] };
   }
   let validerPlan;
   let fichierSur;
@@ -610,9 +661,14 @@ function controler(argument) {
   if (!estUnDossier(dossier)) {
     return { code: 2, lignes: [`Le dossier « ${argument} » n'existe pas.`] };
   }
-  const cheminDuPlan = join(dossier, "plan.js");
+  const sources = join(dossier, "sources");
+  const cheminDuPlan = join(sources, "plan.js");
   if (!estUnFichier(cheminDuPlan)) {
-    return { code: 2, lignes: [`Le dossier « ${argument} » ne contient pas de plan.js.`] };
+    if (estUnFichier(join(dossier, "plan.js"))) {
+      return { code: 2, lignes: [`Le dossier « ${argument} » est un ancien dossier de maquettes (plan.js à la racine).`,
+        "Le passer au dossier a-plat/ : node reprendre.mjs <ce dossier> <racine du projet>/a-plat, puis node copier.mjs <racine du projet>/a-plat (voir references/etat-des-lieux.md)."] };
+    }
+    return { code: 2, lignes: [`Le dossier « ${argument} » ne contient pas de sources/plan.js.`] };
   }
 
   let plan;
@@ -620,17 +676,20 @@ function controler(argument) {
     plan = lirePlan(cheminDuPlan);
   } catch (erreur) {
     if (erreur instanceof ErreurDePlan) {
-      return { code: 1, lignes: [erreur.message, "Contrôle échoué : plan.js doit être corrigé avant tout autre contrôle."] };
+      return { code: 1, lignes: [erreur.message, "Contrôle échoué : sources/plan.js doit être corrigé avant tout autre contrôle."] };
     }
     throw erreur;
   }
 
   const erreurs = [...validerPlan(plan)];
   const infos = [...avertissementsDuPlan(dossier, plan, inchangesACompleter)];
+  if (!estUnFichier(join(dossier, ".cache", "moteur.js")) || !estUnFichier(join(dossier, "index.html"))) {
+    infos.push("Avertissement : la page n'est pas en place dans ce dossier (index.html ou .cache/ manque) : lancer copier.mjs sur ce dossier, qui la refait sans toucher à sources/.");
+  }
   const finition = controlerLaFinition(dossier, plan);
   erreurs.push(...finition.erreurs);
   infos.push(...finition.infos);
-  const dossierDesEcrans = join(dossier, "ecrans");
+  const dossierDesEcrans = join(sources, "ecrans");
   // Un fichier qui sortirait de son dossier n'est jamais lu : validerPlan l'a déjà signalé.
   const ecrans = (Array.isArray(plan.ecrans) ? plan.ecrans : [])
     .filter((e) => e && typeof e === "object" && fichierSur(e.fichier));
@@ -638,15 +697,15 @@ function controler(argument) {
 
   const fichiersDuPlan = new Set(ecrans.map((e) => e.fichier));
   let fichiersPresents = [];
-  // Claude ne crée aucun dossier vide : ecrans/ n'est exigé que si le plan liste des écrans.
+  // sources/ecrans/ n'est exigé que si le plan liste des écrans.
   if (estUnDossier(dossierDesEcrans)) {
     fichiersPresents = readdirSync(dossierDesEcrans).filter((nom) => /\.html$/i.test(nom)).sort();
   } else if (Array.isArray(plan.ecrans) && plan.ecrans.length > 0) {
-    erreurs.push("Le dossier ecrans est absent, alors que le plan liste des écrans.");
+    erreurs.push("Le dossier sources/ecrans est absent, alors que le plan liste des écrans.");
   }
   for (const nom of fichiersPresents) {
     if (!fichiersDuPlan.has(nom)) {
-      erreurs.push(`Le fichier ecrans/${nom} n'est dans aucun écran du plan : l'ajouter au plan ou le supprimer.`);
+      erreurs.push(`Le fichier sources/ecrans/${nom} n'est dans aucun écran du plan : l'ajouter au plan ou le supprimer.`);
     }
   }
 
@@ -654,11 +713,11 @@ function controler(argument) {
   for (const ecran of ecrans) {
     const cheminDeLEcran = join(dossierDesEcrans, ecran.fichier);
     if (!estUnFichier(cheminDeLEcran)) {
-      erreurs.push(`L'écran ${ecran.code} du plan n'a pas de fichier : ecrans/${ecran.fichier} est absent.`);
+      erreurs.push(`L'écran ${ecran.code} du plan n'a pas de fichier : sources/ecrans/${ecran.fichier} est absent.`);
     } else {
       controles++;
       const resultat = controlerEcran({
-        chemin: `ecrans/${ecran.fichier}`,
+        chemin: `sources/ecrans/${ecran.fichier}`,
         code: ecran.code,
         html: readFileSync(cheminDeLEcran, "utf8"),
         dossierDesLiens: dossierDesEcrans,
@@ -666,21 +725,22 @@ function controler(argument) {
       });
       erreurs.push(...resultat.erreurs);
       infos.push(...resultat.infos);
+      erreurs.push(...liensDuStyle(readFileSync(cheminDeLEcran, "utf8"), `sources/ecrans/${ecran.fichier}`, plan));
     }
     const actuel = ecran.actuel;
     if (actuel && typeof actuel === "object" && fichierSur(actuel.fichier)) {
       // Comme la page : un existant se cherche dans actuel/, que le plan écrive ce préfixe ou non.
       const relatif = actuel.fichier.indexOf("actuel/") === 0 ? actuel.fichier : `actuel/${actuel.fichier}`;
-      if (!estUnFichier(join(dossier, relatif))) {
-        erreurs.push(`L'écran ${ecran.code} cite la capture ${relatif}, qui est absente.`);
+      if (!estUnFichier(join(sources, relatif))) {
+        erreurs.push(`L'écran ${ecran.code} cite la capture sources/${relatif}, qui est absente.`);
       } else if (/\.html?$/i.test(relatif)) {
         // Un existant redessiné est une page comme un écran : même contrôle, sans le code ni les crochets.
-        if (!resteDansLeDossier(dossier, relatif)) {
-          erreurs.push(`L'écran ${ecran.code} cite l'existant ${relatif}, qui est hors du dossier des maquettes : il n'est pas lu.`);
+        if (!resteDansLeDossier(sources, relatif)) {
+          erreurs.push(`L'écran ${ecran.code} cite l'existant ${relatif}, qui est hors de sources/ : il n'est pas lu.`);
         } else {
-          const cheminDeLActuel = join(dossier, relatif);
+          const cheminDeLActuel = join(sources, relatif);
           const resultat = controlerEcran({
-            chemin: relatif,
+            chemin: `sources/${relatif}`,
             code: ecran.code,
             html: readFileSync(cheminDeLActuel, "utf8"),
             dossierDesLiens: dirname(cheminDeLActuel),

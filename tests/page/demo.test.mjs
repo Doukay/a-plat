@@ -100,7 +100,7 @@ test("à 390 px, chaque écran de la démo tient sans défilement de côté et s
     const { join } = await import("node:path");
     const fichiers = await page.evaluate(() => window.A_PLAT.ecrans.map((e) => e.fichier));
     for (const fichier of fichiers) {
-      await page.goto(pathToFileURL(join(dossier, "ecrans", fichier)).href);
+      await page.goto(pathToFileURL(join(dossier, "sources", "ecrans", fichier)).href);
       const mesures = await page.evaluate(() => ({
         defile: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         haut: document.documentElement.scrollHeight,

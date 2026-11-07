@@ -9,7 +9,7 @@ const CHEMIN_LOGIQUE = "../skills/a-plat/modele/a-plat/logique.js";
 const { validerPlan, texteCorrections, ecranParFichier, fichierSur, nomDeLAvancement, inchangesACompleter } = require(CHEMIN_LOGIQUE);
 
 function chargerPlanComplet() {
-  const texte = readFileSync(new URL("./fixtures/complet/plan.js", import.meta.url), "utf8");
+  const texte = readFileSync(new URL("./fixtures/complet/sources/plan.js", import.meta.url), "utf8");
   const fenetre = {};
   vm.runInNewContext(texte, { window: fenetre });
   // Copie dans le monde de ce test, pour pouvoir la casser sans toucher au reste.
@@ -195,7 +195,7 @@ for (const fichier of FICHIERS_REFUSES) {
     const texte = erreursDe(plan);
     assert.match(texte, /A2/);
     assert.match(texte, /fichier/);
-    assert.match(texte, /dossier ecrans\//);
+    assert.match(texte, /dossier sources\/ecrans\//);
   });
 }
 
@@ -206,7 +206,7 @@ test("validerPlan refuse un actuel.fichier qui sort du dossier actuel/ et cite l
     const texte = erreursDe(plan);
     assert.match(texte, /A2/, fichier);
     assert.match(texte, /actuel/, fichier);
-    assert.match(texte, /dossier actuel\//, fichier);
+    assert.match(texte, /dossier sources\/actuel\//, fichier);
   }
 });
 

@@ -10,15 +10,23 @@ import { avecPage, genererFixture, nettoyerFixtures, ecranHtml } from "./aide.mj
 after(nettoyerFixtures);
 
 const MODELE = fileURLToPath(new URL("../../skills/a-plat/modele/commun.css", import.meta.url));
+const CHARTE_DU_MODELE = fileURLToPath(new URL("../../skills/a-plat/modele/charte.css", import.meta.url));
 const UX = "#0066cc";
 const UI = "#c0392b";
 
-// Le commun.css du modèle, avec un bloc UI aux couleurs d'un projet : un autre accent, un autre fond.
+// Le style des écrans d'un dossier a-plat/ : le commun.css du modèle (dans .cache/, l'UX), et une
+// charte (sources/charte.css) au bloc UI aux couleurs d'un projet : un autre accent, un autre fond.
 // Pour l'essai seulement, une boîte qui grandit en UI (comme le ferait une police du projet).
-function communAvecUneUI() {
-  return readFileSync(MODELE, "utf8").replace(/(:root\[data-finition="ui"\] \{)([^}]*)\}/, (_, debut, corps) =>
-    debut + corps.replace(`--ecran-accent: ${UX};`, `--ecran-accent: ${UI};`).replace("--ecran-page: #f5f5f7;", "--ecran-page: #fdf6e3;") + "}") +
-    "\n.selon-finition { height: 200px; }\n:root[data-finition=\"ui\"] .selon-finition { height: 1600px; }\n";
+function styleAvecUneUI() {
+  const charte = readFileSync(CHARTE_DU_MODELE, "utf8");
+  const motif = /(:root\[data-finition="ui"\] \{)([^}]*)\}/;
+  assert.match(charte, motif, "la charte du modèle a son bloc UI");
+  return {
+    "commun.css": readFileSync(MODELE, "utf8"),
+    "charte.css": charte.replace(motif, (_, debut, corps) =>
+      debut + corps.replace(`--ecran-accent: ${UX};`, `--ecran-accent: ${UI};`).replace("--ecran-page: #f5f5f7;", "--ecran-page: #fdf6e3;") + "}") +
+      "\n.selon-finition { height: 200px; }\n:root[data-finition=\"ui\"] .selon-finition { height: 1600px; }\n"
+  };
 }
 
 const ecran = (code, titre, plus = {}) => ({ code, titre, fichier: `${code}.html`, largeur: 390, hauteur: 844, statut: "a-relire", actuel: null, ...plus });
@@ -45,10 +53,10 @@ function fixture(finition) {
   return genererFixture({
     plan, ecrans,
     autres: {
-      "commun.css": communAvecUneUI(),
+      ...styleAvecUneUI(),
       "actuel/A1.html": ecranHtml("A1", corps("Accueil, existant")),
       // Une page qui n'est pas celle d'À plat et qui tient un écran : pour parler à relais.js
-      // seul, sans que la page d'À plat réponde à sa place.
+      // seul, sans que la page d'À plat réponde à sa place. Écrite dans sources/, à côté de ecrans/.
       "harnais.html": '<!doctype html><html><body><iframe id="ecran" src="ecrans/A2.html" width="390" height="600"></iframe></body></html>'
     }
   });
@@ -110,14 +118,14 @@ test("la position de départ suit le réglage : « charte » en UI, « gris-puis
 const GRIS = /const GRIS = `([\s\S]*?)`;/.exec(readFileSync(fileURLToPath(new URL("../../skills/a-plat/style-du-projet.mjs", import.meta.url)), "utf8"))[1];
 
 test("fidèle : en UX l'écran est en gris et en police du système, en UI en couleurs ; l'actuel garde toujours ses couleurs", async () => {
-  const tete = '<link rel="stylesheet" href="../projet/projet.css"><link rel="stylesheet" href="../projet/gris.css">';
+  const tete = '<link rel="stylesheet" href="../../.cache/projet/projet.css"><link rel="stylesheet" href="../../.cache/projet/gris.css">';
   const plan = {
     version: 1, projet: "Fidèle", etatDesLieux: [], reglages: { finition: "fidele" },
     rangees: [{ id: "A", titre: "Rangée A", notes: [] }],
     ecrans: [ecran("A1", "Accueil", { rangee: "A", actuel: { fichier: "actuel/A1.html", origine: "redessine" } })]
   };
-  const actuel = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../projet/projet.css"></head>' +
-    '<body><p class="soleil">Avant</p><script src="../a-plat/relais.js"></script></body></html>';
+  const actuel = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../../.cache/projet/projet.css"></head>' +
+    '<body><p class="soleil">Avant</p><script src="../../.cache/relais.js"></script></body></html>';
   const dossier = genererFixture({
     plan,
     ecrans: { "A1.html": ecranHtml("A1", '<p class="soleil">Après</p>', { tete }) },
@@ -249,7 +257,7 @@ test("l'actuel n'est jamais touché : il garde le vrai style du projet, en UX co
 
 test("relais.js : le message finition pose l'attribut ; une valeur inconnue ou une autre source sont ignorées", async () => {
   await avecPage(PAR_FINITION.charte, {}, async ({ page, dossier }) => {
-    await page.goto(pathToFileURL(join(dossier, "harnais.html")).href);
+    await page.goto(pathToFileURL(join(dossier, "sources", "harnais.html")).href);
     const ecranDuHarnais = await cadre(page, "#ecran");
     await ecranDuHarnais.waitForFunction(() => document.querySelector(".bouton") !== null);
     const attribut = () => ecranDuHarnais.evaluate(() => document.documentElement.getAttribute("data-finition"));
@@ -275,7 +283,7 @@ test("relais.js : le message finition pose l'attribut ; une valeur inconnue ou u
 
 test("un écran ouvert seul, hors de la page, s'affiche en UX", async () => {
   await avecPage(PAR_FINITION.charte, {}, async ({ page, dossier }) => {
-    await page.goto(pathToFileURL(join(dossier, "ecrans", "A2.html")).href);
+    await page.goto(pathToFileURL(join(dossier, "sources", "ecrans", "A2.html")).href);
     assert.equal(await page.evaluate(() => document.documentElement.getAttribute("data-finition")), null);
     assert.equal(await page.locator(".bouton").evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(0, 102, 204)");
   });
@@ -316,7 +324,7 @@ test("un écran ne se montre jamais dans la mauvaise finition : elle voyage dans
   }
   // L'actuel, lui, ne reçoit rien dans son adresse.
   await avecPage(PAR_FINITION.charte, { adresse: "ecran/A1" }, async ({ page }) => {
-    assert.equal(await page.locator(".volet-actuel iframe").getAttribute("src"), "actuel/A1.html");
+    assert.equal(await page.locator(".volet-actuel iframe").getAttribute("src"), "sources/actuel/A1.html");
   });
 });
 
@@ -326,8 +334,8 @@ test("un cadre reste caché tant que son écran n'a pas dit pret, c'est-à-dire 
     version: 1, projet: "Lent", etatDesLieux: [], reglages: { finition: "charte" }, rangees: [{ id: "A", titre: "A", notes: [] }],
     ecrans: [ecran("A1", "Lent", { rangee: "A" })]
   };
-  const lent = ecranHtml("A1", '<main class="page"><a class="bouton" href="#">Agir</a></main><script>setTimeout(function () { var s = document.createElement("script"); s.src = "../a-plat/relais.js"; document.body.appendChild(s); }, 1200);</script>', { relais: false });
-  const dossier = genererFixture({ plan, ecrans: { "A1.html": lent }, autres: { "commun.css": communAvecUneUI() } });
+  const lent = ecranHtml("A1", '<main class="page"><a class="bouton" href="#">Agir</a></main><script>setTimeout(function () { var s = document.createElement("script"); s.src = "../../.cache/relais.js"; document.body.appendChild(s); }, 1200);</script>', { relais: false });
+  const dossier = genererFixture({ plan, ecrans: { "A1.html": lent }, autres: styleAvecUneUI() });
   await avecPage(dossier, { adresse: "ecran/A1", largeur: 1440, hauteur: 900 }, async ({ page }) => {
     const iframe = page.locator(".volet-proposition iframe");
     const ecranLent = await cadre(page, ".volet-proposition iframe");

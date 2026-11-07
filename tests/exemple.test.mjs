@@ -99,7 +99,7 @@ test("rien dans le projet d'essai ne donne les réponses", () => {
     assert.doesNotMatch(t, /tests\/reponses/i, `${nom} ne cite pas le fichier des réponses`);
     assert.doesNotMatch(t, /fausses? pistes?/i, `${nom} ne parle pas de fausse piste`);
     assert.doesNotMatch(t, /\b(TODO|FIXME|XXX)\b/, `${nom} sans marque TODO`);
-    assert.doesNotMatch(t, /C:\\Users|\/home\/|\/Users\//, `${nom} sans chemin de la machine`);
+    assert.doesNotMatch(t, /C:\\Use[r]s|\/home\/|\/Users\//, `${nom} sans chemin de la machine`);
   }
 });
 

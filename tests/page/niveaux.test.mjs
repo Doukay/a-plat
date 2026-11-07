@@ -143,7 +143,7 @@ test("la barre est noire et lisible, en clair comme en sombre", async () => {
     return page.locator("#resultats").evaluate((el) => getComputedStyle(el).backgroundColor);
   });
   assert.equal(await fondDesResultats("light"), "rgb(255, 255, 255)");
-  assert.equal(await fondDesResultats("dark"), "rgb(29, 33, 40)");
+  assert.equal(await fondDesResultats("dark"), "rgb(29, 29, 31)");
 });
 
 // ---------------------------------------------------------------- la recherche
@@ -953,7 +953,7 @@ test("au doigt ou au stylet, il faut glisser de 12 px pour déplacer la planche 
 });
 
 test("le résultat choisi dans la recherche se voit nettement, en clair comme en sombre", async () => {
-  const attendu = { light: { fond: "rgb(228, 235, 251)", filet: "rgb(33, 80, 201)" }, dark: { fond: "rgb(34, 45, 71)", filet: "rgb(143, 176, 255)" } };
+  const attendu = { light: { fond: "rgb(229, 240, 251)", filet: "rgb(0, 102, 204)" }, dark: { fond: "rgb(16, 38, 61)", filet: "rgb(41, 151, 255)" } };
   for (const schema of ["light", "dark"]) {
     await avecPage(FIXTURE, { adresse: "etat", schema }, async ({ page }) => {
       await page.locator("#recherche").fill("a");

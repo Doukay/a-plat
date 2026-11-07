@@ -174,7 +174,7 @@ test("sur la planche, un écran est un vrai lien, à sa vraie taille, sans touch
     assert.equal(await cadre.getAttribute("tabindex"), "-1");
     assert.match(await cadre.getAttribute("title"), /A2/);
     assert.match(await cadre.getAttribute("title"), /Fiche d'un outil/);
-    assert.equal(await cadre.getAttribute("src"), "ecrans/A2-fiche.html?finition=ux", "la page donne la finition dans l'adresse du cadre");
+    assert.equal(await cadre.getAttribute("src"), "sources/ecrans/A2-fiche.html?finition=ux", "la page donne la finition dans l'adresse du cadre");
     assert.equal(await cadre.evaluate((el) => getComputedStyle(el).pointerEvents), "none");
     // Vraie taille dans la planche : 390 de large, au moins 844 de haut ; c'est la planche qui est réduite.
     const taille = await vignette.locator(".cadre-boite").evaluate((el) => ({ l: el.offsetWidth, h: el.offsetHeight }));
@@ -221,14 +221,14 @@ test("#ecran/A2 avec une capture : l'actuel et la proposition côte à côte à 
     assert.equal(espaces(await actuel.locator(".volet-titre").innerText()), "Capture de l'existant");
     assert.equal(espaces(await proposition.locator(".volet-titre").innerText()), "Proposition");
     const image = actuel.locator("img");
-    assert.match(await image.getAttribute("src"), /actuel\/A2-fiche\.png$/);
+    assert.match(await image.getAttribute("src"), /^sources\/actuel\/A2-fiche\.png$/);
     assert.ok((await image.getAttribute("alt")).length > 5, "l'image a un texte alternatif");
     assert.ok(await image.evaluate((el) => el.complete && el.naturalWidth > 0), "la capture est chargée");
     const a = await actuel.boundingBox();
     const p = await proposition.boundingBox();
     assert.ok(a.x + a.width <= p.x + 1, "l'actuel est à gauche de la proposition");
     assert.ok(Math.abs(a.y - p.y) < 4, "ils sont alignés en haut");
-    assert.equal(await proposition.locator("iframe").getAttribute("src"), "ecrans/A2-fiche.html?finition=ux");
+    assert.equal(await proposition.locator("iframe").getAttribute("src"), "sources/ecrans/A2-fiche.html?finition=ux");
   });
   await avecPage("ecrans-variantes", { adresse: "ecran/A2", largeur: 390, hauteur: 844 }, async ({ page }) => {
     const a = await page.locator(".volet-actuel").boundingBox();
@@ -244,7 +244,7 @@ test("un actuel « redessine » en HTML est un cadre, étiqueté « Redessiné d
     const actuel = page.locator(".volet-actuel");
     assert.equal(espaces(await actuel.locator(".volet-titre").innerText()), "Redessiné d'après le code");
     assert.equal(await actuel.locator("img").count(), 0);
-    assert.equal(await actuel.locator("iframe").getAttribute("src"), "actuel/A1-accueil.html");
+    assert.equal(await actuel.locator("iframe").getAttribute("src"), "sources/actuel/A1-accueil.html");
     const cadre = await cadreDe(page, "A1", ".volet-actuel");
     await attendreMode(cadre, "corriger");
     assert.equal(await page.locator(".cadre-manque").count(), 0, "le cadre de l'actuel répond lui aussi");
@@ -261,7 +261,7 @@ test("sans actuel, la proposition est seule", async () => {
     assert.equal(await page.locator(".volet-actuel").count(), 0);
     const contenu = await texte(page, "#vue");
     assert.doesNotMatch(contenu, /Capture de l'existant|Redessiné d'après le code/);
-    assert.equal(await page.locator(".volet-proposition iframe").getAttribute("src"), "ecrans/B1-pret.html?finition=ux");
+    assert.equal(await page.locator(".volet-proposition iframe").getAttribute("src"), "sources/ecrans/B1-pret.html?finition=ux");
   });
 });
 
@@ -480,7 +480,7 @@ test("un message qui ne vient pas d'un cadre de la page, ou sans aPlat: 1, est i
 
 test("un écran ouvert seul, hors de la page, s'affiche et ses liens marchent normalement", async () => {
   await avecPage("complet", {}, async ({ page, dossier, erreurs, requetes }) => {
-    const base = pathToFileURL(join(dossier, "ecrans")).href;
+    const base = pathToFileURL(join(dossier, "sources", "ecrans")).href;
     await page.goto(`${base}/A1-accueil.html`);
     assert.equal(await page.locator("h1").innerText(), "Prêtoutil");
     assert.equal(await page.evaluate(() => document.documentElement.dataset.aPlatMode), undefined, "le relais ne fait rien seul");
@@ -499,9 +499,9 @@ test("un écran ouvert seul, hors de la page, s'affiche et ses liens marchent no
 });
 
 test("le style d'un écran ne change pas celui de la page, et la page ne change pas celui de l'écran", async () => {
-  // Sans commun.css (qui fait partie du modèle depuis la tâche 6), l'écran n'a que le style par défaut
+  // Sans commun.css ni charte.css (ils font partie de la page et de sources/), l'écran n'a que le style par défaut
   // du navigateur : c'est ce qui prouve que le style de la page ne passe pas dans le cadre.
-  await avecPage("complet", { adresse: "ecran/A2", retirer: ["commun.css"] }, async ({ page }) => {
+  await avecPage("complet", { adresse: "ecran/A2", retirer: [".cache/commun.css", "sources/charte.css"] }, async ({ page }) => {
     const cadre = await cadreDe(page, "A2");
     await attendreMode(cadre, "corriger");
     const dansLaPage = await page.evaluate(() => {
@@ -527,7 +527,7 @@ test("le style d'un écran ne change pas celui de la page, et la page ne change 
 // ---------------------------------------------------------------- écran introuvable
 
 test("un écran dont le fichier manque affiche « Écran introuvable » et le nom du fichier après 3 secondes, les autres restent utilisables", async () => {
-  await avecPage("complet", { adresse: "ensemble", retirer: ["ecrans/B1-pret.html"] }, async ({ page }) => {
+  await avecPage("complet", { adresse: "ensemble", retirer: ["sources/ecrans/B1-pret.html"] }, async ({ page }) => {
     const debut = Date.now();
     await page.waitForTimeout(1500);
     assert.equal(await page.locator(".cadre-manque").count(), 0, "pas de message avant le délai");
@@ -535,7 +535,7 @@ test("un écran dont le fichier manque affiche « Écran introuvable » et le no
     assert.ok(Date.now() - debut >= 2500, `message trop tôt : ${Date.now() - debut} ms`);
     assert.equal(await page.locator(".cadre-manque").count(), 1, "seul l'écran absent est signalé");
     const manque = page.locator('#vue .vignette[data-code="B1"] .cadre-manque');
-    assert.match(await manque.innerText(), /Écran introuvable : ecrans\/B1-pret\.html/);
+    assert.match(await manque.innerText(), /Écran introuvable : sources\/ecrans\/B1-pret\.html/);
     assert.match(await manque.innerText(), /Demandez à Claude/);
     // les autres écrans restent là et utilisables
     for (const code of ["A1", "A2"]) assert.equal(await page.locator(`#vue .vignette[data-code="${code}"] .cadre-manque`).count(), 0);
@@ -544,9 +544,9 @@ test("un écran dont le fichier manque affiche « Écran introuvable » et le no
     await attendreMode(await cadreDe(page, "A1"), "corriger");
   });
   // Dans la vue d'un écran seul.
-  await avecPage("complet", { adresse: "ecran/B1", retirer: ["ecrans/B1-pret.html"] }, async ({ page }) => {
+  await avecPage("complet", { adresse: "ecran/B1", retirer: ["sources/ecrans/B1-pret.html"] }, async ({ page }) => {
     await page.locator(".cadre-manque").waitFor({ timeout: 6000 });
-    assert.match(await texte(page, ".cadre-manque"), /Écran introuvable : ecrans\/B1-pret\.html/);
+    assert.match(await texte(page, ".cadre-manque"), /Écran introuvable : sources\/ecrans\/B1-pret\.html/);
     assert.equal(await page.locator(".mode button").count(), 2, "la page reste utilisable");
   });
 });
@@ -555,7 +555,7 @@ test("un écran qui répond en retard retrouve son cadre", async () => {
   const dossier = genererFixture({
     plan: planDe([{ code: "A1", titre: "Lent", fichier: "A1-lent.html" }, { code: "A2", titre: "Vif", fichier: "A2-vif.html" }]),
     ecrans: {
-      "A1-lent.html": ecranHtml("A1", '<h1>Écran lent</h1><script>setTimeout(function () { var s = document.createElement("script"); s.src = "../a-plat/relais.js"; document.body.appendChild(s); }, 4500);</script>', { relais: false }),
+      "A1-lent.html": ecranHtml("A1", '<h1>Écran lent</h1><script>setTimeout(function () { var s = document.createElement("script"); s.src = "../../.cache/relais.js"; document.body.appendChild(s); }, 4500);</script>', { relais: false }),
       "A2-vif.html": ecranHtml("A2", "<h1>Écran vif</h1>")
     }
   });
@@ -591,7 +591,7 @@ test("un écran absent, loin hors de la vue, n'est signalé qu'une fois approch�
     const a40 = await page.locator('.vignette[data-code="A40"]').boundingBox();
     assert.ok(a40.x > 0 && a40.x < 1320, `A40 est maintenant dans la fenêtre (x = ${a40.x})`);
     await page.locator('.vignette[data-code="A40"] .cadre-manque').waitFor({ timeout: 7000 });
-    assert.match(await texte(page, ".cadre-manque"), /Écran introuvable : ecrans\/A40\.html/);
+    assert.match(await texte(page, ".cadre-manque"), /Écran introuvable : sources\/ecrans\/A40\.html/);
     assert.equal(await page.locator(".cadre-manque").count(), 1);
   });
 });
@@ -713,7 +713,7 @@ for (const largeur of [390, 1320]) {
           assert.deepEqual(contexte.erreurs, [], `${adresse} : erreurs de page`);
           assert.deepEqual(contexte.console.filter((m) => !/Failed to load resource/.test(m)), [], `${adresse} : erreurs de console`);
           assert.deepEqual(contexte.requetes, [], `${adresse} : requêtes hors file://`);
-          assert.equal(mesures.fond === "rgb(238, 240, 243)", schema === "light");
+          assert.equal(mesures.fond === "rgb(245, 245, 247)", schema === "light");
           const fondNote = await page.evaluate(() => {
             const note = document.querySelector(".note");
             return note ? getComputedStyle(note).backgroundColor : null;

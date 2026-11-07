@@ -479,8 +479,8 @@ test("la saisie respecte la zone sûre du bas de l'appareil, et le viewport lais
   const css = readFileSync(fileURLToPath(new URL("../../skills/a-plat/modele/a-plat/style.css", import.meta.url)), "utf8");
   assert.match(css, /\.correction-saisie[^}]*\{[^}]*env\(safe-area-inset-bottom/s);
   const html = readFileSync(fileURLToPath(new URL("../../skills/a-plat/modele/index.html", import.meta.url)), "utf8");
-  assert.match(html, /<script src="a-plat\/corrections\.js"><\/script>/);
-  assert.ok(html.indexOf("a-plat/moteur.js") < html.indexOf("a-plat/corrections.js"), "corrections.js vient après moteur.js");
+  assert.match(html, /<script src="\.cache\/corrections\.js"><\/script>/);
+  assert.ok(html.indexOf(".cache/moteur.js") > 0 && html.indexOf(".cache/moteur.js") < html.indexOf(".cache/corrections.js"), "corrections.js vient après moteur.js");
 });
 
 test("les boutons du panneau font au moins 44 px de haut à 390 px", async () => {
@@ -552,7 +552,7 @@ test("une capture de l'existant introuvable est remplacée par une phrase qui di
     const manque = page.locator(".volet-actuel .actuel-manque");
     await manque.waitFor();
     const texte = espaces(await manque.innerText());
-    assert.match(texte, /^Capture introuvable : actuel\/absente\.png/);
+    assert.match(texte, /^Capture introuvable : sources\/actuel\/absente\.png/);
     assert.match(texte, /Claude/);
     assert.equal(await page.locator(".volet-actuel img").count(), 0, "l'image cassée n'est plus affichée");
     assert.equal(await page.locator(".volet-proposition iframe").count(), 1, "la proposition reste affichée");

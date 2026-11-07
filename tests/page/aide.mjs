@@ -1,4 +1,4 @@
-// Aides communes aux tests de la page : assemblage d'un dossier de maquettes jetable
+// Aides communes aux tests de la page : assemblage d'un dossier a-plat/ jetable
 // et ouverture de sa page en file://, dans un navigateur isolé.
 // Avec A_PLAT_HTTP=1, la page est servie par un petit serveur web local (127.0.0.1 seulement,
 // ce seul dossier) et ouverte par son adresse http, comme depuis un téléphone sur un serveur.
@@ -109,10 +109,12 @@ const generees = [];
 
 // Écrit une fixture jetable dans le dossier temporaire et renvoie son chemin, que l'on
 // passe à avecPage ou assembler à la place d'un nom de fixture. Rien n'est à valider dans Git.
-//   plan    : l'objet du plan (écrit dans plan.js)
-//   ecrans  : { "A1-accueil.html": "<html…>" } écrits dans ecrans/
-//   autres  : { "actuel/x.png": Buffer ou texte } écrits tels quels
-// commun.css est écrit aussi, comme dans un vrai dossier de maquettes.
+//   plan    : l'objet du plan (écrit dans sources/plan.js)
+//   ecrans  : { "A1-accueil.html": "<html…>" } écrits dans sources/ecrans/
+//   autres  : { "actuel/x.png": Buffer ou texte } écrits dans sources/, sauf « commun.css »
+//             (.cache/commun.css), « projet/… » (.cache/projet/…) et « .cache/… », tels quels
+// Un commun.css réduit est écrit dans .cache/, à la place de celui du modèle : les mesures des
+// essais ne dépendent pas du style des écrans.
 export function genererFixture({ plan, ecrans = {}, autres = {} }) {
   const dossier = mkdtempSync(join(tmpdir(), "a-plat-fixture-"));
   generees.push(dossier);
@@ -121,10 +123,14 @@ export function genererFixture({ plan, ecrans = {}, autres = {} }) {
     mkdirSync(dirname(cible), { recursive: true });
     writeFileSync(cible, contenu);
   };
-  ecrire("plan.js", `window.A_PLAT = ${JSON.stringify(plan)};\n`);
-  ecrire("commun.css", "body { font-family: sans-serif; }\n");
-  for (const [nom, contenu] of Object.entries(ecrans)) ecrire(join("ecrans", nom), contenu);
-  for (const [chemin, contenu] of Object.entries(autres)) ecrire(chemin, contenu);
+  const place = (chemin) => chemin === "commun.css" ? ".cache/commun.css"
+    : chemin.startsWith("projet/") ? `.cache/${chemin}`
+    : chemin.startsWith(".cache/") ? chemin
+    : `sources/${chemin}`;
+  ecrire("sources/plan.js", `window.A_PLAT = ${JSON.stringify(plan)};\n`);
+  ecrire(".cache/commun.css", "body { font-family: sans-serif; }\n");
+  for (const [nom, contenu] of Object.entries(ecrans)) ecrire(join("sources", "ecrans", nom), contenu);
+  for (const [chemin, contenu] of Object.entries(autres)) ecrire(place(chemin), contenu);
   return dossier;
 }
 
@@ -139,8 +145,9 @@ export function ecranHtml(code, corps, { tete = "", relais = true } = {}) {
 <html lang="fr" data-ecran="${code}">
 <head><meta charset="utf-8"><title>${code}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="../commun.css">${tete}</head>
-<body>${corps}${relais ? '<script src="../a-plat/relais.js"></script>' : ""}</body>
+<link rel="stylesheet" href="../../.cache/commun.css">
+<link rel="stylesheet" href="../charte.css">${tete}</head>
+<body>${corps}${relais ? '<script src="../../.cache/relais.js"></script>' : ""}</body>
 </html>
 `;
 }

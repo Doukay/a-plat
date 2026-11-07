@@ -4,17 +4,17 @@
 
 ## Avant d'écrire
 
-Relire `plan.js` et relancer le contrôle. Si le contrôle échoue, le dire et corriger. Si le projet a changé depuis la dernière lecture, signaler ce qui ne colle plus.
+Relire `sources/plan.js` et relancer le contrôle. Si le contrôle échoue, le dire et corriger. Si le projet a changé depuis la dernière lecture, signaler ce qui ne colle plus.
 
 ## Écrire le dossier
 
-Dans le dossier de maquettes, un seul fichier : `passage-au-code.md`. S'il existe déjà, le remplacer après avoir dit ce qui change. Il suit ce plan, tiré de `plan.js`, sans rien inventer :
+Dans `a-plat/sources/`, un seul fichier : `passage-au-code.md`. S'il existe déjà, le remplacer après avoir dit ce qui change. Il suit ce plan, tiré de `plan.js`, sans rien inventer :
 
 ```markdown
 # Passage au code : <projet>
 
 Date : <AAAA-MM-JJ>. <n> écrans validés sur <m>.
-Les maquettes s'ouvrent avec index.html. Chaque écran est un vrai fichier HTML, à prendre comme référence.
+Les maquettes s'ouvrent avec a-plat/index.html (si la page manque, relancer copier.mjs). Chaque écran est un vrai fichier HTML, à prendre comme référence.
 
 ## Écrans validés
 | Code | Écran (« inchangé » s'il l'est) | Fichier | Page du projet concernée |

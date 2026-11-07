@@ -3,12 +3,12 @@
   Écran type d'À plat : le point de départ de chaque écran.
 
   Comment s'en servir
-  1. Copier ce fichier dans le dossier ecrans/, sous le nom du code et du titre : ecrans/B3-commande.html.
+  1. Copier ce fichier dans a-plat/sources/ecrans/, sous le nom du code et du titre : B3-commande.html.
   2. Remplacer X0 par le code de l'écran, deux fois : dans data-ecran et dans <title>.
-  3. Ajouter l'écran à plan.js (code, titre, rangée, fichier). Sans cela, la page ne le montre pas.
+  3. Ajouter l'écran à sources/plan.js (code, titre, rangée, fichier). Sans cela, la page ne le montre pas.
   4. Garder l'écran sans couleur ni style à lui : tout passe par les classes de commun.css
-     (.bouton, .champ, .carte, .vignette et celles qui les entourent). Ses couleurs viennent des
-     deux blocs de variables en tête de commun.css : UX (la maquette en gris) et UI (les couleurs
+     (.bouton, .champ, .carte, .vignette et celles qui les entourent). Ses couleurs viennent de
+     deux blocs de variables : UX en tête de commun.css (la maquette en gris), UI dans charte.css (les couleurs
      du projet). Le bouton « UX | UI » de la page passe de l'un à l'autre ; un écran qui écrirait
      une couleur à lui ne suivrait plus.
   5. Écrire de vrais textes, avec des exemples inventés mais crédibles. Ce que l'on ne sait pas
@@ -23,7 +23,8 @@
 <html lang="fr" data-ecran="X0">
 <head><meta charset="utf-8"><title>X0 · Écran type</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="../commun.css"></head>
+<link rel="stylesheet" href="../../.cache/commun.css">
+<link rel="stylesheet" href="../charte.css"></head>
 <body>
 <!-- L'en-tête : un lien de retour (vers l'écran d'où l'on vient) et le titre de l'écran.
      Il ne déborde jamais : un titre trop long est coupé par des points de suspension. -->
@@ -74,5 +75,5 @@
   <a class="bouton discret" href="X0-type.html">Action secondaire</a>
   <div class="ligne"><a class="bouton discret court pousse" href="X0-type.html">Personnaliser</a></div>
 </main>
-<script src="../a-plat/relais.js"></script></body>
+<script src="../../.cache/relais.js"></script></body>
 </html>

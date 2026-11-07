@@ -7,6 +7,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { copierLeModeleEtLaFixture } from "./assembler.mjs";
 
 const SKILL = fileURLToPath(new URL("../skills/a-plat/", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("./fixtures/complet", import.meta.url));
@@ -21,27 +22,28 @@ function lancer(script, ...args) {
   return { code: r.status, sortie: `${r.stdout}${r.stderr}` };
 }
 
-const TETE_FIDELE = '<link rel="stylesheet" href="../projet/polices.css"><link rel="stylesheet" href="../projet/projet.css"><link rel="stylesheet" href="../projet/gris.css">';
+const TETE_FIDELE = '<link rel="stylesheet" href="../../.cache/projet/polices.css"><link rel="stylesheet" href="../../.cache/projet/projet.css"><link rel="stylesheet" href="../../.cache/projet/gris.css">';
 const ecranFidele = (code, corps) => `<!doctype html><html lang="fr" data-ecran="${code}"><head><meta charset="utf-8"><title>${code}</title>${TETE_FIDELE}</head>` +
-  `<body><div id="root">${corps}</div><script src="../a-plat/relais.js"></script></body></html>`;
+  `<body><div id="root">${corps}</div><script src="../../.cache/relais.js"></script></body></html>`;
 
-// Un dossier de maquettes en finition « fidele » : les trois écrans de la fixture réécrits avec
-// des classes du projet, un projet/ complet, et le moteur du modèle.
+// Un vrai dossier a-plat/ en finition « fidele » : la page rangée comme le fait copier.mjs, la
+// fixture complète dans sources/, ses trois écrans réécrits avec des classes du projet, et un
+// .cache/projet/ complet.
 function preparer() {
-  const dossier = join(racine, `maquettes-${++numero}`);
-  cpSync(FIXTURE, dossier, { recursive: true });
-  cpSync(join(SKILL, "modele", "a-plat"), join(dossier, "a-plat"), { recursive: true });
-  const plan = join(dossier, "plan.js");
+  const dossier = join(racine, `${++numero}`, "a-plat");
+  mkdirSync(dossier, { recursive: true });
+  copierLeModeleEtLaFixture(dossier, FIXTURE);
+  const plan = join(dossier, "sources", "plan.js");
   writeFileSync(plan, readFileSync(plan, "utf8").replace('finition: "gris"', 'finition: "fidele"'));
-  writeFileSync(join(dossier, "ecrans", "A1-accueil.html"), ecranFidele("A1", '<h1 class="text-2xl font-semibold">Accueil</h1><a class="bouton" href="A2-fiche.html">Fiche</a>'));
-  writeFileSync(join(dossier, "ecrans", "A2-fiche.html"), ecranFidele("A2", '<h1 class="text-xl">Fiche</h1>'));
-  writeFileSync(join(dossier, "ecrans", "B1-pret.html"), ecranFidele("B1", '<h1 class="text-xl">Prêt</h1>'));
-  mkdirSync(join(dossier, "projet"));
-  writeFileSync(join(dossier, "projet", "projet.css"), ".text-xl { font-size: 1.25rem; }\n");
-  writeFileSync(join(dossier, "projet", "gris.css"), "html:not([data-finition=\"ui\"]) { filter: grayscale(1); }\n");
+  writeFileSync(join(dossier, "sources", "ecrans", "A1-accueil.html"), ecranFidele("A1", '<h1 class="text-2xl font-semibold">Accueil</h1><a class="bouton" href="A2-fiche.html">Fiche</a>'));
+  writeFileSync(join(dossier, "sources", "ecrans", "A2-fiche.html"), ecranFidele("A2", '<h1 class="text-xl">Fiche</h1>'));
+  writeFileSync(join(dossier, "sources", "ecrans", "B1-pret.html"), ecranFidele("B1", '<h1 class="text-xl">Prêt</h1>'));
+  mkdirSync(join(dossier, ".cache", "projet"));
+  writeFileSync(join(dossier, ".cache", "projet", "projet.css"), ".text-xl { font-size: 1.25rem; }\n");
+  writeFileSync(join(dossier, ".cache", "projet", "gris.css"), "html:not([data-finition=\"ui\"]) { filter: grayscale(1); }\n");
   // Le style a été construit après les écrans.
   const plusTard = new Date(Date.now() + 60000);
-  utimesSync(join(dossier, "projet", "projet.css"), plusTard, plusTard);
+  utimesSync(join(dossier, ".cache", "projet", "projet.css"), plusTard, plusTard);
   return dossier;
 }
 
@@ -55,38 +57,38 @@ test("un dossier fidèle complet passe, sans avertissement sur le style, et sans
 
 test("sans projet/projet.css ni gris.css : code 1, le message dit de lancer style-du-projet.mjs", () => {
   const dossier = preparer();
-  rmSync(join(dossier, "projet"), { recursive: true });
+  rmSync(join(dossier, ".cache", "projet"), { recursive: true });
   const { code, sortie } = lancer("verifier.mjs", dossier);
   assert.equal(code, 1, sortie);
-  assert.match(sortie, /projet\/projet\.css : lancer style-du-projet\.mjs/);
-  assert.match(sortie, /projet\/gris\.css/);
+  assert.match(sortie, /\.cache\/projet\/projet\.css : lancer style-du-projet\.mjs/);
+  assert.match(sortie, /\.cache\/projet\/gris\.css/);
 });
 
 test("une feuille du projet qui charge depuis Internet est refusée ; une image locale ou en data: non", () => {
   const dossier = preparer();
-  writeFileSync(join(dossier, "projet", "projet.css"), '.a { background: url("fichiers/fond.png"); }\n.b { background: url(data:image/png;base64,AA); }\n');
+  writeFileSync(join(dossier, ".cache", "projet", "projet.css"), '.a { background: url("fichiers/fond.png"); }\n.b { background: url(data:image/png;base64,AA); }\n');
   assert.equal(lancer("verifier.mjs", dossier).code, 0);
-  writeFileSync(join(dossier, "projet", "projet.css"), '@import "https://exemple.com/police.css";\n');
+  writeFileSync(join(dossier, ".cache", "projet", "projet.css"), '@import "https://exemple.com/police.css";\n');
   const { code, sortie } = lancer("verifier.mjs", dossier);
   assert.equal(code, 1, sortie);
-  assert.match(sortie, /projet\/projet\.css charge depuis Internet : https:\/\/exemple\.com\/police\.css/);
+  assert.match(sortie, /\.cache\/projet\/projet\.css charge depuis Internet : https:\/\/exemple\.com\/police\.css/);
 });
 
 test("un actuel qui charge gris.css est refusé : l'actuel garde le vrai style", () => {
   const dossier = preparer();
   const actuel = ecranFidele("A2", "<p>Avant</p>").replace(' data-ecran="A2"', "");
-  writeFileSync(join(dossier, "actuel", "A2-fiche.html"), actuel);
-  writeFileSync(join(dossier, "plan.js"), readFileSync(join(dossier, "plan.js"), "utf8").replace('"actuel/A2-fiche.png", origine: "capture"', '"actuel/A2-fiche.html", origine: "redessine"'));
+  writeFileSync(join(dossier, "sources", "actuel", "A2-fiche.html"), actuel);
+  writeFileSync(join(dossier, "sources", "plan.js"), readFileSync(join(dossier, "sources", "plan.js"), "utf8").replace('"actuel/A2-fiche.png", origine: "capture"', '"actuel/A2-fiche.html", origine: "redessine"'));
   const { code, sortie } = lancer("verifier.mjs", dossier);
   assert.equal(code, 1, sortie);
-  assert.match(sortie, /L'existant de A2 charge projet\/gris\.css/);
-  writeFileSync(join(dossier, "actuel", "A2-fiche.html"), actuel.replace('<link rel="stylesheet" href="../projet/gris.css">', ""));
+  assert.match(sortie, /L'existant de A2 charge \.cache\/projet\/gris\.css/);
+  writeFileSync(join(dossier, "sources", "actuel", "A2-fiche.html"), actuel.replace('<link rel="stylesheet" href="../../.cache/projet/gris.css">', ""));
   assert.equal(lancer("verifier.mjs", dossier).code, 0);
 });
 
 test("un écran encore en commun.css est signalé en une seule ligne, avec son code", () => {
   const dossier = preparer();
-  cpSync(join(FIXTURE, "ecrans", "B1-pret.html"), join(dossier, "ecrans", "B1-pret.html"));
+  cpSync(join(FIXTURE, "sources", "ecrans", "B1-pret.html"), join(dossier, "sources", "ecrans", "B1-pret.html"));
   const { code, sortie } = lancer("verifier.mjs", dossier);
   assert.equal(code, 0, sortie);
   assert.match(sortie, /Avertissement : 1 écran n'a pas le vrai style du projet \(B1\)/);
@@ -95,19 +97,19 @@ test("un écran encore en commun.css est signalé en une seule ligne, avec son c
 test("un écran changé après la construction par Tailwind : avertissement qui dit de relancer ; pas pour une feuille recopiée", () => {
   const dossier = preparer();
   const tot = new Date(Date.now() - 3600000);
-  writeFileSync(join(dossier, "projet", "projet.css"), "/* Construit par style-du-projet.mjs depuis index.css (Tailwind 4.3.3), pour les classes de 3 écrans. */\n.text-xl { font-size: 1.25rem; }\n");
-  utimesSync(join(dossier, "projet", "projet.css"), tot, tot);
+  writeFileSync(join(dossier, ".cache", "projet", "projet.css"), "/* Construit par style-du-projet.mjs depuis index.css (Tailwind 4.3.3), pour les classes de 3 écrans. */\n.text-xl { font-size: 1.25rem; }\n");
+  utimesSync(join(dossier, ".cache", "projet", "projet.css"), tot, tot);
   const { code, sortie } = lancer("verifier.mjs", dossier);
   assert.equal(code, 0, sortie);
   assert.match(sortie, /3 écrans ont changé après la construction du style \(A1, A2, B1\) : relancer style-du-projet\.mjs/);
-  writeFileSync(join(dossier, "projet", "projet.css"), "/* Recopié par style-du-projet.mjs depuis index.css, @import locaux compris. */\n.a { color: red; }\n");
-  utimesSync(join(dossier, "projet", "projet.css"), tot, tot);
+  writeFileSync(join(dossier, ".cache", "projet", "projet.css"), "/* Recopié par style-du-projet.mjs depuis index.css, @import locaux compris. */\n.a { color: red; }\n");
+  utimesSync(join(dossier, ".cache", "projet", "projet.css"), tot, tot);
   assert.doesNotMatch(lancer("verifier.mjs", dossier).sortie, /ont changé après/);
 });
 
 test("un SVG intégré en data:, avec son xmlns, n'est pas pris pour une adresse en ligne", () => {
   const dossier = preparer();
-  writeFileSync(join(dossier, "projet", "projet.css"),
+  writeFileSync(join(dossier, ".cache", "projet", "projet.css"),
     ".fleche { background-image: url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3c/svg%3e\"); }\n");
   const { code, sortie } = lancer("verifier.mjs", dossier);
   assert.equal(code, 0, sortie);
@@ -115,7 +117,7 @@ test("un SVG intégré en data:, avec son xmlns, n'est pas pris pour une adresse
 
 test("une page d'avant la finition fidèle est signalée", () => {
   const dossier = preparer();
-  writeFileSync(join(dossier, "a-plat", "moteur.js"), '// ancienne page\nvar D = { "charte": "ui" }; nomDeLAvancement;\n');
+  writeFileSync(join(dossier, ".cache", "moteur.js"), '// ancienne page\nvar D = { "charte": "ui" }; nomDeLAvancement;\n');
   const { sortie } = lancer("verifier.mjs", dossier);
   assert.match(sortie, /ne connaît pas la finition fidèle/);
 });
@@ -145,22 +147,22 @@ function fauxProjet() {
 
 test("style-du-projet.mjs recopie une feuille ordinaire dans projet/, sans rien d'Internet, avec ses fichiers et ses polices", () => {
   const dossier = preparer();
-  rmSync(join(dossier, "projet"), { recursive: true });
+  rmSync(join(dossier, ".cache", "projet"), { recursive: true });
   const projet = fauxProjet();
   const avant = readdirSync(projet, { recursive: true }).sort();
   const { code, sortie } = lancer("style-du-projet.mjs", dossier, join(projet, "src", "index.css"));
   assert.equal(code, 0, sortie);
-  const css = readFileSync(join(dossier, "projet", "projet.css"), "utf8");
+  const css = readFileSync(join(dossier, ".cache", "projet", "projet.css"), "utf8");
   assert.match(css, /\.carte \{ background: url\("fichiers\/src\/images\/fond\.png"\); \}/, "l'@import local est mis bout à bout, l'image copiée sous son chemin");
-  assert.ok(existsSync(join(dossier, "projet", "fichiers", "src", "images", "fond.png")));
+  assert.ok(existsSync(join(dossier, ".cache", "projet", "fichiers", "src", "images", "fond.png")));
   assert.doesNotMatch(css, /url\(\s*["']?https?:|@import\s+url\(/, "plus rien ne se charge depuis Internet");
   assert.match(sortie, /Retiré, car en ligne : https:\/\/fonts\.exemple\.com\/x\.css, https:\/\/exemple\.com\/a\.png/);
   assert.match(css, /#123456/, "le style du projet garde ses couleurs");
-  const polices = readFileSync(join(dossier, "projet", "polices.css"), "utf8");
+  const polices = readFileSync(join(dossier, ".cache", "projet", "polices.css"), "utf8");
   assert.match(polices, /url\(polices\/essai-latin-400-normal\.woff2\)/);
   assert.doesNotMatch(polices, /cyrillic/);
-  assert.deepEqual(readdirSync(join(dossier, "projet", "polices")), ["essai-latin-400-normal.woff2"]);
-  assert.match(readFileSync(join(dossier, "projet", "gris.css"), "utf8"), /grayscale\(1\)/);
+  assert.deepEqual(readdirSync(join(dossier, ".cache", "projet", "polices")), ["essai-latin-400-normal.woff2"]);
+  assert.match(readFileSync(join(dossier, ".cache", "projet", "gris.css"), "utf8"), /grayscale\(1\)/);
   assert.deepEqual(readdirSync(projet, { recursive: true }).sort(), avant, "rien n'est écrit dans le projet");
   // Le dossier passe ensuite le contrôle.
   assert.equal(lancer("verifier.mjs", dossier).code, 0);
@@ -201,11 +203,11 @@ function projetPiege() {
 
 test("style-du-projet.mjs : rien d'Internet, rien d'hors du projet, pas d'écrasement, couches et supports gardés", () => {
   const dossier = preparer();
-  rmSync(join(dossier, "projet"), { recursive: true });
+  rmSync(join(dossier, ".cache", "projet"), { recursive: true });
   const projet = projetPiege();
   const { code, sortie } = lancer("style-du-projet.mjs", dossier, join(projet, "src", "index.css"));
   assert.equal(code, 0, sortie);
-  const css = readFileSync(join(dossier, "projet", "projet.css"), "utf8");
+  const css = readFileSync(join(dossier, ".cache", "projet", "projet.css"), "utf8");
   // Internet : le @import avec un « ; » dans l'adresse, image-set ; le SVG intégré reste intact.
   assert.doesNotMatch(css, /fonts\.googleapis\.com\/css2[^*]*;\s*$|@import\s+"https/m);
   assert.doesNotMatch(css, /"https:\/\/exemple\.com/);
@@ -213,12 +215,12 @@ test("style-du-projet.mjs : rien d'Internet, rien d'hors du projet, pas d'écras
   assert.match(sortie, /Retiré, car en ligne : .*fonts\.googleapis\.com.*exemple\.com\/a\.png/);
   // Hors du projet : ni copié, ni mis bout à bout.
   assert.doesNotMatch(css, /SECRET/);
-  assert.equal(readdirSync(join(dossier, "projet", "fichiers"), { recursive: true }).some((n) => /secret/.test(n)), false);
+  assert.equal(readdirSync(join(dossier, ".cache", "projet", "fichiers"), { recursive: true }).some((n) => /secret/.test(n)), false);
   assert.match(sortie, /Pas recopiés, car hors du projet : .*secret/);
   // Deux logo.png gardent chacun le leur ; /marque.svg vient de public/.
   assert.match(css, /\.a \{ background: url\("fichiers\/src\/a\/logo\.png"\); \}/);
   assert.match(css, /\.b \{ background: url\("fichiers\/src\/b\/logo\.png"\); \}/);
-  assert.equal(readFileSync(join(dossier, "projet", "fichiers", "src", "b", "logo.png"), "utf8"), "logo b");
+  assert.equal(readFileSync(join(dossier, ".cache", "projet", "fichiers", "src", "b", "logo.png"), "utf8"), "logo b");
   assert.match(css, /url\("fichiers\/public\/marque\.svg"\)/);
   // Couches et supports : de vrais blocs, pas un @media invalide.
   assert.match(css, /@layer base \{\n\.dans-la-couche/);
@@ -235,7 +237,7 @@ test("style-du-projet.mjs : Tailwind 3, ou des règles à construire hors de Tai
     [".a { @apply p-4; }\n", /règles à construire/]
   ]) {
     const dossier = preparer();
-    rmSync(join(dossier, "projet", "projet.css"));
+    rmSync(join(dossier, ".cache", "projet", "projet.css"));
     const projet = join(racine, `projet-${++numero}`);
     mkdirSync(projet);
     writeFileSync(join(projet, "index.css"), contenu);
@@ -243,7 +245,7 @@ test("style-du-projet.mjs : Tailwind 3, ou des règles à construire hors de Tai
     assert.equal(code, 2, sortie);
     assert.match(sortie, attendu);
     assert.match(sortie, /charte/);
-    assert.equal(existsSync(join(dossier, "projet", "projet.css")), false);
+    assert.equal(existsSync(join(dossier, ".cache", "projet", "projet.css")), false);
   }
 });
 
@@ -272,9 +274,9 @@ function fauxTailwind(projet) {
 
 test("style-du-projet.mjs avec Tailwind 4 : paquets résolus, classes des seuls écrans fidèles, rien quand aucun écran", () => {
   const dossier = preparer();
-  rmSync(join(dossier, "projet"), { recursive: true });
+  rmSync(join(dossier, ".cache", "projet"), { recursive: true });
   // B1 reste en commun.css : ses classes ne comptent pas.
-  cpSync(join(FIXTURE, "ecrans", "B1-pret.html"), join(dossier, "ecrans", "B1-pret.html"));
+  cpSync(join(FIXTURE, "sources", "ecrans", "B1-pret.html"), join(dossier, "sources", "ecrans", "B1-pret.html"));
   const projet = join(racine, `tw-${++numero}`);
   mkdirSync(join(projet, "src"), { recursive: true });
   writeFileSync(join(projet, "package.json"), "{}");
@@ -283,20 +285,44 @@ test("style-du-projet.mjs avec Tailwind 4 : paquets résolus, classes des seuls 
   const { code, sortie } = lancer("style-du-projet.mjs", dossier, join(projet, "src", "index.css"));
   assert.equal(code, 0, sortie);
   assert.match(sortie, /Tailwind 4\.0\.0-essai/);
-  const css = readFileSync(join(dossier, "projet", "projet.css"), "utf8");
+  const css = readFileSync(join(dossier, ".cache", "projet", "projet.css"), "utf8");
   assert.match(css, /^\/\* Construit par style-du-projet\.mjs depuis index\.css \(Tailwind 4\.0\.0-essai\), pour les classes de 2 écrans/);
   assert.match(css, /node_modules\/tailwindcss\/index\.css \| [^|]*node_modules\/tailwindcss\/theme\.css \| undefined \| undefined/);
   assert.match(css, /--c: "bouton font-semibold text-2xl text-xl"/, "les classes des écrans fidèles A1 et A2, pas celles de B1 (page, carte…)");
   // Aucun écran fidèle encore : le script le dit.
-  for (const nom of ["A1-accueil.html", "A2-fiche.html"]) cpSync(join(FIXTURE, "ecrans", nom), join(dossier, "ecrans", nom));
+  for (const nom of ["A1-accueil.html", "A2-fiche.html"]) cpSync(join(FIXTURE, "sources", "ecrans", nom), join(dossier, "sources", "ecrans", nom));
   const vide = lancer("style-du-projet.mjs", dossier, join(projet, "src", "index.css"));
   assert.equal(vide.code, 0, vide.sortie);
   assert.match(vide.sortie, /Aucun écran ne charge encore ce style : relancer le script après les premiers écrans/);
 });
 
+test("style-du-projet.mjs avec Tailwind 4 : les actuels de sources/actuel/ qui chargent ../../.cache/projet/projet.css comptent aussi", () => {
+  const dossier = preparer();
+  rmSync(join(dossier, ".cache", "projet"), { recursive: true });
+  // Un actuel fidèle (projet.css seulement), et un actuel qui ne charge pas le style du projet.
+  writeFileSync(join(dossier, "sources", "actuel", "A2-fiche.html"),
+    '<!doctype html><html lang="fr"><head><link rel="stylesheet" href="../../.cache/projet/projet.css"></head><body><p class="classe-de-l-actuel">Avant</p><script src="../../.cache/relais.js"></script></body></html>');
+  writeFileSync(join(dossier, "sources", "actuel", "B1-pret.html"),
+    '<!doctype html><html lang="fr"><head><link rel="stylesheet" href="../../.cache/commun.css"></head><body><p class="pas-fidele">Avant</p></body></html>');
+  // Un écran d'ancien dossier, au mauvais endroit : il n'est pas lu.
+  mkdirSync(join(dossier, "ecrans"));
+  writeFileSync(join(dossier, "ecrans", "Z9.html"), '<link rel="stylesheet" href="../projet/projet.css"><p class="ancien-dossier">x</p>');
+  const projet = join(racine, `tw-${++numero}`);
+  mkdirSync(join(projet, "src"), { recursive: true });
+  writeFileSync(join(projet, "package.json"), "{}");
+  writeFileSync(join(projet, "src", "index.css"), '@import "tailwindcss";\n');
+  fauxTailwind(projet);
+  const { code, sortie } = lancer("style-du-projet.mjs", dossier, join(projet, "src", "index.css"));
+  assert.equal(code, 0, sortie);
+  const css = readFileSync(join(dossier, ".cache", "projet", "projet.css"), "utf8");
+  assert.match(css, /--c: "[^"]*\bclasse-de-l-actuel\b/, "les classes de l'actuel fidèle");
+  assert.doesNotMatch(css, /pas-fidele|ancien-dossier/, "ni l'actuel qui ne charge pas projet.css, ni un fichier hors de sources/");
+  assert.ok(!existsSync(join(dossier, "projet")), "rien n'est écrit à l'ancienne place");
+});
+
 test("style-du-projet.mjs : les polices importées par le code, tous leurs fichiers ; --modules=… accepté", () => {
   const dossier = preparer();
-  rmSync(join(dossier, "projet"), { recursive: true });
+  rmSync(join(dossier, ".cache", "projet"), { recursive: true });
   const projet = fauxProjet();
   const paquet = join(projet, "node_modules", "@fontsource", "essai");
   writeFileSync(join(paquet, "600.css"), "@font-face { font-family: 'Essai'; font-weight: 600; src: url(./files/essai-latin-600-normal.woff2) format('woff2'), url(./files/essai-latin-600-normal.woff) format('woff'); }\n");
@@ -305,16 +331,16 @@ test("style-du-projet.mjs : les polices importées par le code, tous leurs fichi
   writeFileSync(join(projet, "src", "main.jsx"), 'import "@fontsource/essai/600.css";\n');
   const { code, sortie } = lancer("style-du-projet.mjs", dossier, join(projet, "src", "index.css"), `--modules=${projet}`);
   assert.equal(code, 0, sortie);
-  const polices = readFileSync(join(dossier, "projet", "polices.css"), "utf8");
+  const polices = readFileSync(join(dossier, ".cache", "projet", "polices.css"), "utf8");
   assert.match(polices, /url\(polices\/essai-latin-600-normal\.woff2\).*url\(polices\/essai-latin-600-normal\.woff\)/);
   assert.doesNotMatch(polices, /400/, "seules les feuilles importées par le code");
-  assert.deepEqual(readdirSync(join(dossier, "projet", "polices")).sort(), ["essai-latin-600-normal.woff", "essai-latin-600-normal.woff2"]);
+  assert.deepEqual(readdirSync(join(dossier, ".cache", "projet", "polices")).sort(), ["essai-latin-600-normal.woff", "essai-latin-600-normal.woff2"]);
 });
 
 test("style-du-projet.mjs : un fichier nommé projet à la place du dossier, code 1 sans trace d'erreur", () => {
   const dossier = preparer();
-  rmSync(join(dossier, "projet"), { recursive: true });
-  writeFileSync(join(dossier, "projet"), "");
+  rmSync(join(dossier, ".cache", "projet"), { recursive: true });
+  writeFileSync(join(dossier, ".cache", "projet"), "");
   const { code, sortie } = lancer("style-du-projet.mjs", dossier, join(fauxProjet(), "src", "index.css"));
   assert.equal(code, 1, sortie);
   assert.match(sortie, /ne peut pas être créé/);
@@ -323,7 +349,7 @@ test("style-du-projet.mjs : un fichier nommé projet à la place du dossier, cod
 
 test("style-du-projet.mjs : Tailwind demandé mais pas installé, code 2 et rien de construit", () => {
   const dossier = preparer();
-  rmSync(join(dossier, "projet"), { recursive: true });
+  rmSync(join(dossier, ".cache", "projet"), { recursive: true });
   const projet = join(racine, `projet-${++numero}`);
   mkdirSync(projet);
   writeFileSync(join(projet, "index.css"), '@import "tailwindcss";\n');
@@ -331,7 +357,7 @@ test("style-du-projet.mjs : Tailwind demandé mais pas installé, code 2 et rien
   assert.equal(code, 2, sortie);
   assert.match(sortie, /Tailwind n'est pas installé/);
   assert.match(sortie, /proposer la finition charte/);
-  assert.equal(existsSync(join(dossier, "projet", "projet.css")), false);
+  assert.equal(existsSync(join(dossier, ".cache", "projet", "projet.css")), false);
 });
 
 test("style-du-projet.mjs refuse un dossier qui n'est pas à l'outil, une feuille absente, et un usage incomplet", () => {
@@ -340,8 +366,21 @@ test("style-du-projet.mjs refuse un dossier qui n'est pas à l'outil, une feuill
   mkdirSync(vide);
   const refus = lancer("style-du-projet.mjs", vide, join(projet, "src", "index.css"));
   assert.equal(refus.code, 2);
-  assert.match(refus.sortie, /n'est pas un dossier de maquettes d'À plat/);
-  assert.equal(existsSync(join(vide, "projet")), false);
+  assert.match(refus.sortie, /n'est pas un dossier a-plat d'À plat \(ni \.cache\/moteur\.js, ni sources\/plan\.js\)/);
+  assert.equal(existsSync(join(vide, ".cache")), false);
+  // Un ancien dossier de maquettes (plan.js à la racine, moteur dans a-plat/) n'est pas reconnu non plus.
+  const ancien = join(racine, `ancien-${++numero}`);
+  cpSync(join(FIXTURE, "sources"), ancien, { recursive: true });
+  cpSync(join(SKILL, "modele", "a-plat"), join(ancien, "a-plat"), { recursive: true });
+  const avant = readdirSync(ancien, { recursive: true }).sort();
+  assert.equal(lancer("style-du-projet.mjs", ancien, join(projet, "src", "index.css")).code, 2);
+  assert.deepEqual(readdirSync(ancien, { recursive: true }).sort(), avant, "rien n'est écrit dans l'ancien dossier");
+  // Un dossier a-plat/ sans sa page (sources/plan.js seul) est reconnu : le style va dans .cache/projet/.
+  const sansPage = join(racine, `sans-page-${++numero}`, "a-plat");
+  cpSync(FIXTURE, sansPage, { recursive: true });
+  const ok = lancer("style-du-projet.mjs", sansPage, join(projet, "src", "index.css"));
+  assert.equal(ok.code, 0, ok.sortie);
+  assert.ok(existsSync(join(sansPage, ".cache", "projet", "projet.css")));
   assert.equal(lancer("style-du-projet.mjs", preparer(), join(projet, "absente.css")).code, 1);
   assert.equal(lancer("style-du-projet.mjs", preparer()).code, 2);
   assert.equal(lancer("style-du-projet.mjs", preparer(), join(projet, "src", "index.css"), "--modules").code, 2);

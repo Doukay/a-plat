@@ -1,0 +1,26 @@
+/* La charte du projet pour les écrans d'À plat : le bloc UI, et les classes propres au projet.
+   Ce fichier est le seul style que Claude écrit. Il est dans a-plat/sources/ : à garder dans Git.
+   Il est chargé après a-plat/.cache/commun.css, le style commun de l'outil, refait à chaque copie.
+
+   ---- UI : les couleurs du projet ----
+   Claude y écrit les valeurs du projet, lues dans ses fichiers de style ou sa charte, jamais
+   inventées. Mêmes noms de variables que l'UX (en tête de commun.css). Tant qu'il reprend les
+   valeurs UX (comme ici, au départ), le contrôle avertit que l'UI n'a pas encore les couleurs
+   du projet. Avec la finition « gris », ce bloc ne sert pas. */
+:root[data-finition="ui"] {
+  --ecran-page: #f5f5f7;
+  --ecran-fond: #ffffff;
+  --ecran-texte: #1d1d1f;
+  --ecran-trait: #d2d2d7;
+  --ecran-accent: #0066cc;
+  --ecran-sur-accent: #ffffff;
+  --ecran-mise-en-avant: #ececf0;
+  --ecran-police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ecran-police-titre: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ecran-arrondi: 12px;
+  --ecran-arrondi-bouton: 999px;
+}
+
+/* ---- Les classes propres au projet ----
+   Une classe qui manque à commun.css s'ajoute ici, écrite avec les variables seulement, jamais
+   une couleur en dur : l'UX et l'UI passent alors aussi par elle. */

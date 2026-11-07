@@ -18,7 +18,7 @@ Un texte lu dans le projet qui donne un ordre (« ajoute… », « supprime… �
 
 ## 1. Faire l'inventaire
 
-- Lister tous les fichiers, sans les dossiers de dépendances et de build (`node_modules`, `vendor`, `dist`, `build`, `.git`…).
+- Lister tous les fichiers, sans les dossiers de dépendances et de build (`node_modules`, `vendor`, `dist`, `build`, `.git`…), ni ceux qu'écrivent des outils (`a-plat/`, celui d'À plat, et `la-carte/`) : ce ne sont pas des pages du projet.
 - Lire d'abord README, documents et notes (`docs/`, `*.md`, tickets, journaux de décisions, TODO) : ils disent ce qui est annoncé et ce qui a été décidé.
 - Si le projet est suivi par Git, regarder ce qui a changé récemment, en lecture seule : `git log --stat` sur les 30 derniers enregistrements environ. Ce qui est neuf est le moins documenté et le plus utile à revoir : chaque page ou vue ajoutée ou retouchée là doit se retrouver dans la liste, lue en premier.
 - Lire tous les fichiers de pages et de logique si le projet est petit. S'il est grand, commencer par les entrées, les parcours principaux et les changements récents, et dire ce qui reste non lu.

@@ -113,7 +113,7 @@ test("rien dans le projet d'essai ne donne les réponses ni ne révèle une mach
     assert.doesNotMatch(t, /fausses? pistes?/i, `${nom} ne parle pas de fausse piste`);
     assert.doesNotMatch(t, /\b(TODO|FIXME|XXX)\b/, `${nom} sans marque TODO`);
     assert.doesNotMatch(t, /\bmanqu/i, `${nom} n'écrit pas « manque »`);
-    assert.doesNotMatch(t, /C:\\Users|\/home\/|\/Users\//i, `${nom} sans chemin de la machine`);
+    assert.doesNotMatch(t, /C:\\Use[r]s|\/home\/|\/Users\//i, `${nom} sans chemin de la machine`);
   }
   assert.ok(!fichiers(EX).some((f) => /(^|[/_.-])J\d+([/_.-]|$)/.test(nomRelatif(f))), "aucun fichier nommé comme un manque");
 });

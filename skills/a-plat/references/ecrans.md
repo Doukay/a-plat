@@ -48,7 +48,7 @@ Ce qui revient sur presque chaque écran (barre du haut, menu de côté, barre d
 Dire une seule fois que des captures des pages qui existent sont les bienvenues, à l'arrêt de l'étape 2 ou de l'étape 3, avant tout dessin, en une phrase et pas comme une question de plus. Elles servent pour les pages qui changent : une page inchangée n'a pas d'actuel. Rappeler qu'une capture peut montrer des données réelles : mieux vaut qu'elle n'en contienne pas.
 
 - **Capture fournie :** la regarder avant de la copier. Si elle montre des données qui semblent réelles (noms, adresses, montants, identifiants), ne pas la copier, le dire à la personne, et lui demander une capture sans elles. Sinon, la mettre dans `actuel/`, avec `origine: "capture"` : demander à la personne d'y poser le fichier elle-même, ou le copier par une seule commande de copie ordinaire qui nomme ce seul fichier, sa source et sa destination, jamais avec un joker (`*`). Claude n'en fait pas lui-même en lançant l'application, sauf accord de la personne (voir « Lancer le projet » dans `SKILL.md`).
-- **Pas de capture :** redessiner la page d'après le code, dans `actuel/`, avec `origine: "redessine"`. Lire ses styles avant, puis reprendre sa structure, ses libellés et ses règles de style, avec le même jeu d'exemples. Seul ce que le code et les styles du projet contiennent y entre, et rien n'y est ajouté, hors les exemples inventés : ni largeur, ni règle, ni élément. Ajouter seulement `relais.js`, comme indiqué dans `references/format.md`. Le redessin montre ce que la page fait, défauts compris, y compris un bouton sans effet : c'est ce qui permet la comparaison. Un style qui n'a pas pu être lu se dit dans le compte rendu, et ne se remplace pas.
+- **Pas de capture :** redessiner la page d'après le code, dans `sources/actuel/`, avec `origine: "redessine"`. Lire ses styles avant, puis reprendre sa structure, ses libellés et ses règles de style, avec le même jeu d'exemples. Seul ce que le code et les styles du projet contiennent y entre, et rien n'y est ajouté, hors les exemples inventés : ni largeur, ni règle, ni élément. Ajouter seulement `relais.js`, comme indiqué dans `references/format.md`. Le redessin montre ce que la page fait, défauts compris, y compris un bouton sans effet : c'est ce qui permet la comparaison. Un style qui n'a pas pu être lu se dit dans le compte rendu, et ne se remplace pas.
 - **Pas de page existante :** `actuel: null`.
 
 ## Les textes
@@ -77,7 +77,7 @@ Il ne reprend ni les données du projet (base, fichiers d'exemple, captures), ni
 
 ## Finition
 
-Chaque écran est dessiné une seule fois. `commun.css` lui donne deux visages, par deux blocs de variables aux mêmes noms (voir « UX et UI » dans `references/format.md`) : l'UX, la maquette en gris, et l'UI, les couleurs, polices et arrondis du projet. Le bouton « UX | UI » de la page passe de l'un à l'autre pour tous les écrans d'un coup.
+Chaque écran est dessiné une seule fois. Deux blocs de variables aux mêmes noms lui donnent deux visages, l'UX dans `.cache/commun.css` et l'UI dans `sources/charte.css` (voir « UX et UI » dans `references/format.md`) : l'UX, la maquette en gris, et l'UI, les couleurs, polices et arrondis du projet. Le bouton « UX | UI » de la page passe de l'un à l'autre pour tous les écrans d'un coup.
 
 - `gris` : pas de bouton, tout reste en UX. L'attention va à ce que dit l'écran, pas aux couleurs.
 - `gris-puis-charte` : le bouton, avec un départ en UX. Écrire le bloc UI avant le premier écran ; la personne bascule quand elle veut.

@@ -8,38 +8,52 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
+import { copierLeModeleEtLaFixture } from "./assembler.mjs";
 
 const DEMO = fileURLToPath(new URL("./fixtures/demo", import.meta.url));
 const VERIFIER = fileURLToPath(new URL("../skills/a-plat/verifier.mjs", import.meta.url));
 const ASSEMBLER = fileURLToPath(new URL("./assembler-demo.mjs", import.meta.url));
+// Le travail de la démo, comme dans un vrai dossier a-plat/ : sources/.
+const SOURCES = join(DEMO, "sources");
 
 const fenetre = {};
-vm.runInNewContext(readFileSync(join(DEMO, "plan.js"), "utf8"), { window: fenetre });
+vm.runInNewContext(readFileSync(join(SOURCES, "plan.js"), "utf8"), { window: fenetre });
 const plan = fenetre.A_PLAT;
-const html = (ecran) => readFileSync(join(DEMO, "ecrans", ecran.fichier), "utf8");
+const html = (ecran) => readFileSync(join(SOURCES, "ecrans", ecran.fichier), "utf8");
 
-test("la démo passe le contrôle, avec ses 8 écrans, et signale ses textes entre crochets", () => {
-  const r = spawnSync(process.execPath, [VERIFIER, DEMO], { encoding: "utf8", timeout: 20000 });
+const dossiers = [];
+after(() => { while (dossiers.length) rmSync(dossiers.pop(), { recursive: true, force: true }); });
+
+test("la démo, avec sa page, passe le contrôle, avec ses 8 écrans, et signale ses textes entre crochets", () => {
+  const dossier = mkdtempSync(join(tmpdir(), "a-plat-demo-"));
+  dossiers.push(dossier);
+  copierLeModeleEtLaFixture(dossier, "demo");
+  const r = spawnSync(process.execPath, [VERIFIER, dossier], { encoding: "utf8", timeout: 20000 });
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /8 écrans vérifiés/);
   assert.match(r.stdout, /texte(s)? entre crochets/);
+  assert.doesNotMatch(r.stdout, /la page n'est pas en place|l'UI n'a pas encore les couleurs du projet|ancien dossier/);
 });
 
-test("le dossier de la démo ne contient que commun.css, plan.js, ecrans/ et actuel/ : jamais une copie de la page", () => {
-  assert.deepEqual(readdirSync(DEMO).sort(), ["actuel", "commun.css", "ecrans", "plan.js"]);
+test("le dossier de la démo ne contient que sources/ (plan.js, charte.css, ecrans/, actuel/) : jamais une copie de la page", () => {
+  assert.deepEqual(readdirSync(DEMO).sort(), ["sources"]);
+  assert.deepEqual(readdirSync(SOURCES).sort(), ["actuel", "charte.css", "ecrans", "plan.js"]);
 });
 
-// Comme dans un vrai dossier de maquettes, seul le bloc UI de commun.css est propre au projet :
-// le reste est la copie exacte du modèle.
-test("le commun.css de la démo est celui du modèle, sauf son bloc UI, rempli des couleurs du projet", () => {
-  const modele = readFileSync(fileURLToPath(new URL("../skills/a-plat/modele/commun.css", import.meta.url)), "utf8");
-  const demo = readFileSync(join(DEMO, "commun.css"), "utf8");
-  const blocUI = /\/\* ---- UI : les couleurs du projet ----[\s\S]*?:root\[data-finition="ui"\] \{[^}]*\}/;
+// Comme dans un vrai dossier a-plat/, la charte du projet est sources/charte.css : un bloc UI,
+// aux noms de la charte du modèle, rempli des couleurs du projet.
+test("la charte de la démo a son bloc UI, aux noms du modèle, rempli des couleurs du projet, et rien d'autre", () => {
+  const modele = readFileSync(fileURLToPath(new URL("../skills/a-plat/modele/charte.css", import.meta.url)), "utf8");
+  const demo = readFileSync(join(SOURCES, "charte.css"), "utf8");
+  const blocUI = /:root\[data-finition="ui"\]\s*\{([^}]*)\}/;
+  const noms = (texte) => [...texte.match(blocUI)[1].matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]).sort();
   assert.match(modele, blocUI);
   assert.match(demo, blocUI);
-  assert.equal(demo.replace(blocUI, "BLOC UI"), modele.replace(blocUI, "BLOC UI"), "hors du bloc UI, la démo suit le modèle");
-  assert.notEqual(demo.match(blocUI)[0], modele.match(blocUI)[0], "le bloc UI de la démo a les couleurs du projet");
-  assert.match(demo.match(blocUI)[0], /--ecran-accent: #1f3b63;/);
+  assert.deepEqual(noms(demo), noms(modele), "les noms de variables du modèle");
+  assert.notEqual(demo.match(blocUI)[1], modele.match(blocUI)[1], "le bloc UI de la démo a les couleurs du projet");
+  assert.match(demo.match(blocUI)[1], /--ecran-accent: #1f3b63;/);
+  const sansCommentaires = demo.replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.equal(sansCommentaires.replace(blocUI, "").trim(), "", "ni bloc UX, ni autre règle");
 });
 
 test("huit écrans de 390 de large, en trois rangées, dont un seul validé", () => {
@@ -60,11 +74,11 @@ test("un existant redessiné en HTML et un existant en vraie capture PNG de moin
   assert.equal(captures.length, 1);
   assert.match(redessines[0].actuel.fichier, /^actuel\/.+\.html$/);
   assert.match(captures[0].actuel.fichier, /^actuel\/.+\.png$/);
-  const octets = readFileSync(join(DEMO, captures[0].actuel.fichier));
+  const octets = readFileSync(join(SOURCES, captures[0].actuel.fichier));
   assert.deepEqual([...octets.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], "c'est un vrai PNG");
   assert.ok(octets.length < 60 * 1024, `la capture pèse ${octets.length} octets`);
   assert.ok(octets.readUInt32BE(16) >= 300 && octets.readUInt32BE(20) >= 600, "la capture a la taille d'un écran de téléphone");
-  assert.match(readFileSync(join(DEMO, redessines[0].actuel.fichier), "utf8"), /relais\.js/);
+  assert.match(readFileSync(join(SOURCES, redessines[0].actuel.fichier), "utf8"), /<script src="\.\.\/\.\.\/\.cache\/relais\.js">/);
 });
 
 test("les notes ont les cinq types, une date, et une ancienne valeur", () => {
@@ -101,12 +115,13 @@ test("les écrans sont liés : de l'accueil, on atteint les huit écrans, dont l
   }
 });
 
-test("les écrans emploient commun.css, sans style propre, avec de vrais textes, au moins un texte entre crochets", () => {
+test("les écrans emploient commun.css et la charte, sans style propre, avec de vrais textes, au moins un texte entre crochets", () => {
   let crochets = 0;
   for (const ecran of plan.ecrans) {
     const texte = html(ecran);
     assert.match(texte, /<html lang="fr" data-ecran="/);
-    assert.match(texte, /<link rel="stylesheet" href="\.\.\/commun\.css">/, `${ecran.code} charge commun.css`);
+    assert.match(texte, /<link rel="stylesheet" href="\.\.\/\.\.\/\.cache\/commun\.css">\s*<link rel="stylesheet" href="\.\.\/charte\.css">/, `${ecran.code} charge commun.css puis charte.css`);
+    assert.match(texte, /<script src="\.\.\/\.\.\/\.cache\/relais\.js">/, `${ecran.code} charge le relais de .cache/`);
     assert.doesNotMatch(texte, /<style|style="/i, `${ecran.code} n'a pas de style à lui : il passe par commun.css`);
     assert.doesNotMatch(texte, /lorem|ipsum/i);
     assert.match(texte, /<h1\b/, `${ecran.code} a un titre`);
@@ -116,16 +131,13 @@ test("les écrans emploient commun.css, sans style propre, avec de vrais textes,
 });
 
 test("aucune donnée réelle : ni adresse, ni chemin de machine, ni nom de domaine, ni numéro", () => {
-  const tout = [readFileSync(join(DEMO, "plan.js"), "utf8"), ...plan.ecrans.map(html),
-    readFileSync(join(DEMO, plan.ecrans.find((e) => e.actuel && e.actuel.origine === "redessine").actuel.fichier), "utf8")].join("\n");
+  const tout = [readFileSync(join(SOURCES, "plan.js"), "utf8"), readFileSync(join(SOURCES, "charte.css"), "utf8"), ...plan.ecrans.map(html),
+    readFileSync(join(SOURCES, plan.ecrans.find((e) => e.actuel && e.actuel.origine === "redessine").actuel.fichier), "utf8")].join("\n");
   assert.doesNotMatch(tout, /https?:|www\.|@[a-z]+\.[a-z]|[A-Z]:\\|\/Users\/|\/home\//i);
   assert.doesNotMatch(tout, /\b0\d([ .]?\d\d){4}\b/, "pas de numéro de téléphone");
 });
 
 // ---------------------------------------------------------------- l'assemblage de la démo
-
-const dossiers = [];
-after(() => { while (dossiers.length) rmSync(dossiers.pop(), { recursive: true, force: true }); });
 
 test("assembler-demo copie le modèle puis la démo, et affiche le chemin de index.html", () => {
   const destination = join(mkdtempSync(join(tmpdir(), "a-plat-demo-")), "demo");
@@ -133,12 +145,18 @@ test("assembler-demo copie le modèle puis la démo, et affiche le chemin de ind
   const r = spawnSync(process.execPath, [ASSEMBLER, destination], { encoding: "utf8" });
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.equal(r.stdout.trim(), join(destination, "index.html"));
-  for (const chemin of ["index.html", "commun.css", "ecran-type.html", "plan.js", "a-plat/moteur.js", "ecrans/A1-accueil.html", "actuel"]) {
+  for (const chemin of ["index.html", ".gitignore", ".cache/commun.css", ".cache/ecran-type.html", ".cache/moteur.js", ".cache/relais.js",
+    "sources/plan.js", "sources/charte.css", "sources/ecrans/A1-accueil.html", "sources/actuel"]) {
     assert.ok(existsSync(join(destination, chemin)), `${chemin} est dans la démo assemblée`);
   }
-  assert.ok(statSync(join(destination, "plan.js")).size > 2000, "plan.js est celui de la démo, pas celui du modèle vide");
+  for (const ancien of ["plan.js", "commun.css", "a-plat", "ecrans", "actuel"]) {
+    assert.ok(!existsSync(join(destination, ancien)), `${ancien} est une place d'ancien dossier`);
+  }
+  assert.ok(statSync(join(destination, "sources", "plan.js")).size > 2000, "plan.js est celui de la démo, pas celui du modèle vide");
+  assert.deepEqual(readFileSync(join(destination, "sources", "charte.css")), readFileSync(join(SOURCES, "charte.css")), "la charte est celle de la démo, pas celle de départ");
   const encore = spawnSync(process.execPath, [VERIFIER, destination], { encoding: "utf8" });
   assert.equal(encore.status, 0, encore.stdout + encore.stderr);
+  assert.doesNotMatch(encore.stdout, /la page n'est pas en place|ancien dossier/);
 });
 
 test("assembler-demo refuse une destination qui n'est pas vide, et ne touche à rien", () => {

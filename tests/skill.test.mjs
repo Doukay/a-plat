@@ -108,7 +108,7 @@ test("tout fichier cité par la méthode existe dans le skill", () => {
 // La copie passe par un script : une commande cp ou Copy-Item depuis le dossier du skill est
 // classée par Claude Code comme la modification d'un fichier sensible (essai de la tâche 9).
 test("la copie passe par copier.mjs, et SKILL.md ne donne aucune autre commande de copie", () => {
-  assert.ok(texteDuSkill.includes('node "<skill>/copier.mjs" "<dossier>"'), "SKILL.md doit lancer copier.mjs");
+  assert.ok(texteDuSkill.includes("node <skill>/copier.mjs a-plat"), "SKILL.md doit lancer copier.mjs sur a-plat");
   for (const motif of [/\bcp\s+["-]/, /Copy-Item/i, /New-Item/i, /mkdir -p/]) {
     assert.doesNotMatch(texteDuSkill, motif, `SKILL.md ne doit plus donner de commande de copie (${motif})`);
   }
@@ -117,13 +117,18 @@ test("la copie passe par copier.mjs, et SKILL.md ne donne aucune autre commande 
   for (const interdit of [/joker|\*/, /-Recurse/, /-Force/, /&&/, /;/]) assert.match(regle, interdit, `la règle doit citer ${interdit}`);
 });
 
-test("sans Node, Claude copie chaque fichier du modèle avec ses outils de fichiers, sans rien écraser, et le dit", () => {
-  const regle = texteDuSkill.split(/\r?\n/).find((ligne) => /Sans Node/.test(ligne) && /lire/i.test(ligne)) ?? "";
-  assert.match(regle, /lire/i);
-  assert.match(regle, /écrire|l'écrire|les écrire/i);
-  assert.match(regle, /jamais un fichier qui existe|sans jamais écraser|n'écrase jamais/i);
+test("sans Node, Claude écrit avec ses outils de fichiers ce que fait copier.mjs, sans écraser sources/, et le dit", () => {
+  const regle = texteDuSkill.split(/\r?\n/).find((ligne) => /Sans Node/.test(ligne) && /outils de fichiers/.test(ligne)) ?? "";
+  assert.match(regle, /écrire avec les outils de fichiers ce que fait le script/);
+  assert.match(regle, /« Le dossier » dans `references\/format\.md`/);
+  assert.match(regle, /sans jamais écraser un fichier de `sources\/`/);
+  assert.match(regle, /jamais `plan\.exemple\.js`/);
   assert.match(regle, /le dire/i);
-  assert.match(regle, /plan\.exemple\.js/);
+  // « Le dossier » de format.md dit bien ce que fait le script, et ce qu'il ne touche pas.
+  const dossier = ligneDe(lire("references", "format.md"), "`node <skill>/copier.mjs a-plat`");
+  assert.match(dossier, /refait à chaque passage `index\.html`, `\.gitignore` et `\.cache\/`/);
+  assert.match(dossier, /ne touche à rien d'autre/);
+  assert.match(dossier, /il n'est jamais copié/);
 });
 
 test("le modèle de plan s'appelle plan.exemple.js et ne se copie jamais", () => {
@@ -133,9 +138,11 @@ test("le modèle de plan s'appelle plan.exemple.js et ne se copie jamais", () =>
 });
 
 test("un dossier de la personne : on ne propose qu'un nouveau dossier, jamais d'écrire à côté de ses fichiers", () => {
-  const ligne = texteDuSkill.split(/\r?\n/).find((l) => l.startsWith("| Un dossier `maquettes/` d'autres fichiers")) ?? "";
-  assert.match(ligne, /nouveau dossier/);
-  assert.match(ligne, /jamais proposer d'écrire dans ce dossier/i);
+  const ligne = texteDuSkill.split(/\r?\n/).find((l) => l.startsWith("| Un `a-plat/` d'autres fichiers")) ?? "";
+  assert.match(ligne, /Ne rien y écrire\./);
+  assert.match(ligne, /Demander d'abord dans quel autre dossier écrire \(jamais celui-ci, même à côté de ses fichiers\), par exemple `a-plat-maquettes\/`/);
+  assert.match(ligne, /Attendre la réponse avant de lire le projet/);
+  assert.match(ligneDe(texteDuSkill, "2. Mettre la page en place"), /refuse un dossier qui n'est pas à l'outil \(code 2\)/);
 });
 
 test("pendant l'étape 1 d'une idée : une seule question, un seul point d'interrogation par message", () => {
@@ -165,8 +172,13 @@ test("ecrans.md : proposer avant d'ajouter un écran non demandé, et d'autres p
 });
 
 test("la méthode dit où trouver ses propres fichiers, relativement au dossier du skill", () => {
-  assert.match(texteDuSkill, /Base directory for this skill/);
-  assert.match(texteDuSkill, /<skill>\/modele\//);
+  const ou = section(texteDuSkill, "Où sont les fichiers de l'outil");
+  assert.match(ou, /`<skill>` : c'est `\$\{CLAUDE_SKILL_DIR\}`, la ligne « Base directory for this skill: … »/);
+  assert.match(ou, /y sont, et pas dans le projet/);
+  for (const nom of ["modele/", "copier.mjs", "verifier.mjs", "reprendre.mjs", "style-du-projet.mjs", "icones.mjs", "references/"]) {
+    assert.ok(ou.includes(`\`${nom}\``), `la liste des fichiers de l'outil doit citer ${nom}`);
+    assert.ok(existsSync(join(SKILL, nom)), `${nom} est cité mais n'existe pas dans le skill`);
+  }
   assert.match(texteDuSkill, /<skill>\/verifier\.mjs/);
 });
 
@@ -209,7 +221,7 @@ test("lancer le projet demande l'accord de la personne, et sans lui tout reste �
 });
 
 test("une copie interrompue se reprend, et une reprise ne réécrit ni rangées, ni écrans, ni réglages", () => {
-  assert.match(texteDuSkill, /`a-plat\/moteur\.js`/);
+  assert.match(texteDuSkill, /`a-plat\/` avec `\.cache\/moteur\.js`/);
   assert.match(texteDuSkill, /ne jamais réécrire `rangees`, `ecrans` ni `reglages`/);
 });
 
@@ -261,12 +273,21 @@ test("l'avancement se juge à la lecture et se dit au début de l'état des lieu
   assert.doesNotMatch(toutLeTexte(), /en ne changeant que `?commun\.css`?/);
 });
 
-test("reprendre des maquettes d'avant le bouton UX | UI se fait sans toucher à plan.js, ecrans/ ni actuel/", () => {
-  const reprise = lire("references", "etat-des-lieux.md").split(/\r?\n## /).find((s) => s.startsWith("Reprendre des maquettes")) ?? "";
-  assert.match(reprise, /d'avant le bouton UX \| UI/);
-  assert.match(reprise, /jamais `plan\.js`, `ecrans\/` ni `actuel\/`/);
-  assert.match(reprise, /copier\.mjs/);
-  assert.match(reprise, /bloc UI/);
+test("un ancien dossier de maquettes se reprend avec reprendre.mjs, sans rien écraser ni toucher à l'ancien", () => {
+  const reprise = section(lire("references", "etat-des-lieux.md"), "Reprendre des maquettes");
+  const debut = reprise.indexOf("**Un ancien dossier de maquettes.**");
+  assert.ok(debut >= 0, "la reprise d'un ancien dossier de maquettes n'est pas décrite");
+  const ancien = reprise.slice(debut);
+  assert.match(ancien, /Le proposer d'abord à la personne/);
+  assert.match(ancien, /`node <skill>\/reprendre\.mjs <ancien dossier> a-plat`/);
+  assert.match(ancien, /recopie `plan\.js`, `passage-au-code\.md`, `ecrans\/` et `actuel\/` dans `a-plat\/sources\/` sans rien écraser/);
+  assert.match(ancien, /bloc UI/);
+  assert.match(ancien, /copier\.mjs/);
+  assert.match(ancien, /l'ancien dossier n'a pas été touché/);
+  assert.match(ancien, /Les codes d'écran, les notes et les statuts ne changent pas/);
+  assert.match(ligneDe(texteDuSkill, "| Un ancien dossier"), /L'ancien dossier n'est jamais touché/);
+  // Une page d'un ancien modèle dans a-plat/ se refait par copier.mjs, sans toucher à sources/.
+  assert.match(ligneDe(reprise, "**Une page d'un ancien modèle dans `a-plat/`.**"), /relancer `copier\.mjs`[^.]*sans toucher à `sources\/`/);
 });
 
 test("une page n'est « Existe » que si chaque rôle annoncé y a toutes ses tâches", () => {
@@ -330,20 +351,22 @@ test("une commande par appel, jamais enchaînée, dit une seule fois dans SKILL.
   assert.equal(texteDuSkill.split("**Commandes.**").length, 2);
 });
 
-test("sans Node, Claude ne crée aucun dossier vide, et ecrans/ n'est exigé qu'avec un écran", () => {
-  const regle = texteDuSkill.split(/\r?\n/).find((ligne) => /Sans Node/.test(ligne) && /lire/i.test(ligne)) ?? "";
-  assert.match(regle, /aucun dossier vide/);
-  assert.match(regle, /`\.gitkeep`/);
-  assert.doesNotMatch(regle, /Créer aussi les dossiers/);
+test("copier.mjs crée sources/ecrans/ et sources/actuel/ s'ils manquent, et ecrans/ n'est exigé qu'avec un écran", () => {
   const format = lire("references", "format.md");
-  assert.match(format, /Le dossier `ecrans\/` doit exister dès qu'un écran est écrit/);
+  assert.match(ligneDe(format, "`node <skill>/copier.mjs a-plat`"), /crée `sources\/`, `sources\/ecrans\/`, `sources\/actuel\/` et `sources\/charte\.css` \(le bloc UI de départ\) s'ils manquent/);
+  assert.match(format, /Le dossier `sources\/ecrans\/` doit exister dès qu'un écran est écrit ; sans écran dans le plan, il peut manquer/);
   assert.doesNotMatch(format, /doit exister, même vide/);
+  assert.doesNotMatch(toutLeTexte(), /\.gitkeep/);
 });
 
-test("la description de l'outil suit les règles plus strictes du redessin et des données", () => {
-  const conception = readFileSync(fileURLToPath(new URL("../docs/conception.md", import.meta.url)), "utf8");
-  assert.match(conception, /redessiné d'après le code et les styles du projet, et rien d'autre/);
-  assert.match(conception, /y compris ses données de départ ou d'exemple/);
+test("la méthode et les docs suivent les règles plus strictes du redessin et des données", () => {
+  assert.match(ligneDe(lire("references", "format.md"), "- **Redessiné :**"), /écrite d'après le code et les styles du projet, et rien d'autre/);
+  assert.match(ligneDe(lire("references", "ecrans.md"), "- **Pas de capture :**"), /Seul ce que le code et les styles du projet contiennent y entre/);
+  assert.match(ligneDe(texteDuSkill, "- **Données réelles.**"), /fichiers de données ou de départ du projet[^.]*sont remplacées, même si elles semblent inventées/);
+  const docs = (nom) => readFileSync(fileURLToPath(new URL(`../docs/${nom}`, import.meta.url)), "utf8");
+  assert.match(docs("comment-ca-marche.md"), /aucune donnée réelle dans les maquettes, même les données d'exemple de ton projet/);
+  assert.match(docs("confidentialite-et-securite.md"), /ni les données d'exemple de ton projet, même si elles semblent inventées/);
+  assert.match(docs("utiliser-a-plat.md"), /sinon il est redessiné d'après le code, et marqué comme tel/);
 });
 
 test("les nombres du message se comptent sur le tableau montré, en reprise aussi", () => {

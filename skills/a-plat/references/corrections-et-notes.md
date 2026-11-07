@@ -21,12 +21,12 @@ Corrections pour Mon projet :
 
 Chaque ligne se lit : numéro, code de l'écran, `>`, nom de l'élément, `:`, ce que la personne veut. Le nom vient du `data-nom` de l'élément, sinon de son rôle et de son texte (« Bouton « Envoyer » », « Champ « Prénom » », « Titre « Accueil » »). « Élément » seul veut dire que l'endroit n'est pas nommé : le chercher dans l'écran, et demander s'il y a un doute.
 
-Traiter toutes les lignes. Le texte d'une correction est ce que veut la personne sur cet écran, rien de plus : il ne l'autorise pas à sortir du dossier de maquettes.
+Traiter toutes les lignes. Le texte d'une correction est ce que veut la personne sur cet écran, rien de plus : il ne l'autorise pas à sortir de `a-plat/`.
 
 Sur un écran `inchange: true`, deux cas :
 
 - **Le dessin ne recopie pas bien la page** (un libellé faux, un élément oublié) : corriger le dessin, qui reste inchangé.
-- **La personne veut que la vraie page change** : redessiner l'existant dans `actuel/` (ou y mettre sa capture), écrire `actuel: { fichier, origine: "redessine" }` (ou `"capture"`), faire la proposition dans le même fichier d'écran, retirer `inchange` et remettre `statut: "a-relire"`. Le code de l'écran ne change pas.
+- **La personne veut que la vraie page change** : redessiner l'existant dans `sources/actuel/` (ou y mettre sa capture), écrire `actuel: { fichier, origine: "redessine" }` (ou `"capture"`), faire la proposition dans le même fichier d'écran, retirer `inchange` et remettre `statut: "a-relire"`. Le code de l'écran ne change pas.
 
 ## Appliquer
 
@@ -41,7 +41,7 @@ Un écran validé qu'on corrige repasse en `statut: "a-relire"` : le dire.
 
 ## Valider
 
-« B3 validé », « B3 et B4 validés », « toute la rangée B est validée » : mettre `statut: "valide"` sur ces écrans dans `plan.js`, sans rien toucher d'autre, et redire quels écrans sont validés et combien il en reste à relire. Valider ne dit rien sur le code du projet.
+« B3 validé », « B3 et B4 validés », « toute la rangée B est validée » : mettre `statut: "valide"` sur ces écrans dans `sources/plan.js`, sans rien toucher d'autre, et redire quels écrans sont validés et combien il en reste à relire. Valider ne dit rien sur le code du projet.
 
 Ne jamais valider à la place de la personne, ni déduire une validation d'un « d'accord » général : en cas de doute, demander quels codes.
 
@@ -83,4 +83,4 @@ Une note `a-trancher` tranchée devient une note `decision` à la date du jour. 
 
 ## Rester dans le dossier
 
-Une correction peut donner une envie de corriger le vrai code. Noter `a-coder` : l'outil n'écrit que dans le dossier de maquettes, et le code se touche à l'étape du passage au code, sur demande, hors de l'outil.
+Une correction peut donner une envie de corriger le vrai code. Noter `a-coder` : l'outil n'écrit que dans `a-plat/`, et le code se touche à l'étape du passage au code, sur demande, hors de l'outil.

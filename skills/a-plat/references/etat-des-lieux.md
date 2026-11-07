@@ -65,12 +65,12 @@ Le montrer dans la conversation aussi, sans renvoyer seulement à la page, et da
 - …
 - Si vous ne dites rien sur ces points, les pages à compléter seront dessinées avec ce qui leur manque, sur la page elle-même, et les manques resteront en suspens.
 
-La liste est aussi dans <dossier>/index.html, à ouvrir d'un double-clic.
+La liste est aussi dans a-plat/index.html, à ouvrir d'un double-clic.
 
 Cette liste vous convient, ou voulez-vous corriger quelque chose ?
 ```
 
-- Le compte se fait sur les lignes du tableau montré, les mêmes que dans `plan.js` : recompter avant d'envoyer, en reprise aussi, et chaque nombre du message doit tomber juste sur ce tableau.
+- Le compte se fait sur les lignes du tableau montré, les mêmes que dans `sources/plan.js` : recompter avant d'envoyer, en reprise aussi, et chaque nombre du message doit tomber juste sur ce tableau.
 - Toutes les lignes sont dans le tableau, sans « etc. ».
 - Un point à trancher par manque, ou par groupe de manques qui se décident ensemble, écrit comme une phrase, pas comme une question. Le message ne pose qu'une question, la dernière : la personne répond aux points qu'elle veut, quand elle veut.
 - Ce que couvre « si vous ne dites rien » : seulement l'élément qui manque, dessiné sur la page elle-même. Un écran de plus (un état vide, une erreur) se propose toujours d'abord en une ligne (voir `references/ecrans.md`).
@@ -89,13 +89,16 @@ Comparer la nouvelle lecture avec `etatDesLieux` et les écrans, puis commencer 
 
 S'il n'y a rien de changé, le dire. Ne pas renuméroter, et garder notes et statuts. Une ligne dont l'état change garde sa place, et l'ancien état se note dans une note de type `source` de sa rangée, si la page a déjà une rangée. Une ligne dont la `raison` finit par « Laissé de côté par la personne le … » garde cette phrase et sa date : ne pas reposer la question, ne pas la retirer.
 
-**Une page d'un ancien modèle.** Le contrôle le signale par un avertissement : le `a-plat/moteur.js` du dossier ne connaît pas la finition (page d'avant le bouton UX | UI), ou pas l'avancement (page d'avant l'avancement et « Inchangé à l'écran »). La page marche encore, sans ces nouveautés. Pour passer au nouveau modèle, le proposer d'abord à la personne, car des fichiers de l'outil sont remplacés :
+**Une page d'un ancien modèle dans `a-plat/`.** Le contrôle le signale par un avertissement (`.cache/moteur.js` ne connaît pas une nouveauté) : relancer `copier.mjs` sur le dossier, qui refait la page sans toucher à `sources/`.
 
-1. Garder l'ancien `commun.css` sous un autre nom, par exemple `commun-ancien.css`.
-2. Retirer du dossier `index.html`, `a-plat/`, `ecran-type.html` et `commun.css`, et seulement eux : jamais `plan.js`, `ecrans/` ni `actuel/`.
-3. Relancer `copier.mjs` sur le dossier.
-4. Recopier dans le bloc UI du nouveau fichier les valeurs du bloc UI de l'ancien s'il en avait un, sinon celles de ses six variables si elles avaient été changées d'après le projet, et compléter les autres d'après les styles du projet. Recopier aussi, à la fin, les classes que l'ancien avait ajoutées après celles du modèle. Puis retirer `commun-ancien.css`.
-5. Relancer le contrôle, et regarder les écrans en UX puis en UI.
+**Un ancien dossier de maquettes.** Avant le dossier `a-plat/`, l'outil écrivait tout dans un seul dossier, souvent `maquettes/` : `plan.js` à sa racine, le moteur dans son `a-plat/`, le bloc UI dans son `commun.css`. Le contrôle le refuse (code 2) en le disant. Le proposer d'abord à la personne, puis :
+
+1. `node <skill>/reprendre.mjs <ancien dossier> a-plat` : recopie `plan.js`, `passage-au-code.md`, `ecrans/` et `actuel/` dans `a-plat/sources/` sans rien écraser, met à jour les liens de l'outil dans les écrans et les actuels, et écrit `sources/charte.css` avec le bloc UI de l'ancien `commun.css` et les règles qu'il avait en plus du modèle d'aujourd'hui.
+2. Relire `sources/charte.css` : garder ce qui est propre au projet, retirer ce qui n'est qu'une ancienne règle du modèle. Si l'ancien bloc UX (`:root`) avait été changé d'après le projet, en reporter les valeurs dans le bloc UI.
+3. `node <skill>/copier.mjs a-plat`, puis le contrôle, et regarder les écrans en UX puis en UI. Pour la finition `fidele`, relancer `style-du-projet.mjs` (l'ancien `projet/` n'est pas recopié).
+4. Dire à la personne que l'ancien dossier n'a pas été touché, et que le retirer, une fois le nouveau vérifié, est à elle.
+
+Les codes d'écran, les notes et les statuts ne changent pas.
 
 ## Corrections de la liste
 
@@ -104,4 +107,4 @@ S'il n'y a rien de changé, le dire. Ne pas renuméroter, et garder notes et sta
 - La personne dit qu'une page marche : `aConfirmer: false`, avec « confirmé par la personne » dans la `source`.
 - La personne ajoute une page : une ligne de plus, avec `source: "dit par la personne"`.
 
-Mettre `plan.js` à jour, relancer le contrôle, et redonner le compte.
+Mettre `sources/plan.js` à jour, relancer le contrôle, et redonner le compte.

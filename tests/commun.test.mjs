@@ -5,12 +5,16 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { copierLaPage } from "./assembler.mjs";
 
 const MODELE = fileURLToPath(new URL("../skills/a-plat/modele", import.meta.url));
 const VERIFIER = fileURLToPath(new URL("../skills/a-plat/verifier.mjs", import.meta.url));
 
 const css = readFileSync(join(MODELE, "commun.css"), "utf8");
 const sansCommentaires = css.replace(/\/\*[\s\S]*?\*\//g, "");
+// La charte de départ : le bloc UI et les classes du projet, copiée dans sources/ si elle manque.
+const charte = readFileSync(join(MODELE, "charte.css"), "utf8");
+const charteSansCommentaires = charte.replace(/\/\*[\s\S]*?\*\//g, "");
 
 // Les six variables d'origine, puis celles ajoutées pour une UI crédible.
 const VARIABLES = [
@@ -74,25 +78,35 @@ test("commun.css ne charge rien depuis Internet : ni url(http, ni @import", () =
 // Les variables d'un bloc : { "--ecran-accent": "#0066cc", … }.
 const variablesDe = (corps) => Object.fromEntries([...corps.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1], m[2].replace(/\s+/g, " ").trim()]));
 
-test("deux blocs de variables en tête : l'UX sur :root, puis l'UI sur :root[data-finition=\"ui\"], aux mêmes noms", () => {
+test("deux blocs de variables aux mêmes noms : l'UX sur :root en tête de commun.css, l'UI sur :root[data-finition=\"ui\"] dans charte.css", () => {
   const toutes = regles(sansCommentaires);
-  assert.equal(toutes[0].selecteur, ":root", "la première règle du fichier est l'UX, sur :root");
-  assert.equal(toutes[1].selecteur, BLOC_UI, "la deuxième est l'UI");
+  assert.equal(toutes[0].selecteur, ":root", "la première règle de commun.css est l'UX, sur :root");
+  assert.ok(!toutes.some((r) => r.selecteur === BLOC_UI), "commun.css n'a plus de bloc UI : il est dans charte.css");
+  const deLaCharte = regles(charteSansCommentaires);
+  assert.equal(deLaCharte[0].selecteur, BLOC_UI, "la première règle de charte.css est l'UI");
+  assert.equal(deLaCharte.filter((r) => r.selecteur === BLOC_UI).length, 1, "un seul bloc UI dans charte.css");
+  assert.ok(!deLaCharte.some((r) => r.selecteur === ":root"), "charte.css n'a pas de bloc UX");
   const ux = variablesDe(toutes[0].corps);
-  const ui = variablesDe(toutes[1].corps);
+  const ui = variablesDe(deLaCharte[0].corps);
   assert.deepEqual(Object.keys(ui).sort(), Object.keys(ux).sort(), "les mêmes noms dans les deux blocs");
   // Le seul contrôle du nombre de variables : les onze attendues, et seulement elles.
   assert.deepEqual(Object.keys(ux).sort(), [...VARIABLES].sort(), "les variables attendues, et seulement elles");
   for (const variable of VARIABLES) {
     const motif = new RegExp(`${variable}\\s*:`, "g");
-    assert.equal((sansCommentaires.match(motif) || []).length, 2, `${variable} n'est définie que dans les deux blocs`);
+    assert.equal((sansCommentaires.match(motif) || []).length, 1, `${variable} n'est définie qu'une fois dans commun.css, dans le bloc UX`);
+    assert.equal((charteSansCommentaires.match(motif) || []).length, 1, `${variable} n'est définie qu'une fois dans charte.css, dans le bloc UI`);
   }
 });
 
-test("dans le modèle, le bloc UI reprend les valeurs UX, et dit que Claude y écrit celles du projet", () => {
-  const toutes = regles(sansCommentaires);
-  assert.deepEqual(variablesDe(toutes[1].corps), variablesDe(toutes[0].corps));
-  assert.match(css, /Claude y écrit les valeurs du projet/);
+test("dans le modèle, le bloc UI de charte.css reprend les valeurs UX, et dit que Claude y écrit celles du projet", () => {
+  assert.deepEqual(variablesDe(regles(charteSansCommentaires)[0].corps), variablesDe(regles(sansCommentaires)[0].corps));
+  assert.match(charte, /Claude y écrit les valeurs du projet/);
+});
+
+test("charte.css ne charge rien depuis Internet, et n'a aucune couleur en dur hors du bloc UI", () => {
+  assert.doesNotMatch(charte, /@import|url\(|https?:\/\//i);
+  const hors = regles(charteSansCommentaires).filter((r) => r.selecteur !== BLOC_UI).map((r) => r.corps).join("\n");
+  assert.deepEqual(couleursDe(hors).map((c) => c.texte), []);
 });
 
 test("en UX, les couleurs sont des gris, sauf un seul bleu, l'accent, pour ce qui agit", () => {
@@ -121,9 +135,9 @@ test("les classes de base existent et lisent les variables", () => {
   }
 });
 
-test("hors des deux blocs, aucune couleur n'est écrite en dur : tout passe par les variables", () => {
+test("hors du bloc UX, aucune couleur n'est écrite en dur dans commun.css : tout passe par les variables", () => {
   const toutes = regles(sansCommentaires);
-  const apres = toutes.slice(2).map((r) => r.corps).join("\n");
+  const apres = toutes.slice(1).map((r) => r.corps).join("\n");
   const en_dur = couleursDe(apres).map((c) => c.texte);
   assert.deepEqual(en_dur, []);
 });
@@ -151,8 +165,9 @@ test("ecran-type.html suit le format d'un écran, avec le code X0", () => {
   assert.match(modeleDEcran, /<html lang="fr" data-ecran="X0">/);
   assert.match(modeleDEcran, /<meta charset="utf-8">/);
   assert.match(modeleDEcran, /<meta name="viewport" content="width=device-width,initial-scale=1">/);
-  assert.match(modeleDEcran, /<link rel="stylesheet" href="\.\.\/commun\.css">/);
-  assert.match(modeleDEcran, /<script src="\.\.\/a-plat\/relais\.js"><\/script>\s*<\/body>/);
+  assert.match(modeleDEcran, /<link rel="stylesheet" href="\.\.\/\.\.\/\.cache\/commun\.css">\s*<link rel="stylesheet" href="\.\.\/charte\.css">/);
+  assert.match(modeleDEcran, /<script src="\.\.\/\.\.\/\.cache\/relais\.js"><\/script>\s*<\/body>/);
+  assert.doesNotMatch(modeleDEcran, /href="\.\.\/commun\.css"|\.\.\/a-plat\//, "aucun lien d'ancien dossier");
   assert.match(modeleDEcran, /<title>X0 · /);
 });
 
@@ -173,14 +188,16 @@ test("ecran-type.html montre une fois chaque classe de base et explique en fran�
 const dossiers = [];
 after(() => { while (dossiers.length) rmSync(dossiers.pop(), { recursive: true, force: true }); });
 
-test("copié dans ecrans/ et ajouté au plan, ecran-type.html passe le contrôle", () => {
+test("copié dans sources/ecrans/ et ajouté au plan, ecran-type.html passe le contrôle", () => {
   const dossier = mkdtempSync(join(tmpdir(), "a-plat-type-"));
   dossiers.push(dossier);
-  mkdirSync(join(dossier, "ecrans"));
-  cpSync(join(MODELE, "ecran-type.html"), join(dossier, "ecrans/X0-type.html"));
-  writeFileSync(join(dossier, "plan.js"), `window.A_PLAT = { version: 1, projet: "Essai", etatDesLieux: [],
+  copierLaPage(dossier);
+  mkdirSync(join(dossier, "sources", "ecrans"));
+  cpSync(join(dossier, ".cache", "ecran-type.html"), join(dossier, "sources", "ecrans", "X0-type.html"));
+  writeFileSync(join(dossier, "sources", "plan.js"), `window.A_PLAT = { version: 1, projet: "Essai", etatDesLieux: [],
     rangees: [{ id: "X", titre: "Essai", notes: [] }],
     ecrans: [{ code: "X0", titre: "Écran type", rangee: "X", fichier: "X0-type.html", largeur: 390, hauteur: 844, statut: "a-relire", actuel: null }] };`);
   const resultat = spawnSync(process.execPath, [VERIFIER, dossier], { encoding: "utf8", timeout: 20000 });
   assert.equal(resultat.status, 0, resultat.stdout + resultat.stderr);
+  assert.doesNotMatch(resultat.stdout + resultat.stderr, /Avertissement/, "ni page absente, ni lien d'ancien dossier");
 });

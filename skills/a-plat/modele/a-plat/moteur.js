@@ -145,7 +145,7 @@
   function dessinerProblemeDePlan(lecture) {
     if (lecture.statut === "absent") {
       return message("plan.js est introuvable", [
-        "La page lit le fichier plan.js, qui doit se trouver à côté de index.html, dans le dossier des maquettes. Il n'y est pas.",
+        "La page lit le fichier sources/plan.js du dossier a-plat. Il n'y est pas.",
         "Demandez à Claude de le créer en lançant /a-plat, ou remettez le fichier à sa place, puis rechargez la page."
       ]);
     }
@@ -157,8 +157,8 @@
     }
     if (lecture.statut === "moteur") {
       return message("Il manque un fichier de la page", [
-        "Le fichier a-plat/logique.js n'a pas été chargé.",
-        "Demandez à Claude de remettre le dossier a-plat en place, puis rechargez la page."
+        "Le fichier .cache/logique.js n'a pas été chargé.",
+        "Demandez à Claude de remettre la page en place (copier.mjs refait le dossier .cache), puis rechargez la page."
       ]);
     }
     var carte = message("Le plan contient des erreurs", [
@@ -480,10 +480,10 @@
     var hauteur = dimension(ecran.hauteur, HAUTEUR_PAR_DEFAUT);
     var fichier = fichierSur(ecran.fichier);
     if (!fichier) {
-      return boiteRefusee(ecran.fichier, "ecrans", { largeur: Math.round(largeur * echelle), hauteur: Math.round(hauteur * echelle) });
+      return boiteRefusee(ecran.fichier, "sources/ecrans", { largeur: Math.round(largeur * echelle), hauteur: Math.round(hauteur * echelle) });
     }
     return fabriquerCadre({
-      code: ecran.code, titre: nomCourt(ecran.titre), chemin: "ecrans/" + fichier,
+      code: ecran.code, titre: nomCourt(ecran.titre), chemin: "sources/ecrans/" + fichier,
       largeur: largeur, hauteur: hauteur, vignette: true, echelle: echelle, suit: suit
     });
   }
@@ -575,14 +575,14 @@
 
   // ---- la finition des écrans : UX (la maquette en gris) ou UI (les couleurs du projet)
   //
-  // commun.css porte deux jeux de variables aux mêmes noms ; l'écran prend celui de l'UI quand
-  // relais.js pose data-finition="ui" sur sa racine. Le bouton « UX | UI » de la barre n'existe
+  // Deux jeux de variables aux mêmes noms, l'UX dans .cache/commun.css et l'UI dans
+  // sources/charte.css ; l'écran prend celui de l'UI quand relais.js pose data-finition="ui" sur sa racine. Le bouton « UX | UI » de la barre n'existe
   // que si reglages.finition vaut "charte" ou "fidele" (départ en UI), ou "gris-puis-charte"
-  // (départ en UX). Avec "fidele", l'écran charge le vrai style du projet et projet/gris.css.
+  // (départ en UX). Avec "fidele", l'écran charge le vrai style du projet et .cache/projet/gris.css.
   // Le choix de la personne est gardé par projet. L'actuel (capture ou redessin) n'est jamais
   // touché : il garde le vrai style du projet.
 
-  // « fidele » : les écrans ont le vrai style du projet (projet/), et partent en UI comme « charte ».
+  // « fidele » : les écrans ont le vrai style du projet (.cache/projet/), et partent en UI comme « charte ».
   var DEPART_DE_LA_FINITION = { "charte": "ui", "gris-puis-charte": "ux", "fidele": "ui" };
   var LIBELLES_DE_FINITION = { ux: "UX · maquette en gris", ui: "UI · couleurs du projet" };
   var finition = "ux";
@@ -1484,10 +1484,10 @@
 
     var fichier = fichierSur(actuel.fichier);
     if (!fichier) {
-      volet.appendChild(boiteRefusee(actuel.fichier, "actuel", null));
+      volet.appendChild(boiteRefusee(actuel.fichier, "sources/actuel", null));
       return volet;
     }
-    var chemin = fichier.indexOf("actuel/") === 0 ? fichier : "actuel/" + fichier;
+    var chemin = "sources/" + (fichier.indexOf("actuel/") === 0 ? fichier : "actuel/" + fichier);
     var nom = chemin.toLowerCase().split(/[?#]/)[0];
     var estUnePage = /\.html?$/.test(nom) || (!/\.(png|jpe?g|gif|webp|svg|avif|bmp)$/.test(nom) && redessine);
 
@@ -1605,11 +1605,11 @@
     var fichier = fichierSur(ecran.fichier);
     if (fichier) {
       proposition.appendChild(fabriquerCadre({
-        code: ecran.code, titre: nomCourt(ecran.titre), chemin: "ecrans/" + fichier,
+        code: ecran.code, titre: nomCourt(ecran.titre), chemin: "sources/ecrans/" + fichier,
         largeur: largeur, hauteur: hauteur
       }));
     } else {
-      proposition.appendChild(boiteRefusee(ecran.fichier, "ecrans", null));
+      proposition.appendChild(boiteRefusee(ecran.fichier, "sources/ecrans", null));
     }
     comparaison.appendChild(proposition);
 

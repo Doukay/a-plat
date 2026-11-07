@@ -1,0 +1,18 @@
+/* La charte de la démo Prêtoutil : le bloc UI, comme dans un vrai dossier a-plat/sources/. */
+/* ---- UI : les couleurs du projet ----
+   Démo Prêtoutil : valeurs lues dans les styles du projet inventé (actuel/C1-mes-prets.html :
+   fond #f4f4f0, texte #222, bleu marine #1f3b63, filets #bbb, en-têtes de tableau #e6e6df,
+   police Arial ; boutons presque carrés sur la capture actuel/A2-fiche.png). */
+:root[data-finition="ui"] {
+  --ecran-page: #f4f4f0;
+  --ecran-fond: #ffffff;
+  --ecran-texte: #222222;
+  --ecran-trait: #bbbbbb;
+  --ecran-accent: #1f3b63;
+  --ecran-sur-accent: #ffffff;
+  --ecran-mise-en-avant: #e6e6df;
+  --ecran-police: Arial, Helvetica, sans-serif;
+  --ecran-police-titre: Arial, Helvetica, sans-serif;
+  --ecran-arrondi: 4px;
+  --ecran-arrondi-bouton: 4px;
+}

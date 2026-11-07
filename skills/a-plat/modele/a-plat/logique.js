@@ -28,7 +28,7 @@
     }
   }
 
-  // Un fichier du plan ne sert que dans son dossier (ecrans/ ou actuel/). On refuse tout ce qui
+  // Un fichier du plan ne sert que dans son dossier (sources/ecrans/ ou sources/actuel/). On refuse tout ce qui
   // peut en sortir : « .. », une adresse complète (https:, file:…), une barre au début, une
   // barre oblique inverse, et les mêmes écrits avec des %. Renvoie le fichier, ou null.
   // La page (moteur.js) et le contrôle s'en servent tous deux.
@@ -149,7 +149,7 @@
       if (!estTexte(ecran.fichier)) {
         erreurs.push(nom + " n'a pas de champ fichier.");
       } else if (!fichierSur(ecran.fichier)) {
-        erreurs.push(nom + " a un fichier " + montrer(ecran.fichier) + " refusé : " + regleDuFichier("ecrans"));
+        erreurs.push(nom + " a un fichier " + montrer(ecran.fichier) + " refusé : " + regleDuFichier("sources/ecrans"));
       } else if (Object.prototype.hasOwnProperty.call(fichiers, ecran.fichier)) {
         erreurs.push("Le fichier " + montrer(ecran.fichier) + " est utilisé deux fois (" + fichiers[ecran.fichier] +
           " et " + (estTexte(ecran.code) ? ecran.code : "ecrans[" + i + "]") + ") : chaque écran a son propre fichier.");
@@ -163,7 +163,7 @@
         erreurs.push(nom + " a inchange: true et un actuel : un écran inchangé n'a pas d'actuel à côté (actuel: null).");
       }
       if (estObjet(ecran.actuel) && estTexte(ecran.actuel.fichier) && !fichierSur(ecran.actuel.fichier)) {
-        erreurs.push(nom + " a un actuel.fichier " + montrer(ecran.actuel.fichier) + " refusé : " + regleDuFichier("actuel"));
+        erreurs.push(nom + " a un actuel.fichier " + montrer(ecran.actuel.fichier) + " refusé : " + regleDuFichier("sources/actuel"));
       }
       if (idsDeRangee.indexOf(ecran.rangee) === -1) {
         erreurs.push(nom + " a une rangee " + montrer(ecran.rangee) + " qui n'existe pas dans rangees.");

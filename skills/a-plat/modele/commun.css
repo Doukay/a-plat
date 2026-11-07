@@ -1,10 +1,12 @@
-/* Le style commun des écrans d'À plat.
+/* Le style commun des écrans d'À plat. Il est refait à chaque copie de la page (copier.mjs,
+   dans a-plat/.cache/) : ne pas le modifier.
 
    Chaque écran est dessiné une seule fois, avec les classes de ce fichier, sans couleur à lui.
    Deux jeux de variables, aux mêmes noms, lui donnent deux visages :
-   - UX (:root) : la maquette, un gris calme façon fiche produit, un seul bleu pour ce qui agit.
-     L'attention va à ce que dit l'écran, pas aux couleurs.
-   - UI (:root[data-finition="ui"]) : les couleurs, les polices et les arrondis du projet.
+   - UX (:root, ici) : la maquette, un gris calme façon fiche produit, un seul bleu pour ce qui
+     agit. L'attention va à ce que dit l'écran, pas aux couleurs.
+   - UI (:root[data-finition="ui"]) : les couleurs, les polices et les arrondis du projet, dans
+     a-plat/sources/charte.css, chargé après ce fichier. Les classes propres au projet y vont aussi.
    Le bouton « UX | UI » de la page passe d'un jeu à l'autre pour tous les écrans d'un coup.
    Un écran ouvert seul s'affiche en UX. La page d'À plat, en mode sombre, ne touche pas aux écrans. */
 
@@ -24,23 +26,6 @@
   color-scheme: light;
 }
 
-/* ---- UI : les couleurs du projet ----
-   Claude y écrit les valeurs du projet, lues dans ses fichiers de style ou sa charte, jamais
-   inventées. Mêmes noms de variables que l'UX. Tant qu'il reprend les valeurs UX (comme ici,
-   dans le modèle), le contrôle avertit que l'UI n'a pas encore les couleurs du projet. */
-:root[data-finition="ui"] {
-  --ecran-page: #f5f5f7;
-  --ecran-fond: #ffffff;
-  --ecran-texte: #1d1d1f;
-  --ecran-trait: #d2d2d7;
-  --ecran-accent: #0066cc;
-  --ecran-sur-accent: #ffffff;
-  --ecran-mise-en-avant: #ececf0;
-  --ecran-police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --ecran-police-titre: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --ecran-arrondi: 12px;
-  --ecran-arrondi-bouton: 999px;
-}
 
 /* Calculées d'après les variables ci-dessus, pour l'UX comme pour l'UI : à laisser telles quelles.
    --ecran-doux : le gris de lecture (descriptions, libellés) ;

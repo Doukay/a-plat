@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // Construit le vrai style du projet pour la finition « fidele » : les écrans sont écrits avec le
 // balisage et les classes du projet, et chargent ce style (voir references/fidele.md).
-// Usage : node style-du-projet.mjs <dossier des maquettes> <feuille d'entrée du projet> [--modules <dossier>]
+// Usage : node style-du-projet.mjs <dossier a-plat> <feuille d'entrée du projet> [--modules <dossier>]
 //
-// - Écrit seulement dans <dossier>/projet/ : projet.css, gris.css, polices.css et polices/,
+// - Écrit seulement dans <dossier>/.cache/projet/ : projet.css, gris.css, polices.css et polices/,
 //   fichiers/ (images et polices citées par la feuille, rangées selon leur chemin dans le projet).
 // - Ne lit que dans le projet (le dossier de son package.json, au-dessus de la feuille) et dans
 //   ses paquets installés : un fichier cité hors du projet n'est pas copié, et il le dit.
 // - Tailwind 4 (la feuille fait @import "tailwindcss") : compilé avec le Tailwind installé dans le
-//   projet, pour les seules classes des écrans et des actuels qui chargent ../projet/projet.css.
+//   projet, pour les seules classes des écrans et des actuels qui chargent ../../.cache/projet/projet.css.
 //   Ses extensions (@plugin, @config) sont du code du projet : elles s'exécutent aussi.
 //   Sans Tailwind installé, ou avec un style que l'outil ne sait pas construire (Tailwind 3,
 //   @apply hors Tailwind 4), il s'arrête (code 2) : proposer alors la finition charte.
@@ -88,8 +88,8 @@ if (positionnels.length !== 2 || modulesManquant) {
 const dossier = resolve(positionnels[0]);
 const feuille = resolve(positionnels[1]);
 
-if (!estUnDossier(dossier) || !(estUnFichier(join(dossier, "a-plat", "moteur.js")) || lire(join(dossier, "plan.js")).includes("window.A_PLAT"))) {
-  sortir(2, [`Le dossier « ${positionnels[0]} » n'est pas un dossier de maquettes d'À plat : rien n'est écrit.`]);
+if (!estUnDossier(dossier) || !(estUnFichier(join(dossier, ".cache", "moteur.js")) || lire(join(dossier, "sources", "plan.js")).includes("window.A_PLAT"))) {
+  sortir(2, [`Le dossier « ${positionnels[0]} » n'est pas un dossier a-plat d'À plat (ni .cache/moteur.js, ni sources/plan.js) : rien n'est écrit.`]);
 }
 if (!estUnFichier(feuille)) sortir(1, [`La feuille « ${positionnels[1]} » est introuvable.`]);
 if (dans(dossier, feuille)) sortir(2, ["La feuille d'entrée est dans le dossier des maquettes : il faut celle du projet."]);
@@ -106,10 +106,10 @@ const racine = racineDuProjet();
 const modules = resolve(modulesDonnes || racine);
 const requis = createRequire(join(modules, "noop.js"));
 
-const sortie = join(dossier, "projet");
+const sortie = join(dossier, ".cache", "projet");
 if (!estUnDossier(sortie)) {
   try { mkdirSync(sortie, { recursive: true }); } catch {
-    sortir(1, [`Le dossier ${join(positionnels[0], "projet")} ne peut pas être créé (un fichier porte-t-il ce nom ?).`]);
+    sortir(1, [`Le dossier ${join(positionnels[0], ".cache", "projet")} ne peut pas être créé (un fichier porte-t-il ce nom ?).`]);
   }
 }
 const retires = [];   // ce qui venait d'Internet
@@ -118,17 +118,17 @@ const dehors = [];    // fichiers cités hors du projet, pas copiés
 
 // ---------------------------------------------------------------- les écrans qui chargent le style
 
-const CHARGE_LE_PROJET = /<link\b[^>]*href\s*=\s*["']?\.\.\/projet\/projet\.css/i;
+const CHARGE_LE_PROJET = /<link\b[^>]*href\s*=\s*["']?\.\.\/\.\.\/\.cache\/projet\/projet\.css/i;
 
 function ecransFideles() {
   const liste = [];
   for (const sous of ["ecrans", "actuel"]) {
-    const chemin = join(dossier, sous);
+    const chemin = join(dossier, "sources", sous);
     if (!estUnDossier(chemin)) continue;
     for (const nom of readdirSync(chemin).sort()) {
       if (!/\.html?$/i.test(nom)) continue;
       const texte = lire(join(chemin, nom));
-      if (CHARGE_LE_PROJET.test(texte)) liste.push({ nom: `${sous}/${nom}`, texte });
+      if (CHARGE_LE_PROJET.test(texte)) liste.push({ nom: `sources/${sous}/${nom}`, texte });
     }
   }
   return liste;
@@ -179,7 +179,7 @@ function fichierCite(adresse, dossierDeLaFeuille) {
   return source;
 }
 
-// Copie dans projet/fichiers/, sous son chemin dans le projet (deux logo.png ne s'écrasent pas),
+// Copie dans .cache/projet/fichiers/, sous son chemin dans le projet (deux logo.png ne s'écrasent pas),
 // chaque fichier local cité par url(), et réécrit l'adresse.
 function recopierLesFichiers(css, dossierDeLaFeuille) {
   const gardees = [];
@@ -414,7 +414,7 @@ writeFileSync(join(sortie, "gris.css"), GRIS);
 const polices = copierLesPolices();
 
 const lignes = [
-  `Style écrit dans ${join(positionnels[0], "projet")} : projet.css, gris.css, polices.css (${polices.length} ${polices.length > 1 ? "polices" : "police"}).`,
+  `Style écrit dans ${join(positionnels[0], ".cache", "projet")} : projet.css, gris.css, polices.css (${polices.length} ${polices.length > 1 ? "polices" : "police"}).`,
   entete
 ];
 if (retires.length) lignes.push(`Retiré, car en ligne : ${[...new Set(retires)].join(", ")}.`);

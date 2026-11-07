@@ -13,15 +13,15 @@ Même ainsi, une maquette dessinée reste proche de l'appli, pas identique : seu
 
 ## L'accord, puis la construction du style
 
-Avant de lancer quoi que ce soit, le demander une fois pour les deux scripts (`style-du-projet.mjs` et `icones.mjs`), en disant : ils exécutent des paquets installés du projet (son Tailwind et ses extensions, son React et ses icônes), qui sont du code du projet ; ils n'écrivent que dans `<dossier>/projet/`, ou rien du tout pour les icônes, et ne lisent que dans le projet. Une fois l'accord donné, il vaut pour la suite du travail sur ce dossier.
+Avant de lancer quoi que ce soit, le demander une fois pour les deux scripts (`style-du-projet.mjs` et `icones.mjs`), en disant : ils exécutent des paquets installés du projet (son Tailwind et ses extensions, son React et ses icônes), qui sont du code du projet ; ils n'écrivent que dans `a-plat/.cache/projet/`, ou rien du tout pour les icônes, et ne lisent que dans le projet. Une fois l'accord donné, il vaut pour la suite du travail sur ce dossier.
 
 ```
-node "<skill>/style-du-projet.mjs" "<dossier>" "<feuille d'entrée du projet>"
+node <skill>/style-du-projet.mjs a-plat "<feuille d'entrée du projet>"
 ```
 
 - La feuille d'entrée : celle qui porte le style de l'appli (souvent `src/index.css` ou `src/app/globals.css`), lue à l'étape 1.
 - `--modules "<dossier>"` : seulement si les paquets installés ne sont pas au-dessus de la feuille.
-- Le script écrit `projet/projet.css` (pour Tailwind : les seules classes des écrans et des actuels qui le chargent), `projet/gris.css`, `projet/polices.css` et `projet/polices/` (les paquets `@fontsource` que le code importe), `projet/fichiers/` (images et polices citées, sous leur chemin dans le projet). Ce qui viendrait d'Internet est retiré, ce qui est hors du projet n'est pas copié, et il dit les deux.
+- Le script écrit `.cache/projet/projet.css` (pour Tailwind : les seules classes des écrans et des actuels qui le chargent), `.cache/projet/gris.css`, `.cache/projet/polices.css` et `.cache/projet/polices/` (les paquets `@fontsource` que le code importe), `.cache/projet/fichiers/` (images et polices citées, sous leur chemin dans le projet). Ce qui viendrait d'Internet est retiré, ce qui est hors du projet n'est pas copié, et il dit les deux.
 - **Le relancer** après chaque lot d'écrans, avant le contrôle : avec Tailwind, une classe nouvelle n'a de style qu'après. Le contrôle avertit quand un écran a changé depuis (même pour une retouche de texte : relancer ne coûte rien). Lancé avant le premier écran, il le dit.
 - Ces fichiers ne s'écrivent pas à la main.
 
@@ -43,12 +43,12 @@ Le nom est celui que le projet importe de `lucide-react` (avant un éventuel `as
 <head><meta charset="utf-8"><title>A2 · Titre de l'écran</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <!-- Transcrit de <fichiers source> ; état montré : <lequel>. -->
-<link rel="stylesheet" href="../projet/polices.css">
-<link rel="stylesheet" href="../projet/projet.css">
-<link rel="stylesheet" href="../projet/gris.css"></head>
+<link rel="stylesheet" href="../../.cache/projet/polices.css">
+<link rel="stylesheet" href="../../.cache/projet/projet.css">
+<link rel="stylesheet" href="../../.cache/projet/gris.css"></head>
 <body>
 <div id="root"> … </div>
-<script src="../a-plat/relais.js"></script></body>
+<script src="../../.cache/relais.js"></script></body>
 </html>
 ```
 
@@ -65,7 +65,7 @@ Le nom est celui que le projet importe de `lucide-react` (avant un éventuel `as
 
 ## L'actuel fidèle
 
-L'actuel redessiné s'écrit de la même façon, dans `actuel/`, mais ne charge **jamais** `projet/gris.css` : il garde toujours le vrai style. Il charge `../projet/polices.css` et `../projet/projet.css`, et `relais.js`. Une capture fournie par la personne reste meilleure que tout redessin.
+L'actuel redessiné s'écrit de la même façon, dans `sources/actuel/`, mais ne charge **jamais** `.cache/projet/gris.css` : il garde toujours le vrai style. Il charge `../../.cache/projet/polices.css` et `../../.cache/projet/projet.css`, et `relais.js`. Une capture fournie par la personne reste meilleure que tout redessin.
 
 ## La hauteur
 
@@ -77,4 +77,4 @@ Si la personne accepte qu'on lance l'appli (« Lancer le projet »), comparer un
 
 ## Le contrôle
 
-Avec `fidele`, le contrôle exige `projet/projet.css` et `projet/gris.css`, refuse une feuille qui charge depuis Internet et un actuel qui charge `gris.css`, et avertit pour un écran qui ne charge pas le vrai style, ou qui a changé après la construction. Le bloc UI de `commun.css` ne sert pas.
+Avec `fidele`, le contrôle exige `.cache/projet/projet.css` et `.cache/projet/gris.css`, refuse une feuille qui charge depuis Internet et un actuel qui charge `gris.css`, et avertit pour un écran qui ne charge pas le vrai style, ou qui a changé après la construction. Le bloc UI de `sources/charte.css` ne sert pas.

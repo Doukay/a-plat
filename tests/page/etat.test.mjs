@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 const { validerPlan } = require("../../skills/a-plat/modele/a-plat/logique.js");
 
 function lirePlan(fixture) {
-  const texte = readFileSync(new URL(`../fixtures/${fixture}/plan.js`, import.meta.url), "utf8");
+  const texte = readFileSync(new URL(`../fixtures/${fixture}/sources/plan.js`, import.meta.url), "utf8");
   const fenetre = {};
   vm.runInNewContext(texte, { window: fenetre });
   return fenetre.A_PLAT;
@@ -21,11 +21,21 @@ const lignes = (page) => page.locator("li.ligne");
 // ---------------------------------------------------------------- plan.js absent ou cassé
 
 test("sans plan.js, la page dit que plan.js est introuvable et quoi faire", async () => {
-  await avecPage("complet", { retirer: ["plan.js"] }, async ({ page }) => {
+  await avecPage("complet", { retirer: ["sources/plan.js"] }, async ({ page }) => {
     const texte = await textePrincipal(page);
     assert.match(texte, /plan\.js est introuvable/);
+    assert.match(texte, /sources\/plan\.js/, "la page dit où elle le cherche");
     assert.match(texte, /Demandez à Claude/);
     assert.equal(await page.locator(".barre-vues a").count(), 2, "la barre reste là, la page n'est pas blanche");
+  });
+});
+
+test("sans .cache/logique.js, la page dit qu'il manque un fichier de la page et de la remettre en place", async () => {
+  await avecPage("complet", { retirer: [".cache/logique.js"] }, async ({ page }) => {
+    const texte = await textePrincipal(page);
+    assert.match(texte, /Il manque un fichier de la page/);
+    assert.match(texte, /\.cache\/logique\.js/);
+    assert.match(texte, /copier\.mjs/);
   });
 });
 
@@ -191,7 +201,7 @@ for (const largeur of [390, 1320]) {
           assert.deepEqual(contexte.console, [], `${fixture} : erreurs de console`);
           assert.deepEqual(contexte.erreurs, [], `${fixture} : erreurs de page`);
           assert.deepEqual(contexte.requetes, [], `${fixture} : requêtes hors file://`);
-          const clair = mesures.fond === "rgb(238, 240, 243)";
+          const clair = mesures.fond === "rgb(245, 245, 247)";
           assert.equal(clair, schema === "light", `le fond (${mesures.fond}) ne suit pas le mode ${schema}`);
         });
       }

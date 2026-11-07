@@ -1,4 +1,4 @@
-// Relais d'un écran d'À plat. Chaque écran le charge avec <script src="../a-plat/relais.js">.
+// Relais d'un écran d'À plat. Chaque écran le charge avec <script src="../../.cache/relais.js"> (depuis a-plat/sources/ecrans/).
 //
 // Il sert à une seule chose : parler à la page d'À plat quand l'écran est affiché dedans,
 // car la page n'a pas le droit de lire dans un cadre ouvert d'un double-clic.
